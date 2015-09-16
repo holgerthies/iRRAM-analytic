@@ -31,3 +31,7 @@ bin/*
 
 # Mac specific files
 .DS_Store
+
+# vim files
+*.swp
+*.swo

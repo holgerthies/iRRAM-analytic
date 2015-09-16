@@ -14,11 +14,7 @@ class POLYNOMIAL{
     // empty constructor for 0 polynomial
     POLYNOMIAL() : coefficients(std::vector<std::shared_ptr<POLYNOMIAL<n-1,T>>>{std::shared_ptr<POLYNOMIAL<n-1,T>>(new POLYNOMIAL<n-1,T>())}) {};
     
-    std::string to_string(){
-      char letter='w'+n;
-      std::string result;
-      return result;
-    }
+
 };
 
 // Template specialization for univariate polynomials
@@ -38,6 +34,16 @@ class POLYNOMIAL<1,T>{
         ans = coefficients[i]+ans*x;
       }
       return ans;
+    }
+
+    // real degree might be smaller if leading coefficients are 0
+    int get_degree(){
+      return coefficients.size();
+    }
+
+    // add coefficients to the back
+    void push(T x){
+      coefficients.push_back(x);
     }
 };
 #endif

@@ -3,6 +3,7 @@
 *.lo
 *.o
 *.obj
+*.dSYM
 build
 
 # Precompiled Headers
@@ -35,3 +36,7 @@ bin/*
 # vim files
 *.swp
 *.swo
+.ycm_extra_conf.py
+
+# Misc
+*.pyc

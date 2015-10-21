@@ -24,7 +24,7 @@ class POLYNOMIAL<1,T>{
     std::vector<T> coefficients;
   public:
     // empty constructor for 0 polynomial
-    POLYNOMIAL() : coefficients(std::vector<T>{T()}) {};
+    POLYNOMIAL() : coefficients(std::vector<T>{}) {};
     // constructor with given coefficients
     POLYNOMIAL(std::vector<T> coeffs) : coefficients(coeffs) {};
     // Horner Scheme for evaluation
@@ -35,15 +35,31 @@ class POLYNOMIAL<1,T>{
       }
       return ans;
     }
+    // evaluate only the polynomial given by considering the coefficients
+    // between start and end
+    T evaluate_partial(const T& x, const long start, const long end ){
+      T ans = coefficients[end];
+      for(int i=end-1; i>=start; i--){
+        ans = coefficients[i]+ans*x;
+      }
+      if(start > 0)
+        ans *= power(x,start);
+      return ans;
+    }
 
     // real degree might be smaller if leading coefficients are 0
-    int get_degree(){
+    int get_degree() const{
       return coefficients.size();
     }
 
     // add coefficients to the back
     void push(T x){
       coefficients.push_back(x);
+    }
+
+    // get kth coefficient
+    T get_coefficient(int k) const{
+      return coefficients[k];
     }
 };
 #endif

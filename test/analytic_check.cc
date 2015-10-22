@@ -31,12 +31,12 @@ REAL sinseries(const int n){
 void compute(){
 	
   ANALYTIC f(std::shared_ptr<std::function<REAL(unsigned long)>>(new std::function<REAL(unsigned long)>(sinseries)), 2);
-	int l,prec, continuation_num;
-	iRRAM::cin >>l>> prec >> continuation_num;
+	int l,prec;
+	iRRAM::cin >>l>> prec;
 	// f continuation prec
 	REAL x= REAL(1)/REAL(4*l);
-  REAL x_real = x+REAL(continuation_num)/REAL(2*l);
-	REAL y = f.eval_k(x, continuation_num); 
+  REAL x_real = x;
+	REAL y = f.eval_k(x, 0); 
 	iRRAM::cout << "result: " << endl;
 	rwrite(y, prec);
 	iRRAM::cout << endl;

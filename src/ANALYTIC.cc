@@ -60,6 +60,7 @@ namespace iRRAM
   // evaluate a given powerseries with parameter l at point z
   // only works if z <= 1/2l
   REAL eval(shared_ptr<POWERSERIES<1,REAL>> series, const int& l, const REAL& z){
+   using std::endl;
    int J = -ACTUAL_STACK.actual_prec+l+1;
    REAL error_factor = power(z*REAL(l),J);
    REAL error = power(2,l)*error_factor/(1-z*REAL(l));
@@ -71,7 +72,7 @@ namespace iRRAM
    sizetype_add(local_error, sum_error, trunc_error);
    best.seterror(local_error);
    best_error = local_error;
-   while (sizetype_less(sum_error, trunc_error) &&
+   while (false && sizetype_less(sum_error, trunc_error) &&
         (best_error.exponent >= ACTUAL_STACK.actual_prec) ){
       sum += series->evaluate_partial({z}, J+1, 2*J); // partial sum
       J *= 2;
@@ -98,7 +99,7 @@ namespace iRRAM
     shared_ptr<POWERSERIES<1,REAL>> old_series = pwr;
     pwrs.push_back(old_series);
     REAL germ_position = center + dist;
-    while (choose(germ_position < right,germ_position > right-dist/REAL(2)) == 1) {
+    while (false && choose(germ_position < right,germ_position > right-dist/REAL(2)) == 1) {
       shared_ptr<POWERSERIES<1,REAL>> new_series(
           new POWERSERIES<1,REAL>(
             std::shared_ptr<std::function<REAL(unsigned long)>>(

@@ -8,6 +8,7 @@
 #include "POLYNOMIAL.h"
 #include <functional>
 #include <cstdarg>
+#include "combinatorics.h"
 template <unsigned int n, class T>
 class POWERSERIES{
   private:
@@ -17,9 +18,20 @@ class POWERSERIES{
     POWERSERIES(std::shared_ptr<std::function<T(Args... args)>> f): f(f) {};
     // partially evaluate the function as a polynomial
     // of at least the first m coefficients
-    T evaluate_partial(std::initializer_list<T> x, const unsigned long start, const unsigned long end){
-      for(int m=start; m=end; m++){
+    T evaluate_partial(const std::vector<T>& x, const unsigned long start, const unsigned long end){
+      T ans;
+      for(int m=start; m<=end; m++){
+        auto P = iRRAM::partitions(m, n);
+        for(auto p : P){
+          T prod=1;
+          for(int i=0; i<n; i++){
+            prod *= power(x[i], p[i]);
+          }
+          prod *= get(p[0]);
+          ans += prod;
+        }
       }
+      return ans;
     }
 
     // get the k-th coefficient

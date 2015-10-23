@@ -10,11 +10,11 @@ using std::make_pair;
 namespace iRRAM
 {
   // get all partitions of size k of the number n
-  vector<vector<int>> partitions(const int n, const int k){
-    if(k == 1) return vector<vector<int>>{{n}};
-    vector<vector<int>> ans;
+  vector<vector<unsigned long>> partitions(const unsigned long n, const unsigned long k){
+    if(k == 1) return vector<vector<unsigned long>>{{n}};
+    vector<vector<unsigned long>> ans;
     for(int i=0; i<=n; i++){
-      for(vector<int> p : partitions(n-i, k-1)){
+      for(vector<unsigned long> p : partitions(n-i, k-1)){
         p.push_back(i);
         ans.push_back(p);
       }

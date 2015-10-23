@@ -17,7 +17,8 @@ REAL inv_factorial(const int n){
 }
 
 // sin(2*pi*x)
-REAL sinseries(const int n){
+REAL sinseries(const std::vector<unsigned long>& v){
+  int n=v[0];
 	if (0 == n%2)
 		return 0;
 	else {
@@ -30,7 +31,7 @@ REAL sinseries(const int n){
 
 void compute(){
 	
-  ANALYTIC f(std::shared_ptr<std::function<REAL(unsigned long)>>(new std::function<REAL(unsigned long)>(sinseries)), 2);
+  ANALYTIC f(std::shared_ptr<std::function<REAL(const std::vector<unsigned long>&)>>(new std::function<REAL(const std::vector<unsigned long>&)>(sinseries)), 2);
 	int l,prec;
 	iRRAM::cin >>l>> prec;
 	// f continuation prec

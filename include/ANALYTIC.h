@@ -13,7 +13,7 @@ namespace iRRAM
       std::vector<std::shared_ptr<POWERSERIES<1,REAL>>> pwrs;
     public:
       ANALYTIC(std::shared_ptr<POWERSERIES<1,REAL>>, const int l);
-      ANALYTIC(std::shared_ptr<std::function<REAL(unsigned long)>> f, const int l):
+      ANALYTIC(std::shared_ptr<std::function<REAL(const std::vector<unsigned long>&)>> f, const int l):
         ANALYTIC(std::shared_ptr<POWERSERIES<1,REAL>>(new POWERSERIES<1,REAL>(f)), l) {};
       REAL eval_k(const REAL& x, const int k);
       REAL operator ()(const REAL&) const;

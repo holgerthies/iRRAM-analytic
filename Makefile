@@ -20,7 +20,7 @@ $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
 
 $(TESTDIR)/%.o: $(TESTDIR)/%.$(SRCEXT)
 	@mkdir -p $(TESTDIR)
-	@echo " $(CC) $(CFLAGS) $(INC) $(LIB) -o $@ $< build/ANALYTIC.o"; $(CC) $(CFLAGS) $(INC) $(LIB) -o $@ $< src/ANALYTIC.cc src/combinatorics.cc
+	@echo " $(CC) $(CFLAGS) $(INC) $(LIB) -o $@ $< build/ANALYTIC.o"; $(CC) $(CFLAGS) $(INC) $(LIB) -o $@ $< src/combinatorics.cc
 
 clean:
 	@echo " Cleaning..."; 

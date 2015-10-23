@@ -13,7 +13,7 @@ namespace iRRAM
    int J = -ACTUAL_STACK.actual_prec+l+1;
    REAL error_factor = power(z*REAL(l),J);
    REAL error = power(2,l)*error_factor/(1-z*REAL(l));
-   REAL sum(series->evaluate_partial({z},0,J));
+   REAL sum(evaluate_partial(series, {z},0,J));
    REAL best=sum;
    sizetype best_error, trunc_error, local_error,sum_error;
    sum.geterror(sum_error);
@@ -21,9 +21,9 @@ namespace iRRAM
    sizetype_add(local_error, sum_error, trunc_error);
    best.seterror(local_error);
    best_error = local_error;
-   while (false && sizetype_less(sum_error, trunc_error) &&
+   while (sizetype_less(sum_error, trunc_error) &&
         (best_error.exponent >= ACTUAL_STACK.actual_prec) ){
-      sum += series->evaluate_partial({z}, J+1, 2*J); // partial sum
+      sum += evaluate_partial(series, {z}, J+1, 2*J); // partial sum
       J *= 2;
       error *= error_factor;
       error_factor *= error_factor;

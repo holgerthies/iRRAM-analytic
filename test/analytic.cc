@@ -50,7 +50,7 @@ void compute(){
 	sizetype error;
   getrusage(RUSAGE_SELF, &usage);
   start = usage.ru_utime;
-	REAL y = f.eval_k(x,continuation_num); 
+	REAL y = f({ x });
 	y.geterror(error);
   getrusage(RUSAGE_SELF, &usage);
   end = usage.ru_utime;

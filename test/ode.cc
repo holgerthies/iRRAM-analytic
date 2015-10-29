@@ -1,5 +1,5 @@
 #include "iRRAM.h"
-#include "ANALYTIC.h"
+#include "IVP.h"
 using namespace iRRAM;
 using std::endl;
 REAL inv_factorial(const int n){
@@ -37,6 +37,7 @@ REAL FUN(const REAL& t){
 void compute(){
 	
   ANALYTIC<2,REAL> f(std::shared_ptr<std::function<REAL(const std::vector<unsigned long>&)>>(new std::function<REAL(const std::vector<unsigned long>&)>(series)), 0.25, 24);
+  std::shared_ptr<IVP<2,REAL>> P(new IVP<2,REAL>(f));
 	int l,prec;
 	iRRAM::cin >>l>> prec;
 	// f continuation prec
@@ -57,7 +58,7 @@ void compute(){
 		iRRAM::cout << "OK!" << endl;
 	}
   iRRAM::cout << "solving ode..." << endl;
-  auto F = solve(f);
+  auto F = solve(P);
   iRRAM::cout << "computing F("<<x1<<")..."<<endl;
 	REAL Y = F({x1});
 	iRRAM::cout << "result: " << endl;

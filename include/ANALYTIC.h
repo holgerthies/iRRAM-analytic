@@ -15,7 +15,7 @@ namespace iRRAM
       REAL M,r; // maximum of the function and radius of convergence
       std::shared_ptr<POWERSERIES<n,T>> pwr;
     public:
-      ANALYTIC(sq_ptr f, const REAL& r, const REAL& M ): 
+      ANALYTIC(const sq_ptr f, const REAL& r, const REAL& M ): 
         M(M),
         r(r),
         pwr(new POWERSERIES<n,T>(f))
@@ -67,50 +67,5 @@ namespace iRRAM
       }
   };
 
-  template <class T>
-  REAL a(const ANALYTIC<2,T>& F, const std::vector<unsigned long>& v);
-
-  template <class T>
-  REAL ai(const ANALYTIC<2,T>& F, const unsigned long n, const unsigned long i){
-    if(i == 0 && n==0) return 1;
-    if(i==0) return 0;
-    REAL ans=0;
-    for(unsigned long j=0; j<=n;j++){
-        ans+=ai(F,n-j, i-1)*a(F,{j});
-    } 
-    return ans;
-  }
-
-  template <class T>
-  REAL a(const ANALYTIC<2,T>& F, const std::vector<unsigned long>& v){
-    static std::vector<REAL> cache;
-    REAL ans=0;
-    auto l = v[0];
-    //std::cout << l <<std::endl;
-    if(l==0) return REAL(0);
-    if(cache.size() > l) return cache[l];
-    a(F, {l-1});
-    cache.resize(l+1);
-    for(auto w : partitions(l-1, 2)){
-      auto n = w[0];
-      auto k = w[1];
-      for(unsigned long i=0; i<=n; i++)
-      {
-        ans += F.get_coeff({k,i})*ai(F,n,i);
-      }
-    }
-    cache[l] = ans/REAL((int)l);
-    return cache[l];
-  };
-
-  template <class T>
-  ANALYTIC<1,T> solve(const ANALYTIC<2,T>& F){
-    using std::vector;
-    using seq = std::function<T(const std::vector<unsigned long>&)>;
-    seq series = [F] (const vector<unsigned long>& v) {
-      return a(F, v);
-    };
-    return ANALYTIC<1,T>(series, F.get_r(), F.get_M());
-  }
 }
 #endif

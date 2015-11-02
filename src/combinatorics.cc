@@ -9,6 +9,7 @@ using std::pair;
 using std::make_pair;
 namespace iRRAM
 {
+  
   // get all partitions of size k of the number n
   vector<vector<unsigned long>> partitions(const unsigned long n, const unsigned long k){
     if(k == 1) return vector<vector<unsigned long>>{{n}};
@@ -38,5 +39,21 @@ namespace iRRAM
     if(k > n) return 0;
     mem[make_pair(n,k)] = choose(n-1,k)*REAL(n)/REAL(n-k); 
     return mem[make_pair(n,k)];
+  }
+
+  vector<vector<unsigned long>> bounded_count(const vector<unsigned long>& bound, const int size){
+    if(size == 0) return vector<vector<unsigned long>>{vector<unsigned long>()};
+    vector<vector<unsigned long>> ans; 
+    auto rest=bounded_count(bound, size-1);
+    for(int i=0; i<=bound[size-1]; i++){
+      for(auto v : rest){
+        v.push_back(i);
+        ans.push_back(v);
+      }
+    }
+    return ans;
+  }
+  vector<vector<unsigned long>> bounded_count(const vector<unsigned long>& bound){
+    return bounded_count(bound, bound.size());
   }
 }

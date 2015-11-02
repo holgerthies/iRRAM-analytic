@@ -1,7 +1,9 @@
 #include "iRRAM.h"
 #include "IVP.h"
+#include "combinatorics.h"
 using namespace iRRAM;
 using std::endl;
+using std::vector;
 REAL inv_factorial(const int n){
 	if ((n!=0)&&(n*log(n)-n > 2*-ACTUAL_STACK.actual_prec)){
 		REAL return_value(0);
@@ -37,7 +39,9 @@ REAL FUN(const REAL& t){
 void compute(){
 	
   ANALYTIC<2,REAL> f(std::shared_ptr<std::function<REAL(const std::vector<unsigned long>&)>>(new std::function<REAL(const std::vector<unsigned long>&)>(series)), 0.25, 24);
-  std::shared_ptr<IVP<2,REAL>> P(new IVP<2,REAL>(f));
+  std::shared_ptr<IVP<2,REAL>> P(new IVP<2,REAL>({f}));
+
+
 	int l,prec;
 	iRRAM::cin >>l>> prec;
 	// f continuation prec
@@ -58,7 +62,7 @@ void compute(){
 		iRRAM::cout << "OK!" << endl;
 	}
   iRRAM::cout << "solving ode..." << endl;
-  auto F = solve(P);
+  auto F = solve(P)[0];
   iRRAM::cout << "computing F("<<x1<<")..."<<endl;
 	REAL Y = F({x1});
 	iRRAM::cout << "result: " << endl;

@@ -24,8 +24,8 @@ namespace iRRAM
 
       T operator ()(const std::vector<T>& x) const
       {
-        int J = -ACTUAL_STACK.actual_prec;
-        T x_max = *std::max_element(x.begin(), x.end());
+        int J = 1;
+        T x_max = abs(*std::max_element(x.begin(), x.end(), [] (T x1, T x2) {return abs(x1) < abs(x2);}));
         REAL error = M*power(x_max/r, J+1)*(J+1);
         REAL sum(evaluate_partial(pwr, x,0,J));
         REAL best=sum;

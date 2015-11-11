@@ -45,10 +45,11 @@ namespace iRRAM
     if(size == 0) return vector<vector<unsigned long>>{vector<unsigned long>()};
     vector<vector<unsigned long>> ans; 
     auto rest=bounded_count(bound, size-1);
-    for(int i=0; i<=bound[size-1]; i++){
-      for(auto v : rest){
-        v.push_back(i);
-        ans.push_back(v);
+    for(auto& v : rest){
+      v.resize(size);
+      for(int i=0; i<=bound[size-1]; i++){
+          v[size-1] = i;
+          ans.push_back(v);
       }
     }
     return ans;

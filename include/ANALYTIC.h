@@ -1,5 +1,5 @@
 /*-------------------------------------------------
- * Class for real analytic functions on [0,1]
+ * Class for real analytic functions 
  ------------------------------------------------*/
 #ifndef ANALYTIC_H
 #define ANALYTIC_H
@@ -38,7 +38,7 @@ namespace iRRAM
         int step_size = 1;
         REAL error_factor = power(x_max/r, step_size);
         while (sizetype_less(sum_error, trunc_error) &&
-             (best_error.exponent >= ACTUAL_STACK.actual_prec) ){
+             (trunc_error.exponent >= ACTUAL_STACK.actual_prec) ){
            int new_J = J+step_size;
            sum += evaluate_partial(pwr, x, J+1, new_J); // partial sum
            error *= error_factor*REAL(new_J)/REAL(J);
@@ -52,6 +52,7 @@ namespace iRRAM
              best_error = local_error;
            }
          } 
+        std::cout<<J<<std::endl;
          return best;
 
       };

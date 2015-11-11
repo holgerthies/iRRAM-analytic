@@ -20,32 +20,30 @@ REAL inv_factorial(const int n){
 
 // f(x,y,z) = z
 REAL series1(const std::vector<unsigned long>& v){
-  if(v[0] == 0 && v[1] == 0 && v[2] == 0) return 1;
   if(v[0] == 0 && v[1] == 0 && v[2] == 1) return 1;
   return 0;
 }
 
 // f(x,y,z) = y
 REAL series2(const std::vector<unsigned long>& v){
+  const REAL mu=10;
+  if(v[0] == 0 && v[1] == 0 && v[2] == 0) return -2;
+  if(v[0] == 0 && v[1] == 0 && v[2] == 1) return -3*mu;
   if(v[0] == 0 && v[1] == 1 && v[2] == 0) return -1;
+  if(v[0] == 0 && v[1] == 1 && v[2] == 1) return -4*mu;
+  if(v[0] == 0 && v[1] == 2 && v[2] == 1) return -mu;
   return 0;
 }
 
 REAL fun1(const REAL& t, const REAL& y1, const REAL& y2){
-  return y2+1;
+  return y2;
 }
 
 REAL fun2(const REAL& t, const REAL& y1, const REAL& y2){
-  return -y1;
+  const REAL mu=10;
+  return mu*(1-(y1+2)*(y1+2))*y2-y1-2;
 }
 
-REAL FUN1(const REAL& t){
-  return sin(t);
-}
-
-REAL FUN2(const REAL& t){
-  return cos(t)-1;
-}
 void compute(){
 	
   ANALYTIC<3,REAL> f1(std::shared_ptr<std::function<REAL(const std::vector<unsigned long>&)>>(new std::function<REAL(const std::vector<unsigned long>&)>(series1)),1, 2);
@@ -53,9 +51,7 @@ void compute(){
   std::shared_ptr<IVP<3,REAL>> P(new IVP<3,REAL>({f1,f2}));
 
 	int l,prec;
-	//iRRAM::cin >>l>> prec;
-  prec=150;
-  l=10;
+	iRRAM::cin >>l>> prec;
 	// f continuation prec
 	REAL x1= REAL(1)/REAL(16*l);
 	REAL x2= REAL(1)/REAL(8*l);
@@ -90,32 +86,15 @@ void compute(){
 	}
   iRRAM::cout << "solving ode..." << endl;
   auto F = solve(P);
+  x1=0.1;
   iRRAM::cout << "computing F1("<<x1<<")..."<<endl;
-	REAL Y = F[0]({x1});
+	REAL Y = F[0]({x1})+2;
 	iRRAM::cout << "result: " << endl;
 	rwrite(Y, prec);
 	iRRAM::cout << endl;
-	REAL SOL=FUN1(x1);
-	iRRAM::cout << "should be " << endl;
-	rwrite(SOL,prec);
-	iRRAM::cout << endl;
-	if(!bound(abs(SOL-Y), -prec)){
-		iRRAM::cout << "ERRROR" << endl;
-	} else {
-		iRRAM::cout << "OK!" << endl;
-	}
   iRRAM::cout << "computing F2("<<x1<<")..."<<endl;
 	Y = F[1]({x1});
 	iRRAM::cout << "result: " << endl;
 	rwrite(Y, prec);
 	iRRAM::cout << endl;
-	SOL=FUN2(x1);
-	iRRAM::cout << "should be " << endl;
-	rwrite(SOL,prec);
-	iRRAM::cout << endl;
-	if(!bound(abs(SOL-Y), -prec)){
-		iRRAM::cout << "ERRROR" << endl;
-	} else {
-		iRRAM::cout << "OK!" << endl;
-	}
 }

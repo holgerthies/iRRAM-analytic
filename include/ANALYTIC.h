@@ -8,9 +8,18 @@
 namespace iRRAM
 {
   template <unsigned int n, class T>
+    class ANALYTIC;
+  template<unsigned int n, class T>
+  ANALYTIC<n,T> operator+(const ANALYTIC<n,T>& lhs, const ANALYTIC<n,T>& rhs);
+  template<unsigned int n, class T>
+  ANALYTIC<n,T> operator-(const ANALYTIC<n,T>& lhs, const ANALYTIC<n,T>& rhs);
+  template<unsigned int n, class T>
+  ANALYTIC<n,T> operator*(const ANALYTIC<n,T>& lhs, const ANALYTIC<n,T>& rhs);
+  template <unsigned int n, class T>
   class ANALYTIC{
     using seq = std::function<T(const std::vector<unsigned long>&)>;
     using sq_ptr = std::shared_ptr<seq>;
+    using pwr_ser = POWERSERIES<n,T>;
     private:
       REAL M,r; // maximum of the function and radius of convergence
       std::shared_ptr<POWERSERIES<n,T>> pwr;
@@ -21,6 +30,14 @@ namespace iRRAM
         pwr(new POWERSERIES<n,T>(f))
         {};
       ANALYTIC(seq f, const REAL& r, const REAL& M): ANALYTIC(sq_ptr(new seq(f)), r, M) {};
+      ANALYTIC(pwr_ser& P, const REAL& r, const REAL& M):
+	    M(M),
+	    r(r),
+	    pwr(new pwr_ser(P) )
+	    {};
+	friend ANALYTIC operator+ <>(const ANALYTIC& lhs, const ANALYTIC& rhs);
+	friend ANALYTIC operator- <>(const ANALYTIC& lhs, const ANALYTIC& rhs);
+	friend ANALYTIC operator* <>(const ANALYTIC& lhs, const ANALYTIC& rhs);
 
       T operator ()(const std::vector<T>& x) const
       {
@@ -68,5 +85,23 @@ namespace iRRAM
       }
   };
 
+    template<unsigned int n, class T>
+    ANALYTIC<n,T> operator+(const ANALYTIC<n,T>& lhs, const ANALYTIC<n,T>& rhs){
+	auto spwr=*lhs.pwr+*rhs.pwr;
+	return ANALYTIC<n,T>(spwr, minimum(lhs.r, rhs.r), lhs.M+rhs.M);
+    }
+
+    template<unsigned int n, class T>
+    ANALYTIC<n,T> operator-(const ANALYTIC<n,T>& lhs, const ANALYTIC<n,T>& rhs){
+	auto spwr=*lhs.pwr-*rhs.pwr;
+	return ANALYTIC<n,T>(spwr, minimum(lhs.r, rhs.r), lhs.M+rhs.M);
+    }
+    template<unsigned int n, class T>
+    ANALYTIC<n,T> operator*(const ANALYTIC<n,T>& lhs, const ANALYTIC<n,T>& rhs){
+	auto spwr=*lhs.pwr**rhs.pwr;
+	return ANALYTIC<n,T>(spwr, minimum(lhs.r, rhs.r), lhs.M*rhs.M);
+    }
 }
+
+
 #endif

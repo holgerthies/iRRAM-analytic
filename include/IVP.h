@@ -148,7 +148,7 @@ namespace iRRAM{
       auto series = [P,i] (const std::vector<unsigned long>& v) {
         return P->get_coeff(i,(int)v[0]);
       };
-      ans.push_back(ANALYTIC<1,T>(series, min(P->get_r(i), P->get_M(i)/P->get_r(i)), P->get_M(i)));
+      ans.push_back(ANALYTIC<1,T>(series, min(P->get_r(i), P->get_r(i)/P->get_M(i)), P->get_M(i)));
     }
     return ans;
   }

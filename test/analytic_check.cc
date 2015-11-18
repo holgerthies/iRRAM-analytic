@@ -54,5 +54,32 @@ void compute(){
 	} else {
 		iRRAM::cout << "OK!" << endl;
 	}
-	
+	auto sum = f+f;
+	y = sum({x1,x2,x3});
+	iRRAM::cout << "result: " << endl;
+	rwrite(y, prec);
+	iRRAM::cout << endl;
+	sol=2*sin(x1*x2*x3);
+	iRRAM::cout << "should be " << endl;
+	rwrite(sol,prec);
+	iRRAM::cout << endl;
+	if(!bound(abs(sol-y), -prec)){
+		iRRAM::cout << "ERRROR" << endl;
+	} else {
+		iRRAM::cout << "OK!" << endl;
+	}
+	auto prod = f*sum;
+	y = prod({x1,x2,x3});
+	iRRAM::cout << "result: " << endl;
+	rwrite(y, prec);
+	iRRAM::cout << endl;
+	sol=2*sin(x1*x2*x3)*sin(x1*x2*x3);
+	iRRAM::cout << "should be " << endl;
+	rwrite(sol,prec);
+	iRRAM::cout << endl;
+	if(!bound(abs(sol-y), -prec)){
+		iRRAM::cout << "ERRROR" << endl;
+	} else {
+		iRRAM::cout << "OK!" << endl;
+	}
 }

@@ -86,7 +86,7 @@ void compute(){
 	}
   iRRAM::cout << "solving ode..." << endl;
   auto F = solve(P);
-  x1=0.1;
+  x1=1/REAL(l);
   iRRAM::cout << "computing F1("<<x1<<")..."<<endl;
 	REAL Y = F[0]({x1})+2;
 	iRRAM::cout << "result: " << endl;

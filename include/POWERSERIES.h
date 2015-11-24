@@ -95,7 +95,7 @@ typename PWRSERIES_TYPE<n-1,T>::type POWERSERIES<n,T>::operator[](const unsigned
   auto f=this->f;
   return POWERSERIES<n-1,T>([f,i] (const std::vector<unsigned long>& v) {
       std::vector<unsigned long> ind{i};
-      ind.insert(ind.begin(), v.begin(), v.end());
+      ind.insert(ind.end(), v.begin(), v.end());
       return (*f)(ind);
     });
 }

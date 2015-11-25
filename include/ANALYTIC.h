@@ -103,12 +103,13 @@ namespace iRRAM
   }
 
   template<unsigned int n, class T>
-  T ANALYTIC<n,T>::operator ()(const std::vector<T>& x) const
-  {
-    int J = 1;
-    T x_max = abs(*std::max_element(x.begin(), x.end(), [] (T x1, T x2) {return abs(x1) < abs(x2);}));
-    REAL error = M*power(x_max/r, J+1)*(J+1);
-    REAL sum(evaluate_partial(pwr, x,0,J));
+  T evaluate(const POWERSERIES<n,T>& pwr, const REAL& M, const REAL& r, const std::vector<T>& x){
+    int J=0;
+    REAL error_factor = abs(x[0])/r;
+    REAL error = M*error_factor/(1-error_factor);
+    std::vector<T> y;
+    y.insert(y.end(), x.begin()+1, x.end());
+    REAL sum(evaluate<n-1,T>(pwr[0], M, r, y));
     REAL best=sum;
     sizetype best_error, trunc_error, local_error,sum_error;
     sum.geterror(sum_error);
@@ -116,16 +117,15 @@ namespace iRRAM
     sizetype_add(local_error, sum_error, trunc_error);
     best.seterror(local_error);
     best_error = local_error;
-    int step_size = 1;
-    REAL error_factor = power(x_max/r, step_size);
+    REAL x0=1; // x[0]^J
     while (sizetype_less(sum_error, trunc_error) &&
 	   (trunc_error.exponent >= ACTUAL_STACK.actual_prec) ){
-      int new_J = J+step_size;
-      sum += evaluate_partial(pwr, x, J+1, new_J); 
-      error *= error_factor*REAL(new_J)/REAL(J);
+      J++;
+      x0 *= x[0];
+      sum += x0*evaluate<n-1,T>(pwr[J], M, r, y);
+      error *= error_factor;
       sizetype_add(trunc_error,error.vsize,error.error);
       sum.geterror(sum_error); // get error of partial sum
-      J = new_J;
       sizetype_add(local_error, sum_error, trunc_error);
       if (sizetype_less(local_error, best_error)) { 
 	best = sum;
@@ -134,6 +134,49 @@ namespace iRRAM
       }
     } 
     return best;
+    
+  }
+
+  template<>
+  REAL evaluate<0,REAL>(const POWERSERIES<0,REAL>& pwr, const REAL& M, const REAL& r, const std::vector<REAL>& x){
+    return pwr;
+  }
+
+
+  
+  template<unsigned int n, class T>
+  T ANALYTIC<n,T>::operator ()(const std::vector<T>& x) const
+  {
+    return evaluate<n,T>(*pwr, M,r, x);
+    //int J = 1;
+    //T x_max = abs(*std::max_element(x.begin(), x.end(), [] (T x1, T x2) {return abs(x1) < abs(x2);}));
+    //REAL error = M*power(x_max/r, J+1)*(J+1);
+    //REAL sum(evaluate_partial(pwr, x,0,J));
+    //REAL best=sum;
+    //sizetype best_error, trunc_error, local_error,sum_error;
+    //sum.geterror(sum_error);
+    //sizetype_add(trunc_error,error.vsize,error.error);
+    //sizetype_add(local_error, sum_error, trunc_error);
+    //best.seterror(local_error);
+    //best_error = local_error;
+    //int step_size = 1;
+    //REAL error_factor = power(x_max/r, step_size);
+    //while (sizetype_less(sum_error, trunc_error) &&
+    //	   (trunc_error.exponent >= ACTUAL_STACK.actual_prec) ){
+    //  int new_J = J+step_size;
+    //  sum += evaluate_partial(pwr, x, J+1, new_J); 
+    //  error *= error_factor*REAL(new_J)/REAL(J);
+    //  sizetype_add(trunc_error,error.vsize,error.error);
+    //  sum.geterror(sum_error); // get error of partial sum
+    //  J = new_J;
+    //  sizetype_add(local_error, sum_error, trunc_error);
+    //  if (sizetype_less(local_error, best_error)) { 
+    //	best = sum;
+    //	best.seterror(local_error);
+    //	best_error = local_error;
+    //  }
+    //} 
+    //return best;
   }
   // some predefined functions
   namespace AnalyticFunction{

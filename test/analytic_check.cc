@@ -37,11 +37,11 @@ void compute(){
 	
   ANALYTIC<3,REAL> f(std::shared_ptr<std::function<REAL(const std::vector<unsigned long>&)>>(new std::function<REAL(const std::vector<unsigned long>&)>(sinseries)), 2, 2);
 
-  auto g = AnalyticFunction::projection<3,1,REAL>();
-  g = power(g,5);
+  //auto g = AnalyticFunction::projection<3,1,REAL>();
+  //g = power(g,5);
   int l,prec;
   iRRAM::cin >>l>> prec;
-  rwrite(g({0.2,0.3, 0.5}), prec);
+  // rwrite(g({0.2,0.3, 0.5}), prec);
   iRRAM::cout << endl;
   // f continuation prec
   REAL x1= REAL(1)/REAL(4*l);

@@ -76,7 +76,7 @@ namespace iRRAM
   };
 
   template<unsigned int n, class T>
-  ANALYTIC<n,T> operator+(const ANALYTIC<n,T>& lhs, const ANALYTIC<n,T>& rhs){
+  ANALYTIC<n,T> operator+(const ANALYTIC<n,T>& l// hs, const ANALYTIC<n,T>& rhs){
     auto spwr=*lhs.pwr+*rhs.pwr;
     return ANALYTIC<n,T>(spwr, minimum(lhs.r, rhs.r), lhs.M+rhs.M);
   }

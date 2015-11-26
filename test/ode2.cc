@@ -61,7 +61,7 @@ void compute(){
 	REAL x2= REAL(1)/REAL(8*l);
 	REAL x3= REAL(1)/REAL(10*l);
   iRRAM::cout << "computing f1("<<x1<<","<<x2<<","<< x3 << ")..."<<endl;
-	REAL y = f1({x1,x2,x3});
+	REAL y = f1(x1,x2,x3);
 	iRRAM::cout << "result: " << endl;
 	rwrite(y, prec);
 	iRRAM::cout << endl;
@@ -75,7 +75,7 @@ void compute(){
 		iRRAM::cout << "OK!" << endl;
 	}
   iRRAM::cout << "computing f2("<<x1<<","<<x2<<","<< x3 << ")..."<<endl;
-	y = f2({x1,x2,x3});
+	y = f2(x1,x2,x3);
 	iRRAM::cout << "result: " << endl;
 	rwrite(y, prec);
 	iRRAM::cout << endl;
@@ -91,7 +91,7 @@ void compute(){
   iRRAM::cout << "solving ode..." << endl;
   auto F = solve(P);
   iRRAM::cout << "computing F1("<<x1<<")..."<<endl;
-	REAL Y = F[0]({x1});
+	REAL Y = F[0](x1);
 	iRRAM::cout << "result: " << endl;
 	rwrite(Y, prec);
 	iRRAM::cout << endl;
@@ -105,7 +105,7 @@ void compute(){
 		iRRAM::cout << "OK!" << endl;
 	}
   iRRAM::cout << "computing F2("<<x1<<")..."<<endl;
-	Y = F[1]({x1});
+	Y = F[1](x1);
 	iRRAM::cout << "result: " << endl;
 	rwrite(Y, prec);
 	iRRAM::cout << endl;

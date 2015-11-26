@@ -47,7 +47,7 @@ void compute(){
   REAL x1= REAL(1)/REAL(4*l);
   REAL x2= REAL(1)/REAL(2*l);
   REAL x3= REAL(1)/REAL(8*l);
-  REAL y = f({x1,x2,x3});
+  REAL y = f(x1,x2,x3);
   iRRAM::cout << "result: " << endl;
   rwrite(y, prec);
   iRRAM::cout << endl;
@@ -61,7 +61,7 @@ void compute(){
     iRRAM::cout << "OK!" << endl;
   }
   auto sum = f+f;
-  y = sum({x1,x2,x3});
+  y = sum(x1,x2,x3);
   iRRAM::cout << "result: " << endl;
   rwrite(y, prec);
   iRRAM::cout << endl;
@@ -75,7 +75,7 @@ void compute(){
     iRRAM::cout << "OK!" << endl;
   }
   auto prod = f*sum;
-  y = prod({x1,x2,x3});
+  y = prod(x1,x2,x3);
   iRRAM::cout << "result: " << endl;
   rwrite(y, prec);
   iRRAM::cout << endl;

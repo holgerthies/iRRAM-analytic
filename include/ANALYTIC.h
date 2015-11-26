@@ -61,7 +61,8 @@ namespace iRRAM
     friend ANALYTIC operator- <>(const ANALYTIC& lhs, const ANALYTIC& rhs);
     friend ANALYTIC operator* <>(const ANALYTIC& lhs, const ANALYTIC& rhs);
 
-    T operator ()(const std::vector<T>& x) const;
+    template<typename... Ts>
+    T operator ()(Ts... x) const;
 
     int get_known_coeffs() const {};
 
@@ -76,7 +77,7 @@ namespace iRRAM
   };
 
   template<unsigned int n, class T>
-  ANALYTIC<n,T> operator+(const ANALYTIC<n,T>& l// hs, const ANALYTIC<n,T>& rhs){
+  ANALYTIC<n,T> operator+(const ANALYTIC<n,T>& lhs, const ANALYTIC<n,T>& rhs){
     auto spwr=*lhs.pwr+*rhs.pwr;
     return ANALYTIC<n,T>(spwr, minimum(lhs.r, rhs.r), lhs.M+rhs.M);
   }
@@ -102,14 +103,12 @@ namespace iRRAM
     return ans*ans;
   }
 
-  template<unsigned int n, class T>
-  T evaluate(const POWERSERIES<n,T>& pwr, const REAL& M, const REAL& r, const std::vector<T>& x){
+  template<unsigned int n, class T, typename... Ts>
+  T evaluate(const POWERSERIES<n,T>& pwr, const REAL& M, const REAL& r, const T& x, Ts... rest){
     int J=0;
-    REAL error_factor = abs(x[0])/r;
+    REAL error_factor = abs(x)/r;
     REAL error = M*error_factor/(1-error_factor);
-    std::vector<T> y;
-    y.insert(y.end(), x.begin()+1, x.end());
-    REAL sum(evaluate<n-1,T>(pwr[0], M, r, y));
+    REAL sum(evaluate<n-1,T>(pwr[0], M, r, rest...));
     REAL best=sum;
     sizetype best_error, trunc_error, local_error,sum_error;
     sum.geterror(sum_error);
@@ -121,8 +120,8 @@ namespace iRRAM
     while (sizetype_less(sum_error, trunc_error) &&
 	   (trunc_error.exponent >= ACTUAL_STACK.actual_prec) ){
       J++;
-      x0 *= x[0];
-      sum += x0*evaluate<n-1,T>(pwr[J], M, r, y);
+      x0 *= x;
+      sum += x0*evaluate<n-1,T>(pwr[J], M, r, rest...);
       error *= error_factor;
       sizetype_add(trunc_error,error.vsize,error.error);
       sum.geterror(sum_error); // get error of partial sum
@@ -137,17 +136,18 @@ namespace iRRAM
     
   }
 
-  template<>
-  REAL evaluate<0,REAL>(const POWERSERIES<0,REAL>& pwr, const REAL& M, const REAL& r, const std::vector<REAL>& x){
-    return pwr;
+  template<unsigned int n, class T>
+  T evaluate(const T& x, const REAL& M, const REAL& r){
+    return x;
   }
 
 
   
   template<unsigned int n, class T>
-  T ANALYTIC<n,T>::operator ()(const std::vector<T>& x) const
+  template<typename... Ts>
+  T ANALYTIC<n,T>::operator ()(Ts... x) const
   {
-    return evaluate<n,T>(*pwr, M,r, x);
+    return evaluate<n,T>(*pwr, M,r, x...);
     //int J = 1;
     //T x_max = abs(*std::max_element(x.begin(), x.end(), [] (T x1, T x2) {return abs(x1) < abs(x2);}));
     //REAL error = M*power(x_max/r, J+1)*(J+1);

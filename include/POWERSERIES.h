@@ -32,7 +32,7 @@ namespace iRRAM{
     private:
       sq_ptr f;
     public:
-      POWERSERIES(T x): POWERSERIES([x] (unsigned int i) {
+      POWERSERIES(const T& x): POWERSERIES([x] (unsigned int i) {
 	  if(i==0){
 	    return coeff_type(x);
 	  } 

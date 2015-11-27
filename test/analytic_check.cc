@@ -17,11 +17,7 @@ REAL inv_factorial(const int n){
 }
 
 
-// sin(2*pi*x)
-REAL sinseries(const std::vector<unsigned long>& v){
-  int n=v[0];
-  int m=v[1];
-  int q=v[2];
+REAL sinseries(unsigned long n, unsigned long m, unsigned long q){
   if(n != m || n != q) return 0;
   if(n%2 == 0)
     return 0;
@@ -35,7 +31,7 @@ REAL sinseries(const std::vector<unsigned long>& v){
 
 void compute(){
 	
-  ANALYTIC<3,REAL> f(std::shared_ptr<std::function<REAL(const std::vector<unsigned long>&)>>(new std::function<REAL(const std::vector<unsigned long>&)>(sinseries)), 2, 2);
+  ANALYTIC<3,REAL> f(std::function<REAL(unsigned long, unsigned long, unsigned long)>(sinseries), 2, 2);
 
   //auto g = AnalyticFunction::projection<3,1,REAL>();
   //g = power(g,5);
@@ -60,12 +56,12 @@ void compute(){
   } else {
     iRRAM::cout << "OK!" << endl;
   }
-  auto sum = f+f;
+  auto sum = f+f+ANALYTIC<3,REAL>(2);
   y = sum(x1,x2,x3);
   iRRAM::cout << "result: " << endl;
   rwrite(y, prec);
   iRRAM::cout << endl;
-  sol=2*sin(x1*x2*x3);
+  sol=2*sin(x1*x2*x3)+2;
   iRRAM::cout << "should be " << endl;
   rwrite(sol,prec);
   iRRAM::cout << endl;
@@ -79,7 +75,7 @@ void compute(){
   iRRAM::cout << "result: " << endl;
   rwrite(y, prec);
   iRRAM::cout << endl;
-  sol=2*sin(x1*x2*x3)*sin(x1*x2*x3);
+  sol=(2*sin(x1*x2*x3)+2)*sin(x1*x2*x3);
   iRRAM::cout << "should be " << endl;
   rwrite(sol,prec);
   iRRAM::cout << endl;

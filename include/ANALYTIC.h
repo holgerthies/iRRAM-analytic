@@ -20,42 +20,27 @@ namespace iRRAM
   template <unsigned int n, class T>
   class ANALYTIC{
     using vec = std::vector<unsigned long>;
-    using seq = std::function<T(const vec&)>;
-    using sq_ptr = std::shared_ptr<seq>;
     using pwr_ser = POWERSERIES<n,T>;
   private:
     REAL M,r; // maximum of the function and radius of convergence
     std::shared_ptr<pwr_ser> pwr;
   public:
 
-    // constructor from sequence pointer
-    ANALYTIC(const sq_ptr f, const REAL& r, const REAL& M ): 
+    // constructor from everything that can be used to construct a power series
+    template<typename F>
+    ANALYTIC(F&& f, const REAL& r, const REAL& M ): 
       M(M),
       r(r),
-      pwr(new POWERSERIES<n,T>(f))
+      pwr(new POWERSERIES<n,T>(std::forward<F>(f)))
       {};
 
-    // constructor from sequence
-    ANALYTIC(seq f, const REAL& r, const REAL& M): ANALYTIC(sq_ptr(new seq(f)), r, M) {};
 
     // constructor from T (constant function)
-    ANALYTIC(const T& x){
-      r = 10000;
-      M = abs(x);
-      auto series= [x] (const vec& v) -> T{
-	for(int i=0; i<n; i++){
-	  if(v[i] != 0) return 0;
-	}
-	return x;
-      };      pwr = std::shared_ptr<pwr_ser>(new POWERSERIES<n,T>(sq_ptr(new seq(series))));
-    };
-    // constructor from powerseries
-    ANALYTIC(pwr_ser& P, const REAL& r, const REAL& M):
-      M(M),
-      r(r),
-      pwr(new pwr_ser(P) )
+    ANALYTIC(const T& x):
+      M(abs(x)),
+      r(1000),
+      pwr(new POWERSERIES<n,T>(x))
       {};
-
     // arithmetic operations
     friend ANALYTIC operator+ <>(const ANALYTIC& lhs, const ANALYTIC& rhs);
     friend ANALYTIC operator- <>(const ANALYTIC& lhs, const ANALYTIC& rhs);
@@ -68,11 +53,6 @@ namespace iRRAM
 
     REAL get_r() const{return r;}
     REAL get_M() const{return M;}
-
-    T get_coeff(const vec& v) const
-      {
-	return pwr->get(v);
-      }
 
   };
 
@@ -148,35 +128,6 @@ namespace iRRAM
   T ANALYTIC<n,T>::operator ()(Ts... x) const
   {
     return evaluate<n,T>(*pwr, M,r, x...);
-    //int J = 1;
-    //T x_max = abs(*std::max_element(x.begin(), x.end(), [] (T x1, T x2) {return abs(x1) < abs(x2);}));
-    //REAL error = M*power(x_max/r, J+1)*(J+1);
-    //REAL sum(evaluate_partial(pwr, x,0,J));
-    //REAL best=sum;
-    //sizetype best_error, trunc_error, local_error,sum_error;
-    //sum.geterror(sum_error);
-    //sizetype_add(trunc_error,error.vsize,error.error);
-    //sizetype_add(local_error, sum_error, trunc_error);
-    //best.seterror(local_error);
-    //best_error = local_error;
-    //int step_size = 1;
-    //REAL error_factor = power(x_max/r, step_size);
-    //while (sizetype_less(sum_error, trunc_error) &&
-    //	   (trunc_error.exponent >= ACTUAL_STACK.actual_prec) ){
-    //  int new_J = J+step_size;
-    //  sum += evaluate_partial(pwr, x, J+1, new_J); 
-    //  error *= error_factor*REAL(new_J)/REAL(J);
-    //  sizetype_add(trunc_error,error.vsize,error.error);
-    //  sum.geterror(sum_error); // get error of partial sum
-    //  J = new_J;
-    //  sizetype_add(local_error, sum_error, trunc_error);
-    //  if (sizetype_less(local_error, best_error)) { 
-    //	best = sum;
-    //	best.seterror(local_error);
-    //	best_error = local_error;
-    //  }
-    //} 
-    //return best;
   }
   // some predefined functions
   namespace AnalyticFunction{

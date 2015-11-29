@@ -19,13 +19,14 @@ namespace iRRAM
 
   template <unsigned int n, class T>
   class ANALYTIC{
+    template<unsigned int d, class F>
+    friend class IVP;
     using vec = std::vector<unsigned long>;
     using pwr_ser = POWERSERIES<n,T>;
   private:
     REAL M,r; // maximum of the function and radius of convergence
     std::shared_ptr<pwr_ser> pwr;
   public:
-
     // constructor from everything that can be used to construct a power series
     template<typename F>
     ANALYTIC(F&& f, const REAL& r, const REAL& M ): 
@@ -48,6 +49,9 @@ namespace iRRAM
 
     template<typename... Ts>
     T operator ()(Ts... x) const;
+
+    template<typename... ARGS>
+    T get_coeff(ARGS... args);
 
     int get_known_coeffs() const {};
 
@@ -85,6 +89,7 @@ namespace iRRAM
 
   template<unsigned int n, class T, typename... Ts>
   T evaluate(const POWERSERIES<n,T>& pwr, const REAL& M, const REAL& r, const T& x, Ts... rest){
+    int stepsize=10;
     int J=0;
     REAL error_factor = abs(x)/r;
     REAL error = M*error_factor/(1-error_factor);
@@ -97,15 +102,24 @@ namespace iRRAM
     best.seterror(local_error);
     best_error = local_error;
     REAL x0=1; // x[0]^J
+    error_factor = power(error_factor, stepsize);
     while (sizetype_less(sum_error, trunc_error) &&
 	   (trunc_error.exponent >= ACTUAL_STACK.actual_prec) ){
-      J++;
+      J+=stepsize;
+      // horner's method to evaluate polynomial 
       x0 *= x;
-      sum += x0*evaluate<n-1,T>(pwr[J], M, r, rest...);
+      T b = evaluate<n-1,T>(pwr[J], M, r, rest...);
+      REAL x1=x0; // x^J
+      for(int j=J-1; j>J-stepsize; j--){
+	b = evaluate<n-1,T>(pwr[j], M, r, rest...) + b*x;
+	x1 *= x;
+      }
+      sum += b*x0;
       error *= error_factor;
       sizetype_add(trunc_error,error.vsize,error.error);
       sum.geterror(sum_error); // get error of partial sum
       sizetype_add(local_error, sum_error, trunc_error);
+      x0 = x1;
       if (sizetype_less(local_error, best_error)) { 
 	best = sum;
 	best.seterror(local_error);
@@ -122,7 +136,11 @@ namespace iRRAM
   }
 
 
-  
+  template<unsigned int n, class T>
+  template<typename... ARGS>
+  T ANALYTIC<n,T>::get_coeff(ARGS... args){
+    return pwr->get(args...);
+  }
   template<unsigned int n, class T>
   template<typename... Ts>
   T ANALYTIC<n,T>::operator ()(Ts... x) const

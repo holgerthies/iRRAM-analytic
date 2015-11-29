@@ -7,12 +7,19 @@
 #include "POLYNOMIAL.h"
 #include <functional>
 #include <cstdarg>
-#include "combinatorics.h"
 
 namespace iRRAM{
   namespace PWRSERIES_IMPL{ // implementation details for having special type for dimension 0
+    // forward declarations
     template <unsigned int n, class T>
     class POWERSERIES;
+
+    template <unsigned int n, class T, typename... ARGS>
+    T get_coeff(const POWERSERIES<n,T>& pwr, const unsigned long i, ARGS... rest);
+
+    template<class T>
+    T get_coeff(const T& x);
+
     // define coeff type 
     template <unsigned int n, class T>
     struct COEFF_TYPE{
@@ -31,6 +38,7 @@ namespace iRRAM{
       using sq_ptr = std::shared_ptr<seq>;
     private:
       sq_ptr f;
+      mutable std::vector<coeff_type> cache; // precomputed coefficients
     public:
       POWERSERIES(const T& x): POWERSERIES([x] (unsigned int i) {
 	  if(i==0){
@@ -47,10 +55,8 @@ namespace iRRAM{
       template <typename... ARGS>
       POWERSERIES(std::function<T(const unsigned long, ARGS...)>);
       // get the coefficient with given index
-      //POWERSERIES(seq  f): POWERSERIES(sq_ptr(new seq(f))) {};
-      //T get(const std::vector<unsigned long>& v) const {
-      //  return (*f)(v);
-      //}
+      template <typename... ARGS>
+      T get(ARGS...);
       coeff_type  operator[](const unsigned long) const;
 
       int known_coeffs() const{
@@ -70,10 +76,36 @@ namespace iRRAM{
       this->f = sq_ptr(new seq(sq_fun));
     }
 
+    template <unsigned int n, class T, typename... ARGS>
+    T get_coeff(const POWERSERIES<n,T>& pwr, const unsigned long i, ARGS... rest){
+      return get_coeff(pwr[i], rest...);
+    }
+
+    template<class T>
+    T get_coeff(const T& x){
+      return x;
+    }
+
+    template <unsigned int n, class T>
+    template <typename... ARGS>
+    T POWERSERIES<n,T>::get(ARGS... args){
+      return get_coeff(*this, args...);
+    }
+
+
 // fix the first parameter and return a POWERSERIES with decreased dimension
     template <unsigned int n, class T>
     typename COEFF_TYPE<n,T>::type POWERSERIES<n,T>::operator[](const unsigned long i) const{
-      return (*f)(i);
+      if(cache.size() <= i){
+	auto sz=cache.size();
+	cache.resize(i+1);
+	// fill cache
+	for(int j=sz; j<=i;j++ )
+	{
+	  cache[j] = (*f)(j);
+	}
+      }
+      return cache[i];
     }
     // add coefficients
     template <unsigned int n, class T>

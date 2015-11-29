@@ -18,20 +18,18 @@ REAL inv_factorial(const int n){
 	return inv_fact;
 }
 
-// f(x,y,z) = z
-REAL series1(const std::vector<unsigned long>& v){
-  if(v[0] == 0 && v[1] == 0 && v[2] == 1) return 1;
+REAL series1(const unsigned long v0, const unsigned long v1, const unsigned long v2){
+  if(v0 == 0 && v1 == 0 && v2 == 1) return 1;
   return 0;
 }
 
-// f(x,y,z) = y
-REAL series2(const std::vector<unsigned long>& v){
+REAL series2(const unsigned long v0, const unsigned long v1, const unsigned long v2){
   const REAL mu=10;
-  if(v[0] == 0 && v[1] == 0 && v[2] == 0) return -2;
-  if(v[0] == 0 && v[1] == 0 && v[2] == 1) return -3*mu;
-  if(v[0] == 0 && v[1] == 1 && v[2] == 0) return -1;
-  if(v[0] == 0 && v[1] == 1 && v[2] == 1) return -4*mu;
-  if(v[0] == 0 && v[1] == 2 && v[2] == 1) return -mu;
+  if(v0 == 0 && v1 == 0 && v2 == 0) return -2;
+  if(v0 == 0 && v1 == 0 && v2 == 1) return -3*mu;
+  if(v0 == 0 && v1 == 1 && v2 == 0) return -1;
+  if(v0 == 0 && v1 == 1 && v2 == 1) return -4*mu;
+  if(v0 == 0 && v1 == 2 && v2 == 1) return -mu;
   return 0;
 }
 
@@ -46,8 +44,8 @@ REAL fun2(const REAL& t, const REAL& y1, const REAL& y2){
 
 void compute(){
 	
-  ANALYTIC<3,REAL> f1(std::shared_ptr<std::function<REAL(const std::vector<unsigned long>&)>>(new std::function<REAL(const std::vector<unsigned long>&)>(series1)),1, 2);
-  ANALYTIC<3,REAL> f2(std::shared_ptr<std::function<REAL(const std::vector<unsigned long>&)>>(new std::function<REAL(const std::vector<unsigned long>&)>(series2)),1, 2);
+  ANALYTIC<3,REAL> f1(std::function<REAL(unsigned long, unsigned long, unsigned long)>(series1),1, 2);
+  ANALYTIC<3,REAL> f2(std::function<REAL(unsigned long, unsigned long, unsigned long)>(series2),1, 2);
   std::shared_ptr<IVP<3,REAL>> P(new IVP<3,REAL>({f1,f2}));
 
 	int l,prec;
@@ -57,7 +55,7 @@ void compute(){
 	REAL x2= REAL(1)/REAL(8*l);
 	REAL x3= REAL(1)/REAL(10*l);
   iRRAM::cout << "computing f1("<<x1<<","<<x2<<","<< x3 << ")..."<<endl;
-	REAL y = f1({x1,x2,x3});
+	REAL y = f1(x1,x2,x3);
 	iRRAM::cout << "result: " << endl;
 	rwrite(y, prec);
 	iRRAM::cout << endl;
@@ -71,7 +69,7 @@ void compute(){
 		iRRAM::cout << "OK!" << endl;
 	}
   iRRAM::cout << "computing f2("<<x1<<","<<x2<<","<< x3 << ")..."<<endl;
-	y = f2({x1,x2,x3});
+	y = f2(x1,x2,x3);
 	iRRAM::cout << "result: " << endl;
 	rwrite(y, prec);
 	iRRAM::cout << endl;
@@ -88,12 +86,12 @@ void compute(){
   auto F = solve(P);
   x1=1/REAL(l);
   iRRAM::cout << "computing F1("<<x1<<")..."<<endl;
-	REAL Y = F[0]({x1})+2;
+	REAL Y = F[0](x1)+2;
 	iRRAM::cout << "result: " << endl;
 	rwrite(Y, prec);
 	iRRAM::cout << endl;
   iRRAM::cout << "computing F2("<<x1<<")..."<<endl;
-	Y = F[1]({x1});
+	Y = F[1](x1);
 	iRRAM::cout << "result: " << endl;
 	rwrite(Y, prec);
 	iRRAM::cout << endl;

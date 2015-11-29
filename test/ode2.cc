@@ -19,15 +19,15 @@ REAL inv_factorial(const int n){
 }
 
 // f(x,y,z) = z
-REAL series1(const std::vector<unsigned long>& v){
-  if(v[0] == 0 && v[1] == 0 && v[2] == 0) return 1;
-  if(v[0] == 0 && v[1] == 0 && v[2] == 1) return 1;
+REAL series1(const unsigned long v0, const unsigned long v1, const unsigned long v2){
+  if(v0 == 0 && v1 == 0 && v2 == 0) return 1;
+  if(v0 == 0 && v1 == 0 && v2 == 1) return 1;
   return 0;
 }
 
 // f(x,y,z) = y
-REAL series2(const std::vector<unsigned long>& v){
-  if(v[0] == 0 && v[1] == 1 && v[2] == 0) return -1;
+REAL series2(const unsigned long v0, const unsigned long v1, const unsigned long v2){
+  if(v0 == 0 && v1 == 1 && v2 == 0) return -1;
   return 0;
 }
 
@@ -48,8 +48,8 @@ REAL FUN2(const REAL& t){
 }
 void compute(){
 	
-  ANALYTIC<3,REAL> f1(std::shared_ptr<std::function<REAL(const std::vector<unsigned long>&)>>(new std::function<REAL(const std::vector<unsigned long>&)>(series1)),1, 2);
-  ANALYTIC<3,REAL> f2(std::shared_ptr<std::function<REAL(const std::vector<unsigned long>&)>>(new std::function<REAL(const std::vector<unsigned long>&)>(series2)),1, 2);
+  ANALYTIC<3,REAL> f1(std::function<REAL(unsigned long, unsigned long, unsigned long)>(series1),1, 2);
+ANALYTIC<3,REAL> f2(std::function<REAL(unsigned long, unsigned long, unsigned long)>(series2),1, 2);
   std::shared_ptr<IVP<3,REAL>> P(new IVP<3,REAL>({f1,f2}));
 
 	int l,prec;

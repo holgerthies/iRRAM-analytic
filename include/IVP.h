@@ -11,13 +11,17 @@ namespace iRRAM{
         std::vector<std::vector<T>> a;
         // ai[i,n] contains the coefficient a(i,i+n) since a(i,n)=0 for i>n
         std::vector<std::vector<std::vector<T>>> ai;
-        REAL get_a(const int v,const int n, const int i);
+        T get_a(const int v,const int n, const int i);
         void init(){
           a.resize(d);
           ai.resize(d);
         };
-        REAL get_coeff_rec(const int v, const int l, const int k, const int upper,const int size, std::vector<unsigned long>& N);
-        REAL get_coeff_rec2(const int upper, const int pos, std::vector<unsigned long>& N, std::vector<unsigned long>& I);
+        T get_coeff_rec(const int v, const int l, const int k, const int upper,const int size, std::vector<unsigned long>& N);
+	template <unsigned int n>
+	T get_coeff_rec2(const POWERSERIES<n, T>& pwr,const int pos, std::vector<unsigned long>& N);
+    T get_coeff_rec2(const T& x, const int pos, std::vector<unsigned long>& N);
+    
+    //T get_coeff_rec2(const int upper, const int pos, std::vector<unsigned long>& N, std::vector<unsigned long>& I);
       public:
         IVP(std::initializer_list<std::shared_ptr<ANALYTIC<d,T>>> f ): f(f) {init();};
         IVP(std::initializer_list<ANALYTIC<d,T>> fl) {
@@ -26,13 +30,13 @@ namespace iRRAM{
             f.push_back(std::shared_ptr<ANALYTIC<d,T>>(new ANALYTIC<d,T>(fun)));
           }
         };
-        REAL get_coeff(const int v, const int n);
+        T get_coeff(const int v, const int n);
         REAL get_r(const int i) const {return f[i]->get_r();}
         REAL get_M(const int i) const {return f[i]->get_r()*f[i]->get_M();}
   };
   
   template<unsigned int d, class T>
-  REAL IVP<d,T>::get_a(const int v, const int i, const int n){
+  T IVP<d,T>::get_a(const int v, const int i, const int n){
     auto& av=ai[v];
     if(i > n) return 0;
     int m=n-i;
@@ -57,29 +61,43 @@ namespace iRRAM{
     return av[i][m];
   }
 
-  template<unsigned int d, class T>
-  REAL IVP<d,T>::get_coeff_rec2(const int v,  const int pos, std::vector<unsigned long>& N, std::vector<unsigned long>& I){
-    if(pos == d-1){
-      return f[v]->get_coeff(I);
+    template<unsigned int d, class T>
+    template<unsigned int n>
+    T IVP<d,T>::get_coeff_rec2(const POWERSERIES<n, T>& pwr,const int pos, std::vector<unsigned long>& N){
+      T ans=0;
+      for(int i=0; i<=N[pos]; i++){
+	ans += get_a(pos, i, N[pos])*get_coeff_rec2(pwr[i], pos+1, N);
+      }
+      return ans;
     }
-    REAL ans=0;
-    for(int i=0; i<=N[pos]; i++){
-      I[pos+1] = i;
-      ans += get_a(pos, i, N[pos])*get_coeff_rec2(v, pos+1, N, I);
-    }
-    return ans;
+
+
+  template<unsigned int n, class T>
+  T IVP<n,T>::get_coeff_rec2(const T& x, const int pos, std::vector<unsigned long>& N){
+    return x;
   }
 
+  //template<unsigned int d, class T>
+  //REAL IVP<d,T>::get_coeff_rec2(const int v,  const int pos, std::vector<unsigned long>& N, std::vector<unsigned long>& I){
+  //  If(pos == d-1){
+  //    return f[v]->get_coeff(I);
+  //  }
+  //  REAL ans=0;
+  //  for(int i=0; i<=N[pos]; i++){
+  //    I[pos+1] = i;
+  //    ans += get_a(pos, i, N[pos])*get_coeff_rec2(v, pos+1, N, I);
+  //  }
+  //  return ans;
+  //}
+
   template<unsigned int d, class T>
-  REAL IVP<d,T>::get_coeff_rec(const int v, const int l, const int k, const int upper,const int size, std::vector<unsigned long>& N){
+  T IVP<d,T>::get_coeff_rec(const int v, const int l, const int k, const int upper,const int size, std::vector<unsigned long>& N){
     using std::vector;
     if(size == d-1){
-       vector<unsigned long> I(d, 0);
-       I[0] = k;
-       return get_coeff_rec2(v,0, N, I);
+      return get_coeff_rec2((*(f[v]->pwr))[k], 0, N);
       
     }
-    REAL ans=0;
+    T ans=0;
     int start = (size == d-2) ? upper : 0;
     for(int i=start; i<=upper; i++){
       N[size] = i;
@@ -89,7 +107,7 @@ namespace iRRAM{
   }
 
   template<unsigned int d, class T>
-  REAL IVP<d,T>::get_coeff(const int v, const int l){
+  T IVP<d,T>::get_coeff(const int v, const int l){
     using std::vector;
     auto& av=a[v];
     if(av.size() > l) return av[l];
@@ -145,8 +163,8 @@ namespace iRRAM{
     std::vector<ANALYTIC<1,T>> ans;
     for(int i=0; i<d-1; i++)
     {
-      auto series = [P,i] (const std::vector<unsigned long>& v) {
-        return P->get_coeff(i,(int)v[0]);
+      std::function<T(unsigned long)> series = [P,i] (const unsigned long n) {
+        return P->get_coeff(i,n);
       };
       ans.push_back(ANALYTIC<1,T>(series, min(P->get_r(i), P->get_r(i)/P->get_M(i)), P->get_M(i)));
     }

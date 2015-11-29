@@ -19,9 +19,7 @@ REAL inv_factorial(const int n){
 }
 
 // 4y/t
-REAL series(const std::vector<unsigned long>& v){
-  int n=v[0];
-  int m=v[1];
+REAL series(const unsigned long n, const unsigned long m){
   if(m >= 2) return 0;
   REAL ans=4;
   if(n % 2 == 0) return ans;
@@ -38,7 +36,7 @@ REAL FUN(const REAL& t){
 
 void compute(){
 	
-  ANALYTIC<2,REAL> f(std::shared_ptr<std::function<REAL(const std::vector<unsigned long>&)>>(new std::function<REAL(const std::vector<unsigned long>&)>(series)), 0.25, 24);
+  ANALYTIC<2,REAL> f(std::function<REAL(unsigned long, unsigned long)>(series), 0.25, 24);
   std::shared_ptr<IVP<2,REAL>> P(new IVP<2,REAL>({f}));
 
 
@@ -48,7 +46,7 @@ void compute(){
 	REAL x1= REAL(1)/REAL(16*l);
 	REAL x2= REAL(1)/REAL(8*l);
   iRRAM::cout << "computing f("<<x1<<","<<x2<<")..."<<endl;
-	REAL y = f({x1,x2});
+	REAL y = f(x1,x2);
 	iRRAM::cout << "result: " << endl;
 	rwrite(y, prec);
 	iRRAM::cout << endl;
@@ -64,7 +62,7 @@ void compute(){
   iRRAM::cout << "solving ode..." << endl;
   auto F = solve(P)[0];
   iRRAM::cout << "computing F("<<x1<<")..."<<endl;
-	REAL Y = F({x1});
+	REAL Y = F(x1);
 	iRRAM::cout << "result: " << endl;
 	rwrite(Y, prec);
 	iRRAM::cout << endl;
@@ -78,6 +76,6 @@ void compute(){
 		iRRAM::cout << "OK!" << endl;
 	}
   iRRAM::cout << "first coefficients " << endl;
-  iRRAM::cout << F.get_coeff({0})<<"+"<<F.get_coeff({1})<<"x+"<<F.get_coeff({2})<<"x^2" << endl;
-  iRRAM::cout << F.get_coeff({3})<<"x^3+"<<F.get_coeff({4})<<"x^4+"<<F.get_coeff({5})<<"x^5" << endl;
+  iRRAM::cout << F.get_coeff(0)<<"+"<<F.get_coeff(1)<<"x+"<<F.get_coeff(2)<<"x^2" << endl;
+  iRRAM::cout << F.get_coeff(3)<<"x^3+"<<F.get_coeff(4)<<"x^4+"<<F.get_coeff(5)<<"x^5" << endl;
 }

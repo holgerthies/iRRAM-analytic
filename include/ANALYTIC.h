@@ -5,6 +5,7 @@
 #define ANALYTIC_H
 #include "POWERSERIES.h"
 #include <vector>
+#include <memory>
 namespace iRRAM
 {
   // forward declarations
@@ -32,7 +33,7 @@ namespace iRRAM
     ANALYTIC(F&& f, const REAL& r, const REAL& M ): 
       M(M),
       r(r),
-      pwr(new POWERSERIES<n,T>(std::forward<F>(f)))
+      pwr(std::make_shared<POWERSERIES<n,T>>(POWERSERIES<n,T>(std::forward<F>(f))))
       {};
 
 

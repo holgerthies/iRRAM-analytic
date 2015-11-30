@@ -51,6 +51,11 @@ namespace iRRAM{
       POWERSERIES() : POWERSERIES(T()) {};
       POWERSERIES(sq_ptr f): f(f) {};
       POWERSERIES(seq f) : f(sq_ptr(new seq(f))) {}; 
+      // copy constructor
+      POWERSERIES(const POWERSERIES& pwr) {
+	// do not copy cache
+	this->f = pwr.f;
+      }
       // constructor from function N^n -> T
       template <typename... ARGS>
       POWERSERIES(std::function<T(const unsigned long, ARGS...)>);
@@ -107,6 +112,8 @@ namespace iRRAM{
       }
       return cache[i];
     }
+
+    
     // add coefficients
     template <unsigned int n, class T>
     POWERSERIES<n,T> operator+(const POWERSERIES<n,T>& lhs, const POWERSERIES<n,T>& rhs){

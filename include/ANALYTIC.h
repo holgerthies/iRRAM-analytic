@@ -47,6 +47,8 @@ namespace iRRAM
     friend ANALYTIC operator+ <>(const ANALYTIC& lhs, const ANALYTIC& rhs);
     friend ANALYTIC operator- <>(const ANALYTIC& lhs, const ANALYTIC& rhs);
     friend ANALYTIC operator* <>(const ANALYTIC& lhs, const ANALYTIC& rhs);
+    template<unsigned int d, class U>
+    friend ANALYTIC<d,U> compose(const ANALYTIC<1,U>& f, const ANALYTIC<d,U>& rhs);
 
     template<typename... Ts>
     T operator ()(Ts... x) const;
@@ -148,6 +150,14 @@ namespace iRRAM
   {
     return evaluate<n,T>(*pwr, M,r, x...);
   }
+
+  
+    // function composition 
+  template<unsigned int m, class T>
+  ANALYTIC<m,T> compose(const ANALYTIC<1,T>& f, const ANALYTIC<m,T>& g){
+    return ANALYTIC<m,T>(compose(*(f.pwr), *(g.pwr)), f.r, f.M);
+  }
+    
   // some predefined functions
   namespace AnalyticFunction{
     // projection to the i-th coordinate

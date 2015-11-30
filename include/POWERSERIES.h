@@ -7,6 +7,7 @@
 #include "POLYNOMIAL.h"
 #include <functional>
 #include <cstdarg>
+#include "combinatorics.h"
 
 namespace iRRAM{
   namespace PWRSERIES_IMPL{ // implementation details for having special type for dimension 0
@@ -101,6 +102,7 @@ namespace iRRAM{
 // fix the first parameter and return a POWERSERIES with decreased dimension
     template <unsigned int n, class T>
     typename COEFF_TYPE<n,T>::type POWERSERIES<n,T>::operator[](const unsigned long i) const{
+
       if(cache.size() <= i){
 	auto sz=cache.size();
 	cache.resize(i+1);
@@ -112,6 +114,37 @@ namespace iRRAM{
       }
       return cache[i];
     }
+
+    // composition of formal powerseries
+    // insert for each variable one powerseries
+    // recursively applying the faa di bruno formula
+    // for each of the inserted powerseries all coefficients
+    // with first parameter 0 have to be 0
+    template<typename... ARGS, unsigned int n, unsigned int m, class T>
+    POWERSERIES<m,T> compose(const POWERSERIES<n,T>& f, const POWERSERIES<m,T>& g1, ARGS... rest){
+      
+    } 
+
+    template<unsigned int m, class T>
+    POWERSERIES<m,T> compose(const POWERSERIES<1,T>& p, const POWERSERIES<m,T>& q){
+      using coeff_type = typename COEFF_TYPE<m,T>::type;
+      auto series = [p,q] (const unsigned int i) -> coeff_type {
+	if(i==0) return p[0];
+	std::vector<coeff_type> c(i+1);
+	for(int k=1; k<=i; k++){
+	  for(auto& P : partitions(i,k)){
+	    coeff_type cp = p[k];
+	    for(auto j : P){
+	      cp = cp*q[j];
+	    }
+	    c[k] = c[k-1]+cp;
+	  }
+	}
+	return c[i];
+      };
+      return POWERSERIES<m,T>(series);
+    }
+
 
     
     // add coefficients
@@ -127,7 +160,7 @@ namespace iRRAM{
     }
 
 
-// multiply coefficients
+    // multiply coefficients
     template <unsigned int n, class T>
     POWERSERIES<n,T> operator*(const POWERSERIES<n,T>& lhs, const POWERSERIES<n,T>& rhs){
       return POWERSERIES<n,T>([lhs, rhs] (const unsigned long i) {
@@ -138,6 +171,29 @@ namespace iRRAM{
 	  }
 	  return c;
 	});
+    }
+
+    // scalar addition
+    template <unsigned int n, class T>
+    POWERSERIES<n,T> operator+(const T& lhs, const POWERSERIES<n,T>& rhs){
+      return POWERSERIES<n,T>([lhs, rhs] (const unsigned int i) {
+	  if(i==0)
+	    return lhs+rhs[0];
+	  return rhs[i];
+	});
+    }
+    template <unsigned int n, class T>
+    POWERSERIES<n,T> operator+(const POWERSERIES<n,T>& lhs, const T& rhs){
+      return rhs+lhs;  
+    }
+    // scalar multiplication
+    template <unsigned int n, class T>
+    POWERSERIES<n,T> operator*(const T& lhs, const POWERSERIES<n,T>& rhs){
+      return POWERSERIES<n,T>([lhs, rhs] (const unsigned int i) {return lhs[i]*rhs[i];});
+    }
+    template <unsigned int n, class T>
+    POWERSERIES<n,T> operator*(const POWERSERIES<n,T>& lhs, const T& rhs){
+      return rhs*lhs;  
     }
   } // PWRSERIES_IMPL namespace
   template <unsigned int n, class T>

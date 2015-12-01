@@ -21,6 +21,9 @@ namespace iRRAM{
     template<class T>
     T get_coeff(const T& x);
 
+    template<unsigned int n, class T>
+    POWERSERIES<n,T> inverse(const POWERSERIES<n,T>&);
+
     // define coeff type 
     template <unsigned int n, class T>
     struct COEFF_TYPE{
@@ -32,12 +35,29 @@ namespace iRRAM{
       typedef T type;   
     };
 
+    
+
     template <unsigned int n, class T>
     class POWERSERIES{
       using coeff_type = typename COEFF_TYPE<n,T>::type;
       using seq = std::function<coeff_type(const unsigned long)>;
       using sq_ptr = std::shared_ptr<seq>;
     private:
+
+      // helper class to invert a powerseries
+      // and cache coefficients to speed up recursion
+      class INVERSION{
+      private:
+	mutable std::vector<coeff_type> cache;
+	std::shared_ptr<POWERSERIES> pwr;
+      public:
+	INVERSION(const POWERSERIES& pwr):
+	  pwr(std::make_shared<POWERSERIES>(pwr))
+	  {};
+	coeff_type get_coeff(const unsigned long) const;
+      };
+
+      friend POWERSERIES inverse<>(const POWERSERIES&);
       sq_ptr f;
       mutable std::vector<coeff_type> cache; // precomputed coefficients
     public:
@@ -64,6 +84,8 @@ namespace iRRAM{
       template <typename... ARGS>
       T get(ARGS...);
       coeff_type  operator[](const unsigned long) const;
+      // unary -
+      POWERSERIES operator-();
 
       int known_coeffs() const{
 	return 0;
@@ -120,11 +142,6 @@ namespace iRRAM{
     // recursively applying the faa di bruno formula
     // for each of the inserted powerseries all coefficients
     // with first parameter 0 have to be 0
-    template<typename... ARGS, unsigned int n, unsigned int m, class T>
-    POWERSERIES<m,T> compose(const POWERSERIES<n,T>& f, const POWERSERIES<m,T>& g1, ARGS... rest){
-      
-    } 
-
     template<unsigned int m, class T>
     POWERSERIES<m,T> compose(const POWERSERIES<1,T>& p, const POWERSERIES<m,T>& q){
       using coeff_type = typename COEFF_TYPE<m,T>::type;
@@ -147,6 +164,11 @@ namespace iRRAM{
 
 
     
+    // unary -
+    template <unsigned int n, class T>
+    POWERSERIES<n,T> POWERSERIES<n,T>::operator-(){
+      return POWERSERIES<n,T>([this] (const unsigned long i) {return -(*this)[i];});
+    }
     // add coefficients
     template <unsigned int n, class T>
     POWERSERIES<n,T> operator+(const POWERSERIES<n,T>& lhs, const POWERSERIES<n,T>& rhs){
@@ -157,6 +179,12 @@ namespace iRRAM{
     template <unsigned int n, class T>
     POWERSERIES<n,T> operator-(const POWERSERIES<n,T>& lhs, const POWERSERIES<n,T>& rhs){
       return POWERSERIES<n,T>([lhs, rhs] (const unsigned int i) {return lhs[i]-rhs[i];});
+    }
+
+    // division of power series
+    template <unsigned int n, class T>
+    POWERSERIES<n,T> operator/(const POWERSERIES<n,T>& lhs, const POWERSERIES& rhs){
+      return lhs*inverse(rhs);
     }
 
 
@@ -182,6 +210,7 @@ namespace iRRAM{
 	  return rhs[i];
 	});
     }
+
     template <unsigned int n, class T>
     POWERSERIES<n,T> operator+(const POWERSERIES<n,T>& lhs, const T& rhs){
       return rhs+lhs;  
@@ -195,6 +224,42 @@ namespace iRRAM{
     POWERSERIES<n,T> operator*(const POWERSERIES<n,T>& lhs, const T& rhs){
       return rhs*lhs;  
     }
+
+    template <unsigned int n, class T>
+    POWERSERIES<n,T> inverse(const POWERSERIES<n,T>& pwr){
+      using inv_class = typename POWERSERIES<n,T>::INVERSION;
+      auto coeff_getter = inv_class(pwr);
+      return POWERSERIES<n,T>([coeff_getter] (const unsigned int i) {
+	  return coeff_getter.get_coeff(i);
+	});
+    }
+
+    template<class T>
+    T inverse(const T& x){
+      return 1/x;
+    }
+
+    // get coefficient for inverse power series
+    template <unsigned int n, class T> 
+    typename COEFF_TYPE<n,T>::type POWERSERIES<n,T>::INVERSION::get_coeff(const unsigned long i) const{
+      auto sz=cache.size();
+      if(i >= sz)
+      {
+	cache.resize(i+1);
+      }
+      for(unsigned long j=sz; j<=i; j++){
+	if(j==0){
+	  cache[j] = inverse((*pwr)[0]);
+	} else{
+	  for(int k=0; k<=j; k++){
+	    cache[j] = cache[j] + (*pwr)[k]*cache[j-k];
+	  }
+	  cache[j] = -cache[0]*cache[j];
+	}
+      }
+      return cache[i];
+    }
+    
   } // PWRSERIES_IMPL namespace
   template <unsigned int n, class T>
   using POWERSERIES = PWRSERIES_IMPL::POWERSERIES<n,T>;

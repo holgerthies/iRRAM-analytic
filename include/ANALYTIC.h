@@ -17,6 +17,10 @@ namespace iRRAM
   ANALYTIC<n,T> operator-(const ANALYTIC<n,T>& lhs, const ANALYTIC<n,T>& rhs);
   template<unsigned int n, class T>
   ANALYTIC<n,T> operator*(const ANALYTIC<n,T>& lhs, const ANALYTIC<n,T>& rhs);
+  template<unsigned int n, class T>
+  ANALYTIC<n,T> operator/(const ANALYTIC<n,T>& lhs, const ANALYTIC<n,T>& rhs);
+  template<unsigned int n, class T>
+  ANALYTIC<n,T> inverse(const ANALYTIC<n,T>&);
 
   template <unsigned int n, class T>
   class ANALYTIC{
@@ -47,6 +51,8 @@ namespace iRRAM
     friend ANALYTIC operator+ <>(const ANALYTIC& lhs, const ANALYTIC& rhs);
     friend ANALYTIC operator- <>(const ANALYTIC& lhs, const ANALYTIC& rhs);
     friend ANALYTIC operator* <>(const ANALYTIC& lhs, const ANALYTIC& rhs);
+    friend ANALYTIC operator/ <>(const ANALYTIC& lhs, const ANALYTIC& rhs);
+    friend ANALYTIC inverse <>(const ANALYTIC&);
     template<unsigned int d, class U>
     friend ANALYTIC<d,U> compose(const ANALYTIC<1,U>& f, const ANALYTIC<d,U>& rhs);
 
@@ -81,6 +87,28 @@ namespace iRRAM
   }
 
   template<unsigned int n, class T>
+  ANALYTIC<n,T> inverse(const ANALYTIC<n,T>& f){
+    auto npwr=inverse(*f.pwr);
+    auto r=f.get_r();
+    auto M=f.get_M();
+    auto newr = r;
+    // find r' such that the function does not have a zero for all z \in B_r'
+    REAL lowerbound=-1;// lower bound for the function
+    T f0 = constant_coefficient(*f.pwr);
+    while(!positive(lowerbound, -10)){
+      newr /= 2;
+      lowerbound = abs(f0)-M*r*newr/(r-newr);
+    }
+    return ANALYTIC<n,T>(npwr, r, 1/lowerbound);
+  }
+
+  template<unsigned int n, class T>
+  ANALYTIC<n,T> operator/(const ANALYTIC<n,T>& lhs, const ANALYTIC<n,T>& rhs){
+    auto inv = inverse(rhs);
+    return lhs*inv;
+  }
+
+  template<unsigned int n, class T>
   ANALYTIC<n,T> power(const ANALYTIC<n,T>& f, unsigned int m){
     // power by repeated squaring
     if(m == 0) return T(1);
@@ -92,10 +120,14 @@ namespace iRRAM
 
   template<unsigned int n, class T, typename... Ts>
   T evaluate(const POWERSERIES<n,T>& pwr, const REAL& M, const REAL& r, const T& x, Ts... rest){
+    //iRRAM:: cout<<"evaluating dim" << n << std::endl;
     int stepsize=10;
     int J=0;
     REAL error_factor = abs(x)/r;
     REAL error = M*error_factor/(1-error_factor);
+    //iRRAM::cout << "get first coefficient" << std::endl;
+    //PWRSERIES_IMPL::print(pwr[0]);
+    //iRRAM::cout << "got first coefficient" << std::endl;
     REAL sum(evaluate<n-1,T>(pwr[0], M, r, rest...));
     REAL best=sum;
     sizetype best_error, trunc_error, local_error,sum_error;
@@ -109,6 +141,7 @@ namespace iRRAM
     while (sizetype_less(sum_error, trunc_error) &&
 	   (trunc_error.exponent >= ACTUAL_STACK.actual_prec) ){
       J+=stepsize;
+      //cout << "J = " << J<< std::endl;
       // horner's method to evaluate polynomial 
       x0 *= x;
       T b = evaluate<n-1,T>(pwr[J], M, r, rest...);

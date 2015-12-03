@@ -22,9 +22,42 @@ REAL sinseries1d(unsigned long n){
   if((n-1) % 4 == 0) return inv_factorial(n);
   return -inv_factorial(n);
 }
+// sin(x)+1
+REAL sinseriesmod1d(unsigned long n){
+  if(n==0) return 1;
+  if(n % 2 == 0) return 0;
+  if((n-1) % 4 == 0) return inv_factorial(n);
+  return -inv_factorial(n);
+}
 
 // series for sin(x1*x2*x3)
 REAL sinseries(unsigned long n, unsigned long m, unsigned long q){
+  if(n != m || n != q) return 0;
+  if(n%2 == 0)
+    return 0;
+  else {
+    if (0 == (n-1)%4)
+      return inv_factorial(n);
+    else
+      return -inv_factorial(n);
+  }
+}
+
+// series for sin(x1*x2*x3)
+REAL sinseries2d(unsigned long n, unsigned long m){
+  if(n != m ) return 0;
+  if(n%2 == 0)
+    return 0;
+  else {
+    if (0 == (n-1)%4)
+      return inv_factorial(n);
+    else
+      return -inv_factorial(n);
+  }
+}
+// series for sin(x1*x2*x3)+1
+REAL sinseriesmod(unsigned long n, unsigned long m, unsigned long q){
+  if(n+m+q==0) return 1;
   if(n != m || n != q) return 0;
   if(n%2 == 0)
     return 0;
@@ -81,22 +114,38 @@ void compute(){
   sol=2*sin(x1*x2*x3)+2;
   checkResult(y, sol, prec);
 
-  auto prod = f*sum;
-  y = prod(x1,x2,x3);
-  iRRAM::cout << "checking multiplication" << endl;
-  sol=(2*sin(x1*x2*x3)+2)*sin(x1*x2*x3);
+  // auto prod = f*sum;
+  // y = prod(x1,x2,x3);
+  // iRRAM::cout << "checking multiplication" << endl;
+  // sol=(2*sin(x1*x2*x3)+2)*sin(x1*x2*x3);
+  // checkResult(y, sol, prec);
+   ANALYTIC<1,REAL> gmod(std::function<REAL(unsigned long)>(sinseriesmod1d), 3,2);
+   ANALYTIC<3,REAL> fmod(std::function<REAL(unsigned long, unsigned long, unsigned long)>(sinseriesmod), 3,2);
+
+
+  iRRAM::cout << "checking division (1d)" << endl;
+  // sin(x)/(sin(x)+1)
+  auto inv_test = g/gmod;   
+  y = inv_test(x1);
+  sol=sin(x1)/(1+sin(x1));
   checkResult(y, sol, prec);
 
 
-  auto comp = compose(g,g);
-  iRRAM::cout << "checking composition (1d)" << endl;
-  y = comp(x1);
-  sol=sin(sin(x1));
+  iRRAM::cout << "checking division (3d)" << endl;
+  // sin(x*y*z)/(sin(x*y*z)+1)
+  auto inv_test2 = f/fmod;   
+  y = inv_test2(x1,x2,x3);
+  sol=sin(x1*x2*x3)/(1+sin(x1*x2*x3));
   checkResult(y, sol, prec);
+  // auto comp = compose(g,g);
+  // iRRAM::cout << "checking composition (1d)" << endl;
+  // y = comp(x1);
+  // sol=sin(sin(x1));
+  // checkResult(y, sol, prec);
 
-  auto comp2 = compose(g,f);
-  iRRAM::cout << "checking composition (3d)" << endl;
-  y = comp2(x1,x2,x3);
-  sol=sin(sin(x1*x2*x3));
-  checkResult(y, sol, prec);
+  // auto comp2 = compose(g,f);
+  // iRRAM::cout << "checking composition (3d)" << endl;
+  // y = comp2(x1,x2,x3);
+  // sol=sin(sin(x1*x2*x3));
+  // checkResult(y, sol, prec);
 }

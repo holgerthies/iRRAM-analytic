@@ -322,7 +322,7 @@ namespace iRRAM{
     
   } // PWRSERIES_IMPL namespace
   template <unsigned int n, class T>
-  using POWERSERIES = PWRSERIES_IMPL::POWERSERIES<n,T>;
+  using POWERSERIES = typename PWRSERIES_IMPL::COEFF_TYPE<n+1,T>::type;
 } // iRRAM namespace
 
 #endif

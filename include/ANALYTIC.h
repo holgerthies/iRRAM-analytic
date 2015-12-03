@@ -211,22 +211,36 @@ namespace iRRAM
     
   // some predefined functions
   namespace AnalyticFunction{
-    // projection to the i-th coordinate
+    template<unsigned int n, class T>
+    // the power series for the projection function
+    // returns 1 iff the i-th input parameter is m and all other parameters are 0
+    // otherwise 0
+    struct MONOMIAL_PWR_FUN{
+      static POWERSERIES<n,T> function(const unsigned int i, const unsigned int m){
+      auto pwr=POWERSERIES<n,T>([i, m] (unsigned long j) -> POWERSERIES<n-1,T> {
+	if(i == 1 && j == m){
+	  return T(1);
+	}
+	if(i != 1 && j == 0){
+	  return MONOMIAL_PWR_FUN<n-1, T>::function(i-1, m);
+	}
+	return T(0);
+	});
+      return pwr;
+      }
+    };
+    template<class T>
+    struct MONOMIAL_PWR_FUN<0,T>{
+      static T function(const unsigned int i, const unsigned int m){
+	return 0;
+      }
+    };
+    // monomial f(x) = x_i^m and f: R^n \to R 
     template <unsigned int n,unsigned int i, class T>
-    ANALYTIC<n,T> projection(){
-      static_assert(i <= n && i>0, "projection to invalid parameter");
-      using vec = std::vector<unsigned long>;
-      // the power series for the projection function
-      // returns 1 iff v[i] == 1 and for all i != j v[j] == 0
-      // oterwise 0
-      auto prj = [] (const vec& v) -> T {
-	if(v[i-1] != 1) return 0;
-	for(int j = 0; j<n; j++){
-	  if(j != i-1 && v[j] != 0) return 0;
-	} 
-	return 1;
-      };  
-      return ANALYTIC<n,T>(prj, 1, 1);
+    ANALYTIC<n,T> monomial(int m){
+      static_assert(i <= n && i>0, "given coordinate is invalid.");
+      auto pwr = MONOMIAL_PWR_FUN<n,T>::function(i,m);
+      return ANALYTIC<n,T>(pwr, 1000, power(1000, m));
       
     }
   }

@@ -144,7 +144,25 @@ void compute(){
   sol=-cos(x1*x2*x3)*x1*x1*x1*x2*x2*x3-sin(x1*x2*x3)*x1*x1*x2-x1*x1*x2*sin(x1*x2*x3);
   checkResult(y, sol, prec);
 
+
+  // check predefined functions
+  auto mon1=AnalyticFunction::monomial<3,2,REAL>(5); // x2^5
+  auto mon2=AnalyticFunction::monomial<3,1,REAL>(3); // x1^3
+  auto mon3=AnalyticFunction::monomial<3,3,REAL>(2); // x3^2
+  auto mon4=AnalyticFunction::monomial<3,1,REAL>(1); // x1
+
+  iRRAM::cout << "checking monomial (3d)" << endl;
+  y = mon1(x1, x2,x3);
+  sol=power(x2,5);
+  checkResult(y, sol, prec);
+  // x1^3*x3^2 - x2^5/(x1+1)
+  auto composed = mon2*mon3-mon1/(ANALYTIC<3,REAL>(1)+mon4);
+  y = composed(x1, x2,x3);
+  sol=power(x1,3)*power(x3,2)-power(x2,5)/(1+x1);
+  checkResult(y, sol, prec);
+
   iRRAM::cout << "checking division (3d)" << endl;
+
   // sin(x*y*z)/(sin(x*y*z)+1)
   auto inv_test2 = f/fmod;   
   y = inv_test2(x1,x2,x3);

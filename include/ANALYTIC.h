@@ -21,6 +21,8 @@ namespace iRRAM
   ANALYTIC<n,T> operator/(const ANALYTIC<n,T>& lhs, const ANALYTIC<n,T>& rhs);
   template<unsigned int n, class T>
   ANALYTIC<n,T> inverse(const ANALYTIC<n,T>&);
+  template<unsigned int n, class T>
+  ANALYTIC<n,T> derive(const ANALYTIC<n,T>&, unsigned int i, unsigned int d);
 
   template <unsigned int n, class T>
   class ANALYTIC{
@@ -53,6 +55,8 @@ namespace iRRAM
     friend ANALYTIC operator* <>(const ANALYTIC& lhs, const ANALYTIC& rhs);
     friend ANALYTIC operator/ <>(const ANALYTIC& lhs, const ANALYTIC& rhs);
     friend ANALYTIC inverse <>(const ANALYTIC&);
+    friend ANALYTIC derive <>(const ANALYTIC<n,T>&, unsigned int i, unsigned int d);
+
     template<unsigned int d, class U>
     friend ANALYTIC<d,U> compose(const ANALYTIC<1,U>& f, const ANALYTIC<d,U>& rhs);
 
@@ -84,6 +88,20 @@ namespace iRRAM
   ANALYTIC<n,T> operator*(const ANALYTIC<n,T>& lhs, const ANALYTIC<n,T>& rhs){
     auto spwr=*lhs.pwr**rhs.pwr;
     return ANALYTIC<n,T>(spwr, minimum(lhs.r, rhs.r), lhs.M*rhs.M);
+  }
+
+  // d-th derivative w.r.t. to the i-th variable
+  template<unsigned int n, class T>
+    ANALYTIC<n,T> derive(const ANALYTIC<n,T>& f, const unsigned int i, const unsigned int d){
+    auto npwr=derivative(*f.pwr, i, d);
+    auto r=f.get_r();
+    auto M=f.get_M();
+    auto newr = r/2;
+    auto p = power(2, d+1);
+    T fact=1;
+    for(int j=2; j<=d; j++) fact *= d;
+    auto newM = M*r*p*fact; 
+    return ANALYTIC<n,T>(npwr,newr, newM );
   }
 
   template<unsigned int n, class T>

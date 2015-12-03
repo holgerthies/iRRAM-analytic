@@ -32,5 +32,8 @@ void compute(){
   iRRAM::cout << (*test)[300][245] << endl;
   iRRAM::cout << test2[300][245][1000] << endl;
   iRRAM::cout << ((*test)*(*test))[1][1] << endl;
+  auto deriv=derivative(test2, 1, 1);
+  iRRAM::cout << test2[0][0][0] << "," << test2[0][3][0] << ", " << test2[1][0][0] << endl;
+  iRRAM::cout << deriv[0][0][0] << "," << deriv[0][3][0] << ", " << deriv[1][0][0] << endl;
 }
 

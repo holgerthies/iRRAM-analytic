@@ -131,13 +131,27 @@ void compute(){
   checkResult(y, sol, prec);
 
 
+  iRRAM::cout << "checking derivative (1d)" << endl;
+  // sin(x)
+  auto d1 = derive(g,0, 2);
+  y = d1(x1);
+  sol=-sin(x1);
+  checkResult(y, sol, prec);
+
+  iRRAM::cout << "checking derivative (3d)" << endl;
+  auto d2 = derive(derive(f,1, 1), 2, 2);
+  y = d2(x1, x2,x3);
+  sol=-cos(x1*x2*x3)*x1*x1*x1*x2*x2*x3-sin(x1*x2*x3)*x1*x1*x2-x1*x1*x2*sin(x1*x2*x3);
+  checkResult(y, sol, prec);
+
   iRRAM::cout << "checking division (3d)" << endl;
   // sin(x*y*z)/(sin(x*y*z)+1)
   auto inv_test2 = f/fmod;   
   y = inv_test2(x1,x2,x3);
   sol=sin(x1*x2*x3)/(1+sin(x1*x2*x3));
   checkResult(y, sol, prec);
-  // auto comp = compose(g,g);
+
+ // auto comp = compose(g,g);
   // iRRAM::cout << "checking composition (1d)" << endl;
   // y = comp(x1);
   // sol=sin(sin(x1));

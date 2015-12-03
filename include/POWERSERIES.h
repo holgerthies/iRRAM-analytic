@@ -27,8 +27,12 @@ namespace iRRAM{
 
     template<class T>
     T constant_coefficient(const T& x);
+
     template<unsigned int n, class T>
     POWERSERIES<n,T> inverse(const POWERSERIES<n,T>&);
+
+    template<unsigned int n, class T>
+    POWERSERIES<n,T> derivative(const POWERSERIES<n,T>&, const unsigned int, const unsigned int);
 
     // define coeff type 
     template <unsigned int n, class T>
@@ -242,7 +246,7 @@ namespace iRRAM{
     // scalar multiplication
     template <unsigned int n, class T>
     POWERSERIES<n,T> operator*(const T& lhs, const POWERSERIES<n,T>& rhs){
-      auto lhsptr = std::make_shared<POWERSERIES<n,T>>(lhs);
+      auto lhsptr = std::make_shared<T>(lhs);
       auto rhsptr = std::make_shared<POWERSERIES<n,T>>(rhs);
       return POWERSERIES<n,T>([lhsptr, rhsptr] (const unsigned int i) {return (*lhsptr)*(*rhsptr)[i];});
     }
@@ -259,6 +263,34 @@ namespace iRRAM{
 	  return coeff_getter.get_coeff(i);
 	});
     }
+
+
+    template<class T>
+    T derivative(const T& x, const unsigned int i, const unsigned int d){
+      return x;
+    }
+    // d-th formal derivative w.r.t. the i-th variable
+    template<unsigned int n, class T>
+    POWERSERIES<n,T> derivative(const POWERSERIES<n,T>& pwr, const unsigned int i, const unsigned int d){
+      auto pwrptr = std::make_shared<POWERSERIES<n,T>>(pwr);
+      if(i==0){
+	return POWERSERIES<n,T>([pwrptr, d] (unsigned int j){
+	    T fact=1; 
+	    for(int k=j+1; k<=j+d; k++)
+	    {
+	      fact *= T(k);
+	    }
+	    return fact*(*pwrptr)[d+j];  
+	  } );
+      }
+      else{
+	return POWERSERIES<n,T>([pwrptr, i, d] (unsigned int j){
+	    return derivative((*pwrptr)[j], i-1, d);
+	  } );
+	
+      }
+    }
+    
 
     template<class T>
     T inverse(const T& x){

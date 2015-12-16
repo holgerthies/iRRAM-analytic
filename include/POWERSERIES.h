@@ -8,7 +8,6 @@
 #include <functional>
 #include <cstdarg>
 #include "combinatorics.h"
-#include <typeinfo>
 
 namespace iRRAM{
   namespace PWRSERIES_IMPL{ // implementation details for having special type for dimension 0

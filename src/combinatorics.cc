@@ -31,14 +31,24 @@ namespace iRRAM
     return ans[n];
   }
 
-  REAL choose(int n, int k){
-    static map<pair<int,int>, REAL> mem;
-    if(mem.find(make_pair(n,k)) != mem.end())
-      return mem[make_pair(n,k)];
-    if(k == 0 || n==k) return 1;
+  INTEGER choose(int n, int k){
+    static vector<vector<INTEGER>> mem={{1}};
     if(k > n) return 0;
-    mem[make_pair(n,k)] = choose(n-1,k)*REAL(n)/REAL(n-k); 
-    return mem[make_pair(n,k)];
+    if(mem.size() > n && mem[n].size() > k)
+      return mem[n][k];
+    if(mem.size() <= n){
+      // guarantee all needed coefficients known
+      choose(n-1, k);
+      mem.resize(n+1);
+      mem[n] = vector<INTEGER>{1};
+    }
+    if(mem[n].size() <= k){
+      choose(n, k-1);
+      mem[n].resize(k+1);
+    }
+    if(k == 0 || n==k) mem[n][k] = 1;
+    else mem[n][k] = choose(n-1,k-1)+choose(n-1,k);
+    return mem[n][k];
   }
 
   vector<vector<unsigned long>> bounded_count(const vector<unsigned long>& bound, const int size){
@@ -57,4 +67,19 @@ namespace iRRAM
   vector<vector<unsigned long>> bounded_count(const vector<unsigned long>& bound){
     return bounded_count(bound, bound.size());
   }
+
+REAL inv_factorial(const int n){
+  using std::log;
+  if ((n!=0)&&(n*log(n)-n > 2*-ACTUAL_STACK.actual_prec)){
+    REAL return_value(0);
+    sizetype error;
+    sizetype_set(error,1,ACTUAL_STACK.actual_prec);
+    return_value.seterror(error);
+    return return_value;
+  }
+  if (n==0)
+    return REAL(1);
+  REAL inv_fact=inv_factorial(n-1)/REAL(n);
+  return inv_fact;
+}
 }

@@ -168,8 +168,8 @@ namespace iRRAM{
     }
 
     template<class T>
-    T get_coeff(const std::shared_ptr<T>& x){
-      return *x;
+    T get_coeff(const T& x){
+      return x;
     }
 
     template<unsigned int n, class T>

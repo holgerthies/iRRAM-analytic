@@ -92,10 +92,10 @@ namespace iRRAM{
   struct series_computation_rec<1,n,T>{
     std::shared_ptr<coefficient_computation<n,T>> cc;
     std::list<unsigned long> params;
-    T get_series(const unsigned long j) const{
+    std::shared_ptr<T> get_series(const unsigned long j) const{
       std::list<unsigned long> all_params(params);
       all_params.push_back(j);
-      return cc->get(all_params);
+      return std::make_shared<T>(cc->get(all_params));
     }
   }; 
 

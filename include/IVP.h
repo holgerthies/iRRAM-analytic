@@ -18,8 +18,9 @@ namespace iRRAM{
         };
         T get_coeff_rec(const int v, const int l, const int k, const int upper,const int size, std::vector<unsigned long>& N);
 	template <unsigned int n>
-	T get_coeff_rec2(const POWERSERIES<n, T>& pwr,const int pos, std::vector<unsigned long>& N);
-    T get_coeff_rec2(const T& x, const int pos, std::vector<unsigned long>& N);
+	  T get_coeff_rec2(const std::shared_ptr<POWERSERIES<n, T>>& pwr,const int pos, std::vector<unsigned long>& N);
+	template <unsigned int n>
+	T get_coeff_rec2(const std::shared_ptr<T>& x, const int pos, std::vector<unsigned long>& N);
     
       public:
         IVP(std::initializer_list<std::shared_ptr<ANALYTIC<d,T>>> f ): f(f) {init();};
@@ -62,18 +63,19 @@ namespace iRRAM{
 
     template<unsigned int d, class T>
     template<unsigned int n>
-    T IVP<d,T>::get_coeff_rec2(const POWERSERIES<n, T>& pwr,const int pos, std::vector<unsigned long>& N){
+      T IVP<d,T>::get_coeff_rec2(const std::shared_ptr<POWERSERIES<n, T>>& pwr,const int pos, std::vector<unsigned long>& N){
       T ans=0;
       for(int i=0; i<=N[pos]; i++){
-	ans += get_a(pos, i, N[pos])*get_coeff_rec2(pwr[i], pos+1, N);
+	ans += get_a(pos, i, N[pos])*get_coeff_rec2<n-1>((*pwr)[i], pos+1, N);
       }
       return ans;
     }
 
 
   template<unsigned int n, class T>
-  T IVP<n,T>::get_coeff_rec2(const T& x, const int pos, std::vector<unsigned long>& N){
-    return x;
+  template<unsigned int d>
+    T IVP<n,T>::get_coeff_rec2(const std::shared_ptr<T>& x, const int pos, std::vector<unsigned long>& N){
+    return *x;
   }
 
 
@@ -81,7 +83,7 @@ namespace iRRAM{
   T IVP<d,T>::get_coeff_rec(const int v, const int l, const int k, const int upper,const int size, std::vector<unsigned long>& N){
     using std::vector;
     if(size == d-1){
-      return get_coeff_rec2((*(f[v]->pwr))[k], 0, N);
+      return get_coeff_rec2<d-1>((*(f[v]->pwr))[k], 0, N);
       
     }
     T ans=0;

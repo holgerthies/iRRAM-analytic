@@ -4,20 +4,6 @@
 using namespace iRRAM;
 using std::endl;
 using std::vector;
-REAL inv_factorial(const int n){
-	if ((n!=0)&&(n*log(n)-n > 2*-ACTUAL_STACK.actual_prec)){
-		REAL return_value(0);
-		sizetype error;
-		sizetype_set(error,1,ACTUAL_STACK.actual_prec);
-		return_value.seterror(error);
-		return return_value;
-	}
-	if (n==0)
-		return REAL(1);
-	REAL inv_fact=inv_factorial(n-1)/REAL(n);
-	return inv_fact;
-}
-
 REAL series1(const unsigned long v0, const unsigned long v1, const unsigned long v2){
   if(v0 == 0 && v1 == 0 && v2 == 1) return 1;
   return 0;

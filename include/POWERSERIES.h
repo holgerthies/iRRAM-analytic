@@ -10,10 +10,35 @@
 #include "combinatorics.h"
 
 namespace iRRAM{
+  // forward declarations
+
   namespace PWRSERIES_IMPL{ // implementation details for having special type for dimension 0
     // forward declarations
     template <unsigned int n, class T>
     class POWERSERIES;
+
+    template <unsigned int n, class T>
+    std::shared_ptr<POWERSERIES<n,T>> add(std::shared_ptr<POWERSERIES<n,T>>, std::shared_ptr<POWERSERIES<n,T>>);
+
+    template <unsigned int n, class T>
+    std::shared_ptr<POWERSERIES<n,T>> subtract(std::shared_ptr<POWERSERIES<n,T>>, std::shared_ptr<POWERSERIES<n,T>>);
+
+  template <unsigned int n, class T>
+    std::shared_ptr<POWERSERIES<n,T>> multiply(std::shared_ptr<POWERSERIES<n,T>>, std::shared_ptr<POWERSERIES<n,T>>);
+
+  template <unsigned int n, class T>
+    std::shared_ptr<POWERSERIES<n,T>> unary_minus(std::shared_ptr<POWERSERIES<n,T>>);
+
+    std::shared_ptr<REAL> add(std::shared_ptr<REAL> lhs, std::shared_ptr<REAL> rhs);
+
+    std::shared_ptr<REAL> multiply(std::shared_ptr<REAL> lhs, std::shared_ptr<REAL> rhs);
+
+    std::shared_ptr<REAL> unary_minus(std::shared_ptr<REAL> x);
+
+    template <unsigned int n, class T>
+      std::shared_ptr<POWERSERIES<n,T>> scalar_multiply(const T& lhs, const std::shared_ptr<POWERSERIES<n,T>>& rhs);
+
+    std::shared_ptr<REAL> scalar_multiply(const REAL& lhs, const std::shared_ptr<REAL>& rhs);
 
     template <unsigned int n, class T, typename... ARGS>
     T get_coeff(const POWERSERIES<n,T>& pwr, const unsigned long i, ARGS... rest);
@@ -28,10 +53,10 @@ namespace iRRAM{
     T constant_coefficient(const T& x);
 
     template<unsigned int n, class T>
-    POWERSERIES<n,T> inverse(const POWERSERIES<n,T>&);
+    std::shared_ptr<POWERSERIES<n,T>> inverse(const std::shared_ptr<POWERSERIES<n,T>>&);
 
     template<unsigned int n, class T>
-    POWERSERIES<n,T> derivative(const POWERSERIES<n,T>&, const unsigned int, const unsigned int);
+      std::shared_ptr<POWERSERIES<n,T>> derivative(const std::shared_ptr<POWERSERIES<n,T>>&, const unsigned int, const unsigned int);
 
     // define coeff type 
     template <unsigned int n, class T>
@@ -45,11 +70,13 @@ namespace iRRAM{
     };
 
     
+    using std::make_shared;
 
     template <unsigned int n, class T>
     class POWERSERIES{
       using coeff_type = typename COEFF_TYPE<n,T>::type;
-      using seq = std::function<coeff_type(const unsigned long)>;
+      using coeff_ptr = std::shared_ptr<typename COEFF_TYPE<n,T>::type>;
+      using seq = std::function<coeff_ptr(const unsigned long)>;
       using sq_ptr = std::shared_ptr<seq>;
     private:
 
@@ -57,25 +84,28 @@ namespace iRRAM{
       // and cache coefficients to speed up recursion
       class INVERSION{
       private:
-	mutable std::vector<coeff_type> cache;
+	mutable std::vector<coeff_ptr> cache;
 	std::shared_ptr<POWERSERIES> pwr;
       public:
-	INVERSION(const POWERSERIES& pwr):
-	  pwr(std::make_shared<POWERSERIES>(pwr))
+	INVERSION(const std::shared_ptr<POWERSERIES>& pwr):
+	  pwr(pwr)
 	  {};
-	coeff_type get_coeff(const unsigned long) const;
+	INVERSION(const POWERSERIES& pwr):
+	  pwr(make_shared<POWERSERIES>(pwr))
+	  {};
+	coeff_ptr get_coeff(const unsigned long) const;
       };
 
-      friend POWERSERIES inverse<>(const POWERSERIES&);
+      friend std::shared_ptr<POWERSERIES> inverse<>(const std::shared_ptr<POWERSERIES>&);
       sq_ptr f;
-      mutable std::vector<coeff_type> cache; // precomputed coefficients
+      mutable std::vector<coeff_ptr> cache; // precomputed coefficients
     public:
       POWERSERIES(const T& x): POWERSERIES([x] (unsigned int i) {
 	  if(i==0){
-	    return coeff_type(x);
+	    return make_shared<coeff_type>(x);
 	  } 
 	  else{
-	    return coeff_type(T());
+	    return make_shared<coeff_type>(T());
 	  }
 	}) {}; 
       POWERSERIES() : POWERSERIES(T()) {};
@@ -92,7 +122,7 @@ namespace iRRAM{
       // get the coefficient with given index
       template <typename... ARGS>
       T get(ARGS...);
-      coeff_type  operator[](const unsigned long) const;
+      coeff_ptr  operator[](const unsigned long) const;
       // unary -
       POWERSERIES operator-();
 
@@ -101,36 +131,51 @@ namespace iRRAM{
       }
     };
 
+    template<unsigned int n,class T>
+    std::shared_ptr<T> make_recursive(std::function<T()> f){
+      return make_shared<T>(f());
+    }
+
+    template<unsigned int n, class T, typename... ARGS>
+    std::shared_ptr<typename COEFF_TYPE<n,T>::type> make_recursive(std::function<T(const unsigned long, ARGS...)> f){
+      auto sq_fun = [f] (const unsigned long i)  {
+	std::function<T(ARGS...)> pwr_fun = [f,i] (ARGS... rest) {return f(i, rest...);};
+	return make_recursive<n-1,T>(pwr_fun);
+      };
+      return make_shared<typename COEFF_TYPE<n,T>::type>(sq_fun);
+    } 
+
+
+
     template <unsigned int n, class T>
     template <typename... ARGS>
     POWERSERIES<n,T>::POWERSERIES(std::function<T(const unsigned long, ARGS...)> f){
-      using seq = std::function<coeff_type(const unsigned long)>;
-      using sq_ptr = std::shared_ptr<seq>;
-      auto sq_fun = [f] (const unsigned long i) {
+      auto sq_fun = [f] (const unsigned long i) -> coeff_ptr {
 	std::function<T(ARGS...)> pwr_fun = [f,i] (ARGS... rest) {return f(i, rest...);};
-	return POWERSERIES<n-1,T>(pwr_fun);
+	return make_recursive<n,T>(pwr_fun);
       };
       this->f = sq_ptr(new seq(sq_fun));
     }
 
+
     template <unsigned int n, class T, typename... ARGS>
     T get_coeff(const POWERSERIES<n,T>& pwr, const unsigned long i, ARGS... rest){
-      return get_coeff(pwr[i], rest...);
+      return get_coeff(*(pwr[i]), rest...);
     }
 
     template<class T>
-    T get_coeff(const T& x){
-      return x;
+    T get_coeff(const std::shared_ptr<T>& x){
+      return *x;
     }
 
     template<unsigned int n, class T>
     T constant_coefficient(const POWERSERIES<n,T>& pwr){
-      return constant_coefficient(pwr[0]);
+      return constant_coefficient(*(pwr[0]));
     }
 
     template<class T>
-    T constant_coefficient(const T& x){
-      return x;
+    T constant_coefficient(const std::shared_ptr<T>& x){
+      return *x;
     }
 
     template <unsigned int n, class T>
@@ -142,7 +187,7 @@ namespace iRRAM{
 
 // fix the first parameter and return a POWERSERIES with decreased dimension
     template <unsigned int n, class T>
-    typename COEFF_TYPE<n,T>::type POWERSERIES<n,T>::operator[](const unsigned long i) const{
+      std::shared_ptr<typename COEFF_TYPE<n,T>::type> POWERSERIES<n,T>::operator[](const unsigned long i) const{
       if(cache.size() <= i){
 	auto sz=cache.size();
 	cache.resize(i+1);
@@ -162,22 +207,22 @@ namespace iRRAM{
     // with first parameter 0 have to be 0
     template<unsigned int m, class T>
     POWERSERIES<m,T> compose(const POWERSERIES<1,T>& p, const POWERSERIES<m,T>& q){
-      using coeff_type = typename COEFF_TYPE<m,T>::type;
-      auto series = [p,q] (const unsigned int i) -> coeff_type {
-	if(i==0) return p[0];
-	std::vector<coeff_type> c(i+1);
-	for(int k=1; k<=i; k++){
-	  for(auto& P : partitions(i,k)){
-	    coeff_type cp = p[k];
-	    for(auto j : P){
-	      cp = cp*q[j];
-	    }
-	    c[k] = c[k-1]+cp;
-	  }
-	}
-	return c[i];
-      };
-      return POWERSERIES<m,T>(series);
+//      using coeff_type = typename COEFF_TYPE<m,T>::type;
+//      auto series = [p,q] (const unsigned int i) -> coeff_type {
+//	if(i==0) return p[0];
+//	std::vector<coeff_type> c(i+1);
+//	for(int k=1; k<=i; k++){
+//	  for(auto& P : partitions(i,k)){
+//	    coeff_type cp = p[k];
+//	    for(auto j : P){
+//	      cp = cp*q[j];
+//	    }
+//	    c[k] = c[k-1]+cp;
+//	  }
+//	}
+//	return c[i];
+//      };
+//      return POWERSERIES<m,T>(series);
     }
 
 
@@ -186,14 +231,14 @@ namespace iRRAM{
     template <unsigned int n, class T>
     POWERSERIES<n,T> POWERSERIES<n,T>::operator-(){
       auto thisptr=std::make_shared<POWERSERIES<n,T>>(*this);
-      return POWERSERIES<n,T>([thisptr] (const unsigned long i) {return -(*thisptr)[i];});
+      return *(unary_minus(thisptr));
     }
     // add coefficients
     template <unsigned int n, class T>
     POWERSERIES<n,T> operator+(const POWERSERIES<n,T>& lhs, const POWERSERIES<n,T>& rhs){
       auto lhsptr = std::make_shared<POWERSERIES<n,T>>(lhs);
       auto rhsptr = std::make_shared<POWERSERIES<n,T>>(rhs);
-      return POWERSERIES<n,T>([lhsptr, rhsptr] (const unsigned int i) {return (*lhsptr)[i]+(*rhsptr)[i];});
+      return *(add<n,T>(lhsptr, rhsptr));
     }
 
     // subtract coefficients
@@ -201,13 +246,13 @@ namespace iRRAM{
     POWERSERIES<n,T> operator-(const POWERSERIES<n,T>& lhs, const POWERSERIES<n,T>& rhs){
       auto lhsptr = std::make_shared<POWERSERIES<n,T>>(lhs);
       auto rhsptr = std::make_shared<POWERSERIES<n,T>>(rhs);
-      return POWERSERIES<n,T>([lhsptr, rhsptr] (const unsigned int i) {return (*lhsptr)[i]-(*rhsptr)[i];});
+      return *(subtract<n,T>(lhsptr, rhsptr));
     }
 
     // division of power series
     template <unsigned int n, class T>
     POWERSERIES<n,T> operator/(const POWERSERIES<n,T>& lhs, const POWERSERIES<n,T>& rhs){
-      return lhs*inverse(rhs);
+      //return lhs*inverse(rhs);
     }
 
 
@@ -216,14 +261,7 @@ namespace iRRAM{
     POWERSERIES<n,T> operator*(const POWERSERIES<n,T>& lhs, const POWERSERIES<n,T>& rhs){
       auto lhsptr = std::make_shared<POWERSERIES<n,T>>(lhs);
       auto rhsptr = std::make_shared<POWERSERIES<n,T>>(rhs);
-      return POWERSERIES<n,T>([lhsptr, rhsptr] (const unsigned long i) {
-	  typename COEFF_TYPE<n,T>::type c;
-	  for(int l=0; l<=i;l++){
-	    auto coeff = (*lhsptr)[l]*(*rhsptr)[i-l];
-	    c = c+coeff;
-	  }
-	  return c;
-	});
+      return *(multiply(lhsptr,rhsptr));
     }
 
     // scalar addition
@@ -255,50 +293,47 @@ namespace iRRAM{
     }
 
     template <unsigned int n, class T>
-    POWERSERIES<n,T> inverse(const POWERSERIES<n,T>& pwr){
+    std::shared_ptr<POWERSERIES<n,T>> inverse(const std::shared_ptr<POWERSERIES<n,T>>& pwr){
       using inv_class = typename POWERSERIES<n,T>::INVERSION;
       auto coeff_getter = inv_class(pwr);
-      return POWERSERIES<n,T>([coeff_getter] (const unsigned int i) {
+      return std::make_shared<POWERSERIES<n,T>>([coeff_getter] (const unsigned int i) {
 	  return coeff_getter.get_coeff(i);
 	});
     }
 
 
-    template<class T>
-    T derivative(const T& x, const unsigned int i, const unsigned int d){
+    std::shared_ptr<REAL> derivative(const std::shared_ptr<REAL>& x, const unsigned int i, const unsigned int d){
       return x;
     }
     // d-th formal derivative w.r.t. the i-th variable
     template<unsigned int n, class T>
-    POWERSERIES<n,T> derivative(const POWERSERIES<n,T>& pwr, const unsigned int i, const unsigned int d){
-      auto pwrptr = std::make_shared<POWERSERIES<n,T>>(pwr);
+      std::shared_ptr<POWERSERIES<n,T>> derivative(const std::shared_ptr<POWERSERIES<n,T>>& pwr, const unsigned int i, const unsigned int d){
       if(i==0){
-	return POWERSERIES<n,T>([pwrptr, d] (unsigned int j){
+	return make_shared<POWERSERIES<n,T>>([pwr, d] (unsigned int j){
 	    T fact=1; 
 	    for(int k=j+1; k<=j+d; k++)
 	    {
 	      fact *= T(k);
 	    }
-	    return fact*(*pwrptr)[d+j];  
+	    return scalar_multiply(fact,(*pwr)[d+j]);  
 	  } );
       }
       else{
-	return POWERSERIES<n,T>([pwrptr, i, d] (unsigned int j){
-	    return derivative((*pwrptr)[j], i-1, d);
+	return make_shared<POWERSERIES<n,T>>([pwr, i, d] (unsigned int j){
+	    return derivative((*pwr)[j], i-1, d);
 	  } );
 	
       }
     }
     
 
-    template<class T>
-    T inverse(const T& x){
-      return 1/x;
+    std::shared_ptr<REAL> inverse(const std::shared_ptr<REAL>& x){
+      return std::make_shared<REAL>(1/(*x));
     }
 
     // get coefficient for inverse power series
     template <unsigned int n, class T> 
-    typename COEFF_TYPE<n,T>::type POWERSERIES<n,T>::INVERSION::get_coeff(const unsigned long i) const{
+      std::shared_ptr<typename COEFF_TYPE<n,T>::type> POWERSERIES<n,T>::INVERSION::get_coeff(const unsigned long i) const{
       auto sz=cache.size();
       if(i >= sz)
       {
@@ -310,18 +345,76 @@ namespace iRRAM{
 	  //print((*pwr)[0]);
 	  cache[j] = inverse((*pwr)[0]);
 	} else{
+	  auto sp = std::make_shared<typename COEFF_TYPE<n,T>::type>(T());
+	  cache[j] = sp;
 	  for(int k=0; k<=j; k++){
-	    cache[j] = cache[j] + (*pwr)[k]*cache[j-k];
+	    cache[j] = add(cache[j], multiply((*pwr)[k],cache[j-k]));
 	  }
-	  cache[j] = -cache[0]*cache[j];
+	  cache[j] = multiply(unary_minus(cache[0]),cache[j]);
 	}
       }
       return cache[i];
     }
     
+  template <unsigned int n, class T>
+  std::shared_ptr<POWERSERIES<n,T>> add(std::shared_ptr<POWERSERIES<n,T>> lhs, std::shared_ptr<POWERSERIES<n,T>> rhs){
+    return std::make_shared<POWERSERIES<n,T>>([lhs, rhs] (const unsigned int i) {
+	return add((*lhs)[i],(*rhs)[i]);
+    });
+  }
+  
+  template <unsigned int n, class T>
+  std::shared_ptr<POWERSERIES<n,T>> subtract(std::shared_ptr<POWERSERIES<n,T>> lhs, std::shared_ptr<POWERSERIES<n,T>> rhs){
+    return std::make_shared<POWERSERIES<n,T>>([lhs, rhs] (const unsigned int i) {
+	return subtract((*lhs)[i],(*rhs)[i]);
+    });
+  }
+
+  template <unsigned int n, class T>
+  std::shared_ptr<POWERSERIES<n,T>> unary_minus(std::shared_ptr<POWERSERIES<n,T>> pwr){
+    return std::make_shared<POWERSERIES<n,T>>([pwr] (const unsigned int i) {
+	return unary_minus((*pwr)[i]);
+    });
+  }
+
+  template <unsigned int n, class T>
+  std::shared_ptr<POWERSERIES<n,T>> multiply(std::shared_ptr<POWERSERIES<n,T>> lhs, std::shared_ptr<POWERSERIES<n,T>> rhs){
+    return std::make_shared<POWERSERIES<n,T>>([lhs, rhs] (const unsigned int i) {
+	auto c = std::make_shared<typename COEFF_TYPE<n,T>::type>(T());
+	for(int l=0; l<=i;l++){
+	  auto coeff = multiply((*lhs)[l],(*rhs)[i-l]);
+	  c = add(c,coeff);
+	}
+	return c;
+    });
+  }
+
+  std::shared_ptr<REAL> add(std::shared_ptr<REAL> lhs, std::shared_ptr<REAL> rhs){
+    return std::make_shared<REAL>(*lhs+*rhs);
+  }
+
+  std::shared_ptr<REAL> multiply(std::shared_ptr<REAL> lhs, std::shared_ptr<REAL> rhs){
+    return std::make_shared<REAL>(*lhs**rhs);
+  }
+
+  std::shared_ptr<REAL> unary_minus(std::shared_ptr<REAL> x){
+    return std::make_shared<REAL>(-*x);
+  }
+    // scalar multiplication
+    template <unsigned int n, class T>
+      std::shared_ptr<POWERSERIES<n,T>> scalar_multiply(const T& lhs, const std::shared_ptr<POWERSERIES<n,T>>& rhs){
+      return make_shared<POWERSERIES<n,T>>([lhs, rhs] (const unsigned int i) {return scalar_multiply(lhs, (*rhs)[i]);});
+    }
+
+    std::shared_ptr<REAL> scalar_multiply(const REAL& lhs, const std::shared_ptr<REAL>& rhs){
+      return std::make_shared<REAL>(lhs*(*rhs));
+    }
+
   } // PWRSERIES_IMPL namespace
   template <unsigned int n, class T>
   using POWERSERIES = typename PWRSERIES_IMPL::COEFF_TYPE<n+1,T>::type;
+
+
 } // iRRAM namespace
 
 #endif

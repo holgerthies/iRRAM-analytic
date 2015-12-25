@@ -34,6 +34,13 @@ namespace iRRAM
     REAL M,r; // maximum of the function and radius of convergence
     std::shared_ptr<pwr_ser> pwr;
   public:
+    // constructor from powerseries pointer
+  ANALYTIC(const std::shared_ptr<pwr_ser>& pwr, const REAL& r, const REAL& M, bool a):
+      M(M),
+      r(r),
+      pwr(pwr)
+      {};
+    
     // constructor from everything that can be used to construct a power series
     template<typename F>
     ANALYTIC(F&& f, const REAL& r, const REAL& M ): 
@@ -75,14 +82,12 @@ namespace iRRAM
 
   template<unsigned int n, class T>
   ANALYTIC<n,T> operator+(const ANALYTIC<n,T>& lhs, const ANALYTIC<n,T>& rhs){
-    auto spwr=*lhs.pwr+*rhs.pwr;
-    return ANALYTIC<n,T>(spwr, minimum(lhs.r, rhs.r), lhs.M+rhs.M);
+    return ANALYTIC<n,T>(PWRSERIES_IMPL::add<n,T>(lhs.pwr, rhs.pwr), minimum(lhs.r, rhs.r), lhs.M+rhs.M, false);
   }
 
   template<unsigned int n, class T>
   ANALYTIC<n,T> operator-(const ANALYTIC<n,T>& lhs, const ANALYTIC<n,T>& rhs){
-    auto spwr=*lhs.pwr-*rhs.pwr;
-    return ANALYTIC<n,T>(spwr, minimum(lhs.r, rhs.r), lhs.M+rhs.M);
+    return ANALYTIC<n,T>(PWRSERIES_IMPL::subtract<n,T>(lhs.pwr, rhs.pwr), minimum(lhs.r, rhs.r), lhs.M+rhs.M, false);
   }
   template<unsigned int n, class T>
   ANALYTIC<n,T> operator*(const ANALYTIC<n,T>& lhs, const ANALYTIC<n,T>& rhs){

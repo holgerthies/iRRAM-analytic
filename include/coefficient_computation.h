@@ -79,12 +79,12 @@ namespace iRRAM{
   struct series_computation_rec{
     std::shared_ptr<coefficient_computation<n,T>> cc;
     std::list<unsigned long> params;
-    POWERSERIES<i-1,T> get_series(const unsigned int j) const{
+    std::shared_ptr<POWERSERIES<i-1,T>> get_series(const unsigned int j) const{
       series_computation_rec<i-1, n, T> next;
       next.cc = cc; 
       next.params = params;
       next.params.push_back(j);
-      return POWERSERIES<i-1, T>([next] (const unsigned long k) { return next.get_series(k); });
+      return std::make_shared<POWERSERIES<i-1, T>>([next] (const unsigned long k) { return next.get_series(k); });
     }
   };
 
@@ -103,10 +103,10 @@ namespace iRRAM{
     using series_computation = series_computation_rec<n,n, T>;
 
   template<unsigned long n, class T, typename... ARGS>
-  POWERSERIES<n,T> make_series(const std::function<T(const T&, ARGS...)>& f, const REAL& M, const REAL& r){
+    std::shared_ptr<POWERSERIES<n,T>> make_series(const std::function<T(const T&, ARGS...)>& f, const REAL& M, const REAL& r){
     auto sc = std::make_shared<series_computation<n,T>>();
     sc->cc = std::make_shared<coefficient_computation<n,T>>(coefficient_computation<n,T>(f, M, r));
-    return POWERSERIES<n,T>([sc] (const unsigned long i) { return sc->get_series(i); });
+    return std::make_shared<POWERSERIES<n,T>>([sc] (const unsigned long i) { return sc->get_series(i); });
   }
 
 

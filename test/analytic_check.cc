@@ -1,6 +1,6 @@
 #include "iRRAM.h"
 #include "ANALYTIC.h"
-#include "coefficient_computation.h"
+//#include "coefficient_computation.h"
 #include "combinatorics.h"
 using namespace iRRAM;
 using std::endl;
@@ -72,14 +72,14 @@ void checkResult(const REAL& y,const REAL& sol, const int prec ){
 }
 
 void compute(){
-  auto sin_pwr = make_series<1,REAL>(std::function<REAL(const REAL&)>([] (const REAL& x) {return sin(x);}), 2,2);
+  //auto sin_pwr = make_series<1,REAL>(std::function<REAL(const REAL&)>([] (const REAL& x) {return sin(x);}), 2,2);
 	
-  auto sin_pwr3 = make_series<2,REAL>(std::function<REAL(const REAL&, const REAL&)>([] (const REAL& x, const REAL& y) {return sin(x*y);}), 2,2);
+  //auto sin_pwr3 = make_series<2,REAL>(std::function<REAL(const REAL&, const REAL&)>([] (const REAL& x, const REAL& y) {return sin(x*y);}), 2,2);
   //cout << sin_pwr3.get_coeff(1,1,1) << std::endl;
   ANALYTIC<3,REAL> f(std::function<REAL(unsigned long, unsigned long, unsigned long)>(sinseries), 2, 2);
   ANALYTIC<1,REAL> g(std::function<REAL(unsigned long)>(sinseries1d), 2,2);
-  ANALYTIC<1,REAL> h(sinseries1d, 2,2);
-  ANALYTIC<2,REAL> h3(sin_pwr3, 2,2);
+  ANALYTIC<1,REAL> h(std::function<REAL(unsigned long)>(sinseries1d), 2,2);
+  //ANALYTIC<2,REAL> h3(sin_pwr3, 2,2);
   //auto g = AnalyticFunction::projection<3,1,REAL>();
   //g = power(g,5);
   int l,prec;
@@ -96,8 +96,8 @@ void compute(){
   iRRAM::cout << "checking sin(x)" << endl;
   checkResult(y, sol, prec);
 
-  y = h(x1);
-  sol=sin(x1);
+  //y = h(x1);
+  //sol=sin(x1);
   iRRAM::cout << "checking sin(x) from function" << endl;
   checkResult(y, sol, prec);
 
@@ -106,10 +106,10 @@ void compute(){
   iRRAM::cout << "checking sin(x1*x2*x3)" << endl;
   checkResult(y, sol, prec);
 
-  y = h3(x1,x2);
-  sol=sin(x1*x2);
-  iRRAM::cout << "checking sin(x1*x2) from function" << endl;
-  checkResult(y, sol, prec);
+  //y = h3(x1,x2);
+  //sol=sin(x1*x2);
+  //iRRAM::cout << "checking sin(x1*x2) from function" << endl;
+  //checkResult(y, sol, prec);
 
   auto sum = f+f+ANALYTIC<3,REAL>(2);
   y = sum(x1,x2,x3);

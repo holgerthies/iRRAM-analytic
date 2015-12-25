@@ -33,6 +33,10 @@ namespace iRRAM{
 
     std::shared_ptr<REAL> multiply(std::shared_ptr<REAL> lhs, std::shared_ptr<REAL> rhs);
 
+    std::shared_ptr<REAL> add(std::shared_ptr<REAL> lhs, std::shared_ptr<REAL> rhs);
+
+    std::shared_ptr<REAL> subtract(std::shared_ptr<REAL> lhs, std::shared_ptr<REAL> rhs);
+
     std::shared_ptr<REAL> unary_minus(std::shared_ptr<REAL> x);
 
     template <unsigned int n, class T>
@@ -47,10 +51,10 @@ namespace iRRAM{
     T get_coeff(const T& x);
 
     template <unsigned int n, class T>
-    T constant_coefficient(const POWERSERIES<n,T>& pwr);
+      T constant_coefficient(const std::shared_ptr<POWERSERIES<n,T>>& pwr);
 
     template<class T>
-    T constant_coefficient(const T& x);
+      T constant_coefficient(const std::shared_ptr<T>& x);
 
     template<unsigned int n, class T>
     std::shared_ptr<POWERSERIES<n,T>> inverse(const std::shared_ptr<POWERSERIES<n,T>>&);
@@ -169,8 +173,8 @@ namespace iRRAM{
     }
 
     template<unsigned int n, class T>
-    T constant_coefficient(const POWERSERIES<n,T>& pwr){
-      return constant_coefficient(*(pwr[0]));
+      T constant_coefficient(const std::shared_ptr<POWERSERIES<n,T>>& pwr){
+      return constant_coefficient((*pwr)[0]);
     }
 
     template<class T>
@@ -409,6 +413,12 @@ namespace iRRAM{
     std::shared_ptr<REAL> scalar_multiply(const REAL& lhs, const std::shared_ptr<REAL>& rhs){
       return std::make_shared<REAL>(lhs*(*rhs));
     }
+
+
+    std::shared_ptr<REAL> subtract(std::shared_ptr<REAL> lhs, std::shared_ptr<REAL> rhs){
+      return make_shared<REAL>((*lhs)-(*rhs));
+    };
+
 
   } // PWRSERIES_IMPL namespace
   template <unsigned int n, class T>

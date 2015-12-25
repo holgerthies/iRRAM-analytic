@@ -35,7 +35,7 @@ namespace iRRAM
     std::shared_ptr<pwr_ser> pwr;
   public:
     // constructor from powerseries pointer
-  ANALYTIC(const std::shared_ptr<pwr_ser>& pwr, const REAL& r, const REAL& M, bool a):
+  ANALYTIC(const REAL& r, const REAL& M, const std::shared_ptr<pwr_ser>& pwr):
       M(M),
       r(r),
       pwr(pwr)
@@ -82,23 +82,23 @@ namespace iRRAM
 
   template<unsigned int n, class T>
   ANALYTIC<n,T> operator+(const ANALYTIC<n,T>& lhs, const ANALYTIC<n,T>& rhs){
-    return ANALYTIC<n,T>(PWRSERIES_IMPL::add<n,T>(lhs.pwr, rhs.pwr), minimum(lhs.r, rhs.r), lhs.M+rhs.M, false);
+    return ANALYTIC<n,T>(minimum(lhs.r, rhs.r), lhs.M+rhs.M, PWRSERIES_IMPL::add<n,T>(lhs.pwr, rhs.pwr));
   }
 
   template<unsigned int n, class T>
   ANALYTIC<n,T> operator-(const ANALYTIC<n,T>& lhs, const ANALYTIC<n,T>& rhs){
-    return ANALYTIC<n,T>(PWRSERIES_IMPL::subtract<n,T>(lhs.pwr, rhs.pwr), minimum(lhs.r, rhs.r), lhs.M+rhs.M, false);
+    return ANALYTIC<n,T>(minimum(lhs.r, rhs.r), lhs.M+rhs.M,PWRSERIES_IMPL::subtract<n,T>(lhs.pwr, rhs.pwr));
   }
   template<unsigned int n, class T>
   ANALYTIC<n,T> operator*(const ANALYTIC<n,T>& lhs, const ANALYTIC<n,T>& rhs){
-    auto spwr=*lhs.pwr**rhs.pwr;
-    return ANALYTIC<n,T>(spwr, minimum(lhs.r, rhs.r), lhs.M*rhs.M);
+    auto spwr=PWRSERIES_IMPL::multiply<n,T>(lhs.pwr,rhs.pwr);
+    return ANALYTIC<n,T>(minimum(lhs.r, rhs.r), lhs.M*rhs.M, spwr);
   }
 
   // d-th derivative w.r.t. to the i-th variable
   template<unsigned int n, class T>
     ANALYTIC<n,T> derive(const ANALYTIC<n,T>& f, const unsigned int i, const unsigned int d){
-    auto npwr=derivative(*f.pwr, i, d);
+    auto npwr=derivative(f.pwr, i, d);
     auto r=f.get_r();
     auto M=f.get_M();
     auto newr = r/2;
@@ -106,23 +106,23 @@ namespace iRRAM
     T fact=1;
     for(int j=2; j<=d; j++) fact *= d;
     auto newM = M*r*p*fact; 
-    return ANALYTIC<n,T>(npwr,newr, newM );
+    return ANALYTIC<n,T>(newr, newM,npwr);
   }
 
   template<unsigned int n, class T>
   ANALYTIC<n,T> inverse(const ANALYTIC<n,T>& f){
-    auto npwr=inverse(*f.pwr);
+    auto npwr=inverse(f.pwr);
     auto r=f.get_r();
     auto M=f.get_M();
     auto newr = r;
     // find r' such that the function does not have a zero for all z \in B_r'
     REAL lowerbound=-1;// lower bound for the function
-    T f0 = constant_coefficient(*f.pwr);
+    T f0 = constant_coefficient(f.pwr);
     while(!positive(lowerbound, -10)){
       newr /= 2;
       lowerbound = abs(f0)-M*r*newr/(r-newr);
     }
-    return ANALYTIC<n,T>(npwr, r, 1/lowerbound);
+    return ANALYTIC<n,T>(r, 1/lowerbound, npwr);
   }
 
   template<unsigned int n, class T>
@@ -142,7 +142,7 @@ namespace iRRAM
   }
 
   template<unsigned int n, class T, typename... Ts>
-  T evaluate(const POWERSERIES<n,T>& pwr, const REAL& M, const REAL& r, const T& x, Ts... rest){
+    T evaluate(const std::shared_ptr<POWERSERIES<n,T>>& pwr, const REAL& M, const REAL& r, const T& x, Ts... rest){
     //iRRAM:: cout<<"evaluating dim" << n << std::endl;
     int stepsize=10;
     int J=0;
@@ -151,7 +151,7 @@ namespace iRRAM
     //iRRAM::cout << "get first coefficient" << std::endl;
     //PWRSERIES_IMPL::print(pwr[0]);
     //iRRAM::cout << "got first coefficient" << std::endl;
-    REAL sum(evaluate<n-1,T>(pwr[0], M, r, rest...));
+    REAL sum(evaluate<n-1,T>((*pwr)[0], M, r, rest...));
     REAL best=sum;
     sizetype best_error, trunc_error, local_error,sum_error;
     sum.geterror(sum_error);
@@ -167,10 +167,10 @@ namespace iRRAM
       //cout << "J = " << J<< std::endl;
       // horner's method to evaluate polynomial 
       x0 *= x;
-      T b = evaluate<n-1,T>(pwr[J], M, r, rest...);
+      T b = evaluate<n-1,T>((*pwr)[J], M, r, rest...);
       REAL x1=x0; // x^J
       for(int j=J-1; j>J-stepsize; j--){
-	b = evaluate<n-1,T>(pwr[j], M, r, rest...) + b*x;
+	b = evaluate<n-1,T>((*pwr)[j], M, r, rest...) + b*x;
 	x1 *= x;
       }
       sum += b*x0;
@@ -190,8 +190,8 @@ namespace iRRAM
   }
 
   template<unsigned int n, class T>
-  T evaluate(const T& x, const REAL& M, const REAL& r){
-    return x;
+    T evaluate(const std::shared_ptr<T>& x, const REAL& M, const REAL& r){
+    return *x;
   }
 
 
@@ -204,14 +204,14 @@ namespace iRRAM
   template<typename... Ts>
   T ANALYTIC<n,T>::operator ()(Ts... x) const
   {
-    return evaluate<n,T>(*pwr, M,r, x...);
+    return evaluate<n,T>(pwr, M,r, x...);
   }
 
   
     // function composition 
   template<unsigned int m, class T>
   ANALYTIC<m,T> compose(const ANALYTIC<1,T>& f, const ANALYTIC<m,T>& g){
-    return ANALYTIC<m,T>(compose(*(f.pwr), *(g.pwr)), f.r, f.M);
+    //return ANALYTIC<m,T>(compose(*(f.pwr), *(g.pwr)), f.r, f.M);
   }
     
   // some predefined functions
@@ -221,23 +221,23 @@ namespace iRRAM
     // returns 1 iff the i-th input parameter is m and all other parameters are 0
     // otherwise 0
     struct MONOMIAL_PWR_FUN{
-      static POWERSERIES<n,T> function(const unsigned int i, const unsigned int m){
-      auto pwr=POWERSERIES<n,T>([i, m] (unsigned long j) -> POWERSERIES<n-1,T> {
+      static std::shared_ptr<POWERSERIES<n,T>> function(const unsigned int i, const unsigned int m){
+	auto pwr=std::make_shared<POWERSERIES<n,T>>([i, m] (unsigned long j) -> std::shared_ptr<POWERSERIES<n-1,T>> {
 	if(i == 1 && j == m){
-	  return T(1);
+	  return std::make_shared<POWERSERIES<n-1,T>>(T(1));
 	}
 	if(i != 1 && j == 0){
 	  return MONOMIAL_PWR_FUN<n-1, T>::function(i-1, m);
 	}
-	return T(0);
+	return std::make_shared<POWERSERIES<n-1,T>>(T(0));
 	});
       return pwr;
       }
     };
     template<class T>
     struct MONOMIAL_PWR_FUN<0,T>{
-      static T function(const unsigned int i, const unsigned int m){
-	return 0;
+      static std::shared_ptr<T> function(const unsigned int i, const unsigned int m){
+	return std::make_shared<T>(T());
       }
     };
     // monomial f(x) = x_i^m and f: R^n \to R 
@@ -245,7 +245,7 @@ namespace iRRAM
     ANALYTIC<n,T> monomial(int m){
       static_assert(i <= n && i>0, "given coordinate is invalid.");
       auto pwr = MONOMIAL_PWR_FUN<n,T>::function(i,m);
-      return ANALYTIC<n,T>(pwr, 1000, power(1000, m));
+      return ANALYTIC<n,T>(1000, power(1000, m), pwr);
       
     }
   }

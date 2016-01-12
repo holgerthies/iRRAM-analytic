@@ -43,3 +43,7 @@ bin/*
 # Misc
 *.pyc
 /eterm-color.ti
+*.aux
+*.log
+*.pdf
+*.thm

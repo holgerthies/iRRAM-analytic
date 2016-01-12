@@ -1,0 +1,117 @@
+\documentclass[]{article}
+
+% packages
+	\usepackage[utf8]{inputenc}
+	\usepackage[thmmarks]{ntheorem}
+	\usepackage{xspace,cleveref,xcolor}
+	\usepackage{amsmath,amssymb}
+	\usepackage{graphicx,url}
+	\usepackage[font=small]{caption}
+% new commands
+	\newcommand{\QQ}{\mathbb Q}
+	\newcommand{\RR}{\mathbb R}
+	\newcommand{\CC}{\mathbb C}
+	\newcommand{\NN}{\mathbb N}
+	\newcommand{\ZZ}{\mathbb Z}
+	\newcommand{\A}{\mathcal A}
+	\newcommand{\B}{\mathcal B}
+	\newcommand{\C}{\mathcal C}
+	\newcommand{\D}{\mathcal D}
+	\newcommand{\R}{\mathcal R}
+	\newcommand{\M}{\mathcal M}
+	\newcommand{\laplace}{\operatorname\Delta}
+	\bibliographystyle{plain}
+
+	\newcommand{\p}{\ensuremath{\mathcal P}\xspace}
+	\newcommand{\np}{\ensuremath{\mathcal{NP}}\xspace}
+	\newcommand{\fp}{\ensuremath{\mathcal{FP}}\xspace}
+	\newcommand{\abs}[1]{\left|#1\right|}
+	\newcommand{\sharpp}{\ensuremath{\# \mathcal{P}}\xspace}
+	\newcommand{\code}{\texttt}
+	\newcommand{\cc}{\code{C++}\xspace}
+	\newcommand{\irram}{\code{iRRAM}\xspace}
+	\newcommand{\MPFR}{\code{MPFR}\xspace}
+	\newcommand{\baana}{\code{BA\_ANA}\xspace}
+	\newcommand{\anarect}{\code{ANA\_RECT}\xspace}
+	\newcommand{\powerseries}{\code{POWERSERIES}\xspace}
+	\newcommand{\real}{\code{REAL}\xspace}
+	\newcommand{\temp}{\textcolor{red}}
+	\newcommand{\seq}{\mathbf}
+	\DeclareMathOperator{\lb}{lb}
+	\DeclareMathOperator{\bigo}{O}
+	\newcommand{\sprec}{prec\xspace}
+	\newcommand{\demph}{\textbf}
+	\newcommand{\sdzero}{\texttt{0}}
+% ntheorem environments
+	\theoremseparator{:}
+	\theorembodyfont{\itshape}
+	\newtheorem{definition}{Definition}
+	\theorembodyfont{\upshape}
+	\theoremsymbol{\ensuremath{\blacksquare}}
+	\newtheorem{theorem}[definition]{Theorem}
+	\newtheorem{corollary}[definition]{Corollary}
+
+\title{Multidimensional Analytic Functions Algorithm Description}
+%\author{Akitoshi Kawamura, Florian Steinberg, Holger Thies}
+
+\begin{document}
+\section{Overview}
+\code{ANALYTIC<d,T>} is a type for analytic functions $f: T^d \to T$.
+Currently, $T$ is always supposed to be \code{REAL}.
+
+More specific, \code{ANALYTIC<n,T>} can be used to represent functions analytic on a polydisc $[-R_1,R_1] \times \dots \times [-R_d, R_d]$ around $0 \in T^d$. 
+\section{Additional Information}
+For most operations to be computable, some additional information has to be supplied.
+The information chosen is lower bounds $r_1, \dots, r_d$ on the radius of convergence and an upper bound $M$ for $\{f(x) \, | \, x_i \in [-r_i, r_i]\}$.  
+Note, that in the current implementation $r_1 = \dots = r_d =: r$.
+The additional parameters are of type \code{REAL}.
+\section{Constructors}
+
+\section{Evaluation}
+To evaluate the function at some point $x$ the sum
+$$ \sum_{i_1, \dots, i_d \in \NN^d} a_{i_1, \dots i_d} \cdot x_1^{i_1} \cdot \dots x_i^{i_d} $$
+has to be approximated with error less than $2^{-n}$.
+
+Only a finite initial segment
+$$ \sum_{0 \leq i_1 \leq N_1, \dots, 0 \leq i_d \leq N_d } a_{i_1, \dots i_d} \cdot x_1^{i_1} \cdot \dots x_i^{i_d} $$
+is computed.
+The error then consists of two parts
+\begin{enumerate}
+  \item The error due to using only approximations to the coefficients $a_{i_1, \dots, i_d}$ and the $x_i$.
+  \item The truncation error, due to only considering the first $N_i$ terms of each sum.
+\end{enumerate}
+The evaluation algorithm is recursive in the dimension d.
+The procedure \code{evaluate(x, a, B, $q_1$, $\dots$, $q_d$)} takes the point $x$ and the $d$-dimensional sequence $a$, as well as parameters $B$ and $q_i$ s.t.
+$$ a_{i_1, \dots, i_d} \leq \frac{B}{q_1^{i_1} \cdot \dots \cdot q_d^{i_d}} $$
+Note, that those parameters can be chosen as $B=M$ and $q_i = r_i$ with $M$ and $r_i$ as above as can be shown by using Cauchy's integral formula.
+Now let $b_{i_1} := \sum_{i_2, \dots, i_d \in \NN^{d-1}} a_{i_1, \dots, i_d} \cdot x_2^{i_2} \dots x_d^{i_d}$.
+Then $f(x_1, \dots, x_d) = \sum_{i \in \NN} b_i\cdot x^i$.
+Summing only up to $N$, the total error consists of the truncation error and the error one gets for only having approximations to $b_i$ and $x_i$.
+The truncation error can be approximated as follows
+\begin{eqnarray*}
+\abs{b_i} &\leq& \sum_{i_2, \dots, i_d \in \NN^{d-1}} \abs{a_{i_1, \dots, i_d}} \cdot \abs{x_2^{i_2}} \dots \abs{x_d^{i_d}} \\
+&\leq& \sum_{i_2, \dots, i_d \in \NN^{d-1}} \frac{B}{q_1^{i} \cdot \dots \cdot q_d^{i_d}} \cdot \abs{x_2^{i_2}} \dots \abs{x_d^{i_d}} \\
+&\leq& \frac{B}{q_1^i \cdot (1-\frac{x_2}{q_1}) \dots (1-\frac{x_d}{q_d})}
+\end{eqnarray*}
+And
+$$ \abs{ \sum_{i=N+1}^\infty b_i x_1^i } \leq \frac{B}{(1-\frac{\abs{x_1}}{q_1}) \dots (1-\frac{\abs{x_d}}{q_d}) }\cdot \left(\frac{\abs{x_1}}{r_1} \right)^{N+1} $$
+Now let $a^{i}_{i_1, \dots, i_{d-1}} = a_{i, i_1, \dots, i_{d-1}}$.
+Then $a^{i}_{i_1, \dots, i_{d-1}} \leq \frac{B}{q_1^{i} \cdot q_2^{i_1} \dots \cdot q_d^{i_{d-1}}}$.
+Thus $b_i$ can be approximated by \code{$b_i$ = evaluate($x_2$, $\dots$, $x_d$, $a^{(i)}$,$\frac{B}{q_1^i}$, $q_2$, $\dots$, $q_d$)}
+\section{Arithmetic Operators}
+\subsection{Addition}
+$$a^{(f+g)}_{i_1,\dots,i_d} = a^{(f)}_{i_1,\dots,i_d}+a^{(g)}_{i_1,\dots,i_d}$$
+$$r_i^{(f+g)} = \min(r_i^{(f)}, r_i^{(g)}) $$
+$$M^{(f+g)} = M^{(f)}+M^{(g)}$$
+\subsection{Multiplication}
+Define convolution $a * b$ of $d-dimensional$ sequences $a$, $b$ by 
+$$ (a * b)_{i_1, \dots, i_d} = \sum_{i=0}^{i_1} (a_i * b_{n-i})_{i_2, \dots, i_d} $$
+where $a_i$ is the $d-1$-dimensional sequence obtained when fixing the first parameter and $*$ is the usual multiplication for $d=0$.
+Then
+$$a^{(f \cdot g)}_{i_1,\dots,i_d} = (a^{(f)}*a^{(g)})_{i_1, \dots, i_d}$$
+$$r_i^{(f \cdot g)} = \min(r_i^{(f)}, r_i^{(g)}) $$
+$$M^{(f \cdot g)} = M^{(f)} \cdot M^{(g)}$$
+\subsection{Division}
+\section{IVP solving}
+\section{Computing coefficients}
+\end{document}

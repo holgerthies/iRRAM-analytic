@@ -59,10 +59,10 @@
 \code{ANALYTIC<d,T>} is a type for analytic functions $f: T^d \to T$.
 Currently, $T$ is always supposed to be \code{REAL}.
 
-More specific, \code{ANALYTIC<n,T>} can be used to represent functions analytic on a polydisc $[-R_1,R_1] \times \dots \times [-R_d, R_d]$ around $0 \in T^d$. 
+More specific, \code{ANALYTIC<n,T>} can be used to represent functions analytic on a polydisc $\prod_{i=1}^d B(0, r_i)$ around $0 \in \CC^d$. 
 \section{Additional Information}
 For most operations to be computable, some additional information has to be supplied.
-The information chosen is lower bounds $r_1, \dots, r_d$ on the radius of convergence and an upper bound $M$ for $\{f(x) \, | \, x_i \in [-r_i, r_i]\}$.  
+The information chosen is lower bounds $r_1, \dots, r_d$ on the radius of convergence and an upper bound $M$ for $\{f(x) \, | \, x_i \in B(0, r_i) \subseteq \CC \}$.  
 Note, that in the current implementation $r_1 = \dots = r_d =: r$.
 The additional parameters are of type \code{REAL}.
 \section{Constructors}
@@ -112,6 +112,32 @@ $$a^{(f \cdot g)}_{i_1,\dots,i_d} = (a^{(f)}*a^{(g)})_{i_1, \dots, i_d}$$
 $$r_i^{(f \cdot g)} = \min(r_i^{(f)}, r_i^{(g)}) $$
 $$M^{(f \cdot g)} = M^{(f)} \cdot M^{(g)}$$
 \subsection{Division}
+If $a_0 \neq 0$ (i.e. $f(0) \neq 0$, A powerseries for $\frac{1}{f}$ can be computed the following way:
+
+Assume $a_{i_1,\dots, i_d}$ is the power series for $f$. 
+A powerseries $b_{i_1,\dots, i_d}$ for $\frac{1}{f}$ can be computed by
+\begin{eqnarray*}
+b_{0, i_2, \dots, i_d} &=& \left(\frac{1}{a_0}\right)_{i_2, \dots, i_d} \\
+b_{i+1, i_2, \dots, i_d} &=& \left( -\frac{1}{a_0} \cdot \sum_{j=1}^{i+1}a_j \cdot b_{i+1-j}\right)_{i_2,\dots,i_d}
+\end{eqnarray*}
+To find suitable parameters $M'$ and $r'$, $r'<r$ has to be chosen s.t. $f(x) \neq 0$ for all $x_i \in B(0, r')$. 
+The mean value theorem gives for every $y \in \prod_{i=1}^d B(0, r)$
+$$ \abs{f(0)-f(y)} \leq \abs{\nabla f(\xi) \cdot y} \leq d \cdot \frac{Mr'}{r}$$
+and thus
+\begin{equation*}\label{divlowerbound}
+\abs{f(y)} \geq \abs{f(0)}-\abs{f(0)-f(y)} \geq \abs{f(0)}-d\cdot \frac{Mr'}{r} =: L.
+\end{equation*}
+One can then choose arbitrary $r'$ s.t. $L > 0$ and set $M' = \frac{1}{L}$
+\subsection{Power}
+At the moment implemented by repeated squaring.
+\section{Differentiation}
+Compute the partial derivative $\frac{\partial^k}{x_j^k}f$.
+Let $a$ be the power series for $f$ and $b$ the powerseries for the derivative.
+Then
+$$ b_{i_1,\dots, \i_d} = (i_j+1) \cdots (i_j+k) \cdot a_{i_1, \dots, i_j+k, \dots, i_d} $$
+Cauchy's Differentiation formula gives a bound on the derivative:
+$$\abs{\frac{\partial^k}{x_j^k}f} \leq \frac{Mk!}{r_j^k}$$
+$r', M'$ can be chosen accordingly.
 \section{IVP solving}
 \section{Computing coefficients}
 \end{document}

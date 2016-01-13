@@ -120,7 +120,7 @@ namespace iRRAM
     T f0 = constant_coefficient(f.pwr);
     while(!positive(lowerbound, -10)){
       newr /= 2;
-      lowerbound = abs(f0)-M*r*newr/(r-newr);
+      lowerbound = abs(f0)-n*M*newr/r;
     }
     return ANALYTIC<n,T>(r, 1/lowerbound, npwr);
   }

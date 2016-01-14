@@ -31,8 +31,7 @@
 	\newcommand{\cc}{\code{C++}\xspace}
 	\newcommand{\irram}{\code{iRRAM}\xspace}
 	\newcommand{\MPFR}{\code{MPFR}\xspace}
-	\newcommand{\baana}{\code{BA\_ANA}\xspace}
-	\newcommand{\anarect}{\code{ANA\_RECT}\xspace}
+	\newcommand{\analytic}{\code{ANALYTIC}\xspace}
 	\newcommand{\powerseries}{\code{POWERSERIES}\xspace}
 	\newcommand{\real}{\code{REAL}\xspace}
 	\newcommand{\temp}{\textcolor{red}}
@@ -139,5 +138,27 @@ For some $r' < r$, Cauchy's Differentiation formula gives a bound on the derivat
 $$\abs{\frac{\partial^k}{x_j^k}f} \leq \frac{Mk!}{(r-r')^k}$$
 Thus for example $r'=\frac{r}{2}, M'=2^k\frac{Mk!}{r}$ can be chosen accordingly.
 \section{IVP solving}
+Consider Systems of Ordinary Differential Equations of the form
+\begin{eqnarray*}
+  \dot y_v(t) &=& F_v(t, y_1(t), \dots, y_t(t)) \\
+  y_v(0) &=& 0 
+\end{eqnarray*}
+for $v=1,\dots,d$ and all $F_v : \RR^{d+1} \to \RR$ analytic.
+The solutions $y_v : \RR \to \RR$ are analytic.
+Let $c_v$ be the coefficient sequence for $F_v$.
+The coefficient sequence $a_v$ for $y_v$ can then be comptued by the following recursion
+\begin{eqnarray*}
+  a_{v,0} &=& 0 \\
+  a_{v, l+1} &=& \frac{1}{l+1} \sum_{n_1+\dots n_d + k = l} \sum_{\substack {0 \leq i_1 < n_1 \\ \dots\\ 0 \leq i_d < n_d}} c_{v,k,i_1,\dots,i_d} a_{1,n_1}^{(i_1)}\cdot \dots \cdot a_{d, n_d}^{(i_d)}
+\end{eqnarray*}
+where
+\begin{eqnarray*}
+ a^{(0)}_{v,0} & = & 1 \\
+ a^{(0)}_{v,n+1} & = & 0 \\
+ a^{(i+1)}_{v,n} & = & \sum_{j=0}^n a_{v,j} \cdot a_{v, n-j}^{(i)}
+\end{eqnarray*}
+Let $r_v$, $M_v$ be the parameters for the functions $F_v$ as above and let $M = \max M_v$ and $r = \min r_v$.
+By the Picard-Lindel\"{o}f Theorem the above solution is valid for all $t \in [-r', r']$ with $r' = \min(r, \frac{r}{M})$.
+Further $M$ is a upper bound for $\abs{y_v}$ on $B(0, r')$. 
 \section{Computing coefficients}
 \end{document}

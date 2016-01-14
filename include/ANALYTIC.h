@@ -104,7 +104,7 @@ namespace iRRAM
     auto newr = r/2;
     auto p = power(2, d+1);
     T fact=1;
-    for(int j=2; j<=d; j++) fact *= d;
+    for(int j=2; j<=d; j++) fact *= j;
     auto newM = M*r*p*fact; 
     return ANALYTIC<n,T>(newr, newM,npwr);
   }

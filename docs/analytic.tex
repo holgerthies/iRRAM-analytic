@@ -135,9 +135,9 @@ Compute the partial derivative $\frac{\partial^k}{x_j^k}f$.
 Let $a$ be the power series for $f$ and $b$ the powerseries for the derivative.
 Then
 $$ b_{i_1,\dots, \i_d} = (i_j+1) \cdots (i_j+k) \cdot a_{i_1, \dots, i_j+k, \dots, i_d} $$
-Cauchy's Differentiation formula gives a bound on the derivative:
-$$\abs{\frac{\partial^k}{x_j^k}f} \leq \frac{Mk!}{r_j^k}$$
-$r', M'$ can be chosen accordingly.
+For some $r' < r$, Cauchy's Differentiation formula gives a bound on the derivative:
+$$\abs{\frac{\partial^k}{x_j^k}f} \leq \frac{Mk!}{(r-r')^k}$$
+Thus for example $r'=\frac{r}{2}, M'=2^k\frac{Mk!}{r}$ can be chosen accordingly.
 \section{IVP solving}
 \section{Computing coefficients}
 \end{document}

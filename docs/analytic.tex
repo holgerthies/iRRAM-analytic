@@ -129,6 +129,21 @@ and thus
 One can then choose arbitrary $r'$ s.t. $L > 0$ and set $M' = \frac{1}{L}$
 \subsection{Power}
 At the moment implemented by repeated squaring.
+\section{Composition}
+$$ F \circ G (x) = \sum_{n=0}^\infty c_n x^n $$
+with
+$$ c_n = \sum_{k=0}^n a_k \prod_{j_1+ \dots + j_k = n} b_{j_k}$$
+Dynamic Programming can be used to compute this.
+Let
+$$ B_{k, n} = \prod_{j_1 + \dots + j_k = n} b_{j_k}$$
+it is
+\begin{eqnarray*}
+  B_{0,0} & = & 1 \\
+  B_{0, n+1} &=& 0 \\
+  B_{k+1, n} &=& \sum_{j=0}^n b_j \cdot B_{k, n-j}
+\end{eqnarray*}
+and
+$$c_n = \sum_{k=0}^n a_k \cdot B_{k,n}$$
 \section{Differentiation}
 Compute the partial derivative $\frac{\partial^k}{x_j^k}f$.
 Let $a$ be the power series for $f$ and $b$ the powerseries for the derivative.

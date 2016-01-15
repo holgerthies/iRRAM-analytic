@@ -58,10 +58,10 @@
 \code{ANALYTIC<d,T>} is a type for analytic functions $f: T^d \to T$.
 Currently, $T$ is always supposed to be \code{REAL}.
 
-More specific, \code{ANALYTIC<n,T>} can be used to represent functions analytic on a polydisc $\prod_{i=1}^d B(0, r_i)$ around $0 \in \CC^d$. 
+More specific, \code{ANALYTIC<d,T>} can be used to represent functions analytic on a polydisc $\prod_{i=1}^d \overline B(0, r_i)$ around $0 \in \CC^d$. 
 \section{Additional Information}
 For most operations to be computable, some additional information has to be supplied.
-The information chosen is lower bounds $r_1, \dots, r_d$ on the radius of convergence and an upper bound $M$ for $\{f(x) \, | \, x_i \in B(0, r_i) \subseteq \CC \}$.  
+The information chosen is lower bounds $r_1, \dots, r_d$ on the radius of convergence and an upper bound $M$ for $\{f(x) \, | \, x_i \in \overline{B}(0, r_i) \subseteq \CC \}$.  
 Note, that in the current implementation $r_1 = \dots = r_d =: r$.
 The additional parameters are of type \code{REAL}.
 \section{Constructors}
@@ -159,6 +159,6 @@ where
 \end{eqnarray*}
 Let $r_v$, $M_v$ be the parameters for the functions $F_v$ as above and let $M = \max M_v$ and $r = \min r_v$.
 By the Picard-Lindel\"{o}f Theorem the above solution is valid for all $t \in [-r', r']$ with $r' = \min(r, \frac{r}{M})$.
-Further $M$ is a upper bound for $\abs{y_v}$ on $B(0, r')$. 
+Further $r$ is a upper bound for $\abs{y_v}$ on $B(0, r')$. 
 \section{Computing coefficients}
 \end{document}

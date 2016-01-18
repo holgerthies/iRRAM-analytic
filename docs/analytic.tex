@@ -95,7 +95,7 @@ The truncation error can be approximated as follows
 And
 $$ \abs{ \sum_{i=N+1}^\infty b_i x_1^i } \leq \frac{B}{(1-\frac{\abs{x_1}}{q_1}) \dots (1-\frac{\abs{x_d}}{q_d}) }\cdot \left(\frac{\abs{x_1}}{r_1} \right)^{N+1} $$
 Now let $a^{i}_{i_1, \dots, i_{d-1}} = a_{i, i_1, \dots, i_{d-1}}$.
-Then $a^{i}_{i_1, \dots, i_{d-1}} \leq \frac{B}{q_1^{i} \cdot q_2^{i_1} \dots \cdot q_d^{i_{d-1}}}$.
+Then $\abs{a^{i}_{i_1, \dots, i_{d-1}}} \leq \frac{B}{q_1^{i} \cdot q_2^{i_1} \dots \cdot q_d^{i_{d-1}}}$.
 Thus $b_i$ can be approximated by \code{$b_i$ = evaluate($x_2$, $\dots$, $x_d$, $a^{(i)}$,$\frac{B}{q_1^i}$, $q_2$, $\dots$, $q_d$)}
 \section{Arithmetic Operators}
 \subsection{Addition}
@@ -132,10 +132,10 @@ At the moment implemented by repeated squaring.
 \section{Composition}
 $$ F \circ G (x) = \sum_{n=0}^\infty c_n x^n $$
 with
-$$ c_n = \sum_{k=0}^n a_k \prod_{j_1+ \dots + j_k = n} b_{j_k}$$
+$$ c_n = \sum_{k=0}^n a_k \sum_{j_1+ \dots + j_k = n} \prod b_{j_k}$$
 Dynamic Programming can be used to compute this.
 Let
-$$ B_{k, n} = \prod_{j_1 + \dots + j_k = n} b_{j_k}$$
+$$ B_{k, n} = \sum_{j_1 + \dots + j_k = n} \prod b_{j_k}$$
 it is
 \begin{eqnarray*}
   B_{0,0} & = & 1 \\

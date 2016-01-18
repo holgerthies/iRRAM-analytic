@@ -96,19 +96,31 @@ void compute(){
   iRRAM::cout << "checking sin(x)" << endl;
   checkResult(y, sol, prec);
 
-  y = h(x1);
-  sol=sin(x1);
-  iRRAM::cout << "checking sin(x) from function" << endl;
-  checkResult(y, sol, prec);
+  // y = h(x1);
+  // sol=sin(x1);
+  // iRRAM::cout << "checking sin(x) from function" << endl;
+  // checkResult(y, sol, prec);
 
   y = f(x1,x2,x3);
   sol=sin(x1*x2*x3);
   iRRAM::cout << "checking sin(x1*x2*x3)" << endl;
   checkResult(y, sol, prec);
 
-  y = h3(x1,x2);
-  sol=sin(x1*x2);
-  iRRAM::cout << "checking sin(x1*x2) from function" << endl;
+  // y = h3(x1,x2);
+  // sol=sin(x1*x2);
+  // iRRAM::cout << "checking sin(x1*x2) from function" << endl;
+  // chec
+
+  auto comp = compose(g,g);
+   iRRAM::cout << "checking composition (1d)" << endl;
+   y = comp(x1);
+   sol=sin(sin(x1));
+   checkResult(y, sol, prec);
+
+  auto comp2 = compose(g,f);
+  iRRAM::cout << "checking composition (3d)" << endl;
+  y = comp2(x1,x2,x3);
+  sol=sin(sin(x1*x2*x3));
   checkResult(y, sol, prec);
 
   auto sum = f+f+ANALYTIC<3,REAL>(2);
@@ -172,15 +184,5 @@ void compute(){
   sol=sin(x1*x2*x3)/(1+sin(x1*x2*x3));
   checkResult(y, sol, prec);
 
- // auto comp = compose(g,g);
-  // iRRAM::cout << "checking composition (1d)" << endl;
-  // y = comp(x1);
-  // sol=sin(sin(x1));
-  // checkResult(y, sol, prec);
 
-  // auto comp2 = compose(g,f);
-  // iRRAM::cout << "checking composition (3d)" << endl;
-  // y = comp2(x1,x2,x3);
-  // sol=sin(sin(x1*x2*x3));
-  // checkResult(y, sol, prec);
 }

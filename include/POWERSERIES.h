@@ -210,23 +210,29 @@ namespace iRRAM{
     // for each of the inserted powerseries all coefficients
     // with first parameter 0 have to be 0
     template<unsigned int m, class T>
-    POWERSERIES<m,T> compose(const POWERSERIES<1,T>& p, const POWERSERIES<m,T>& q){
-//      using coeff_type = typename COEFF_TYPE<m,T>::type;
-//      auto series = [p,q] (const unsigned int i) -> coeff_type {
-//	if(i==0) return p[0];
-//	std::vector<coeff_type> c(i+1);
-//	for(int k=1; k<=i; k++){
-//	  for(auto& P : partitions(i,k)){
-//	    coeff_type cp = p[k];
-//	    for(auto j : P){
-//	      cp = cp*q[j];
-//	    }
-//	    c[k] = c[k-1]+cp;
-//	  }
-//	}
-//	return c[i];
-//      };
-//      return POWERSERIES<m,T>(series);
+    std::shared_ptr<POWERSERIES<m,T>> compose(const std::shared_ptr<POWERSERIES<1,T>>& p, const std::shared_ptr<POWERSERIES<m,T>>& q){
+     using coeff_type = typename COEFF_TYPE<m,T>::type;
+     using coeff_ptr = typename std::shared_ptr<coeff_type>;
+     using std::vector;
+     return std::make_shared<POWERSERIES<m,T>>([p,q] (const unsigned int i) -> coeff_ptr {
+	 //if(i==0) return (*p)[0];
+	auto zptr = std::make_shared<coeff_type>(0);
+	vector<vector<coeff_ptr>> B(i+1, vector<coeff_ptr>(i+1,zptr ));
+	B[0][0] = std::make_shared<coeff_type>(1);
+	auto c(std::make_shared<coeff_type>(0));
+	for(int k=1; k<=i; k++){
+	  for(int j=0; j<=i; j++){
+	    B[k][j] = multiply((*q)[0], B[k-1][j] );
+	    for(int t=1; t<=j; t++){
+	      B[k][j] = add(B[k][j],multiply((*q)[t], B[k-1][j-t]));
+	    }
+	  }
+	}
+	for(int k=0; k<=i; k++){
+	  c = add(c,scalar_multiply(*(*p)[k], B[k][i]));
+	}
+	return c;
+     });
     }
 
 

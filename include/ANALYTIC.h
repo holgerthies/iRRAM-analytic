@@ -120,7 +120,7 @@ namespace iRRAM
     T f0 = constant_coefficient(f.pwr);
     while(!positive(lowerbound, -10)){
       newr /= 2;
-      lowerbound = abs(f0)-n*M*newr/r;
+      lowerbound = abs(f0)-int(n)*M*newr/r;
     }
     return ANALYTIC<n,T>(r, 1/lowerbound, npwr);
   }
@@ -141,17 +141,27 @@ namespace iRRAM
     return ans*ans;
   }
 
+  REAL get_error_constant(const REAL& q){
+    return 1;
+  }
+  template<class T, typename... Ts>
+  REAL get_error_constant(const REAL& q, const T& x, Ts... rest){
+    return (1-abs(x)/q)*get_error_constant(q, rest...);
+  }
+
   template<unsigned int n, class T, typename... Ts>
-    T evaluate(const std::shared_ptr<POWERSERIES<n,T>>& pwr, const REAL& M, const REAL& r, const T& x, Ts... rest){
+    T evaluate(const std::shared_ptr<POWERSERIES<n,T>>& pwr, const REAL& B, const REAL& q, const T& x, Ts... rest){
     //iRRAM:: cout<<"evaluating dim" << n << std::endl;
     int stepsize=10;
     int J=0;
-    REAL error_factor = abs(x)/r;
-    REAL error = M*error_factor/(1-error_factor);
+    REAL error_factor = abs(x)/q;
+    REAL error = B*get_error_constant(q,x,rest...);
+    REAL next_B = B;
+    
     //iRRAM::cout << "get first coefficient" << std::endl;
     //PWRSERIES_IMPL::print(pwr[0]);
     //iRRAM::cout << "got first coefficient" << std::endl;
-    REAL sum(evaluate<n-1,T>((*pwr)[0], M, r, rest...));
+    REAL sum(evaluate<n-1,T>((*pwr)[0], next_B, q, rest...));
     REAL best=sum;
     sizetype best_error, trunc_error, local_error,sum_error;
     sum.geterror(sum_error);
@@ -161,16 +171,19 @@ namespace iRRAM
     best_error = local_error;
     REAL x0=1; // x[0]^J
     error_factor = power(error_factor, stepsize);
+    REAL next_B_factor = power(1/q, stepsize);
     while (sizetype_less(sum_error, trunc_error) &&
 	   (trunc_error.exponent >= ACTUAL_STACK.actual_prec) ){
       J+=stepsize;
-      //cout << "J = " << J<< std::endl;
+      next_B *= next_B_factor;
       // horner's method to evaluate polynomial 
       x0 *= x;
-      T b = evaluate<n-1,T>((*pwr)[J], M, r, rest...);
+      T b = evaluate<n-1,T>((*pwr)[J], next_B, q, rest...);
+      REAL curr_B = next_B;
       REAL x1=x0; // x^J
       for(int j=J-1; j>J-stepsize; j--){
-	b = evaluate<n-1,T>((*pwr)[j], M, r, rest...) + b*x;
+	curr_B *= q;
+	b = evaluate<n-1,T>((*pwr)[j], curr_B, q, rest...) + b*x;
 	x1 *= x;
       }
       sum += b*x0;
@@ -211,7 +224,7 @@ namespace iRRAM
     // function composition 
   template<unsigned int m, class T>
   ANALYTIC<m,T> compose(const ANALYTIC<1,T>& f, const ANALYTIC<m,T>& g){
-    //return ANALYTIC<m,T>(compose(*(f.pwr), *(g.pwr)), f.r, f.M);
+    return ANALYTIC<m,T>(f.r, f.M, compose(f.pwr, g.pwr));
   }
     
   // some predefined functions

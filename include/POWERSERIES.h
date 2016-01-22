@@ -62,6 +62,10 @@ namespace iRRAM{
     template<unsigned int n, class T>
       std::shared_ptr<POWERSERIES<n,T>> derivative(const std::shared_ptr<POWERSERIES<n,T>>&, const unsigned int, const unsigned int);
 
+      template<unsigned int n, class T>
+      T evaluate(const std::shared_ptr<T>& x, const REAL& M, const REAL& r);
+      
+
     // define coeff type 
     template <unsigned int n, class T>
     struct COEFF_TYPE{
@@ -126,7 +130,7 @@ namespace iRRAM{
       // get the coefficient with given index
       template <typename... ARGS>
       T get(ARGS...);
-      coeff_ptr  operator[](const unsigned long) const;
+        coeff_ptr  operator[](const unsigned long) const;
       // unary -
       POWERSERIES operator-();
 
@@ -425,6 +429,71 @@ namespace iRRAM{
       return make_shared<REAL>((*lhs)-(*rhs));
     };
 
+      REAL get_error_constant(const REAL& q){
+          return 1;
+      }
+      template<class T, typename... Ts>
+      REAL get_error_constant(const REAL& q, const T& x, Ts... rest){
+          return (1-abs(x)/q)*get_error_constant(q, rest...);
+      }
+
+      template<unsigned int n, class T, typename... Ts>
+      T evaluate(const std::shared_ptr<POWERSERIES<n,T>>& pwr, const REAL& B, const REAL& q, const T& x, Ts... rest){
+          //iRRAM:: cout<<"evaluating dim" << n << std::endl;
+          int stepsize=10;
+          int J=0;
+          REAL error_factor = abs(x)/q;
+          REAL error = B*get_error_constant(q,x,rest...);
+          REAL next_B = B;
+    
+          //iRRAM::cout << "get first coefficient" << std::endl;
+          //PWRSERIES_IMPL::print(pwr[0]);
+          //iRRAM::cout << "got first coefficient" << std::endl;
+          REAL sum(evaluate<n-1,T>((*pwr)[0], next_B, q, rest...));
+          REAL best=sum;
+          sizetype best_error, trunc_error, local_error,sum_error;
+          sum.geterror(sum_error);
+          sizetype_add(trunc_error,error.vsize,error.error);
+          sizetype_add(local_error, sum_error, trunc_error);
+          best.seterror(local_error);
+          best_error = local_error;
+          REAL x0=1; // x[0]^J
+          error_factor = power(error_factor, stepsize);
+          REAL next_B_factor = power(1/q, stepsize);
+          while (sizetype_less(sum_error, trunc_error) &&
+                 (trunc_error.exponent >= ACTUAL_STACK.actual_prec) ){
+              J+=stepsize;
+              next_B *= next_B_factor;
+              // horner's method to evaluate polynomial 
+              x0 *= x;
+              T b = evaluate<n-1,T>((*pwr)[J], next_B, q, rest...);
+              REAL curr_B = next_B;
+              REAL x1=x0; // x^J
+              for(int j=J-1; j>J-stepsize; j--){
+                  curr_B *= q;
+                  b = evaluate<n-1,T>((*pwr)[j], curr_B, q, rest...) + b*x;
+                  x1 *= x;
+              }
+              sum += b*x0;
+              error *= error_factor;
+              sizetype_add(trunc_error,error.vsize,error.error);
+              sum.geterror(sum_error); // get error of partial sum
+              sizetype_add(local_error, sum_error, trunc_error);
+              x0 = x1;
+              if (sizetype_less(local_error, best_error)) { 
+                  best = sum;
+                  best.seterror(local_error);
+                  best_error = local_error;
+              }
+          } 
+          return best;
+    
+      }
+
+      template<unsigned int n, class T>
+      T evaluate(const std::shared_ptr<T>& x, const REAL& M, const REAL& r){
+          return *x;
+      }
 
   } // PWRSERIES_IMPL namespace
   template <unsigned int n, class T>

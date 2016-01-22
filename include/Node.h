@@ -1,0 +1,71 @@
+/*-------------------------------------------------
+ * Abstract class for nodes in expression tree
+ ------------------------------------------------*/
+#ifndef NODE_H
+#define NODE_H
+#include <memory>
+#include "POWERSERIES.h"
+namespace iRRAM
+{
+  // forward declaration 
+  template<class R, class... Args>
+  class ANALYTIC;
+
+  template<class R, class... Args>
+  class Node
+  {
+  public:
+    virtual ~Node() = default;
+    virtual R evaluate(const Args&... args) const = 0;
+    virtual std::shared_ptr<ANALYTIC<R, Args...>> to_analytic() const = 0;
+    
+  };
+
+  template<class R, class... Args>
+  class BinaryNode : public Node<R, Args...>
+  {
+    using node_ptr = std::shared_ptr<Node<R, Args...>>;
+  protected:
+    node_ptr lhs, rhs;
+  public:
+    virtual ~BinaryNode() = default;
+    
+    BinaryNode(const node_ptr& lhs, const node_ptr& rhs):
+      lhs(lhs), rhs(rhs) 
+    {
+    }
+  };
+  
+
+  template<size_t d, class T>
+  class SERIES_OPERATOR
+  {
+  public:
+    virtual ~SERIES_OPERATOR() = default;
+    virtual std::shared_ptr<POWERSERIES<d-1,T>> get_coeff(const unsigned long) const = 0;
+  };
+
+  template<size_t d, class T>
+  class SERIES_BINARY_OPERATOR : public SERIES_OPERATOR<d,T>
+  {
+    using pwrseries_ptr = std::shared_ptr<POWERSERIES<d,T>>;
+  protected:
+    pwrseries_ptr lhs, rhs;
+  public:
+    virtual ~SERIES_BINARY_OPERATOR() = default;
+    
+    SERIES_BINARY_OPERATOR(const pwrseries_ptr& lhs, const pwrseries_ptr& rhs):
+      lhs(lhs), rhs(rhs) 
+    {
+    }
+  };
+
+  
+  template<size_t d, class T>
+  std::shared_ptr<POWERSERIES<d, T>> get_series(std::shared_ptr<SERIES_OPERATOR<d,T>> op) 
+  {
+    return std::make_shared<POWERSERIES<d,T>>([op] (unsigned long n) {return op->get_coeff(n);});
+  }
+  
+}
+#endif

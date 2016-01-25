@@ -36,6 +36,21 @@ namespace iRRAM
     }
   };
   
+  template<class R, class... Args>
+  class ScalarNode : public Node<R, Args...>
+  {
+    using node_ptr = std::shared_ptr<Node<R, Args...>>;
+  protected:
+    node_ptr node;
+    R scalar;
+  public:
+    virtual ~ScalarNode() = default;
+    
+    ScalarNode(const node_ptr& node, const R& scalar):
+      node(node), scalar(scalar)
+    {
+    }
+  };
 
   template<size_t d, class T>
   class SERIES_OPERATOR
@@ -60,6 +75,21 @@ namespace iRRAM
     }
   };
 
+  template<size_t d, class T>
+  class SERIES_SCALAR_OPERATOR : public SERIES_OPERATOR<d,T>
+  {
+    using pwrseries_ptr = std::shared_ptr<POWERSERIES<d,T>>;
+  protected:
+    pwrseries_ptr series;
+    T scalar;
+  public:
+    virtual ~SERIES_SCALAR_OPERATOR() = default;
+    
+    SERIES_SCALAR_OPERATOR(const pwrseries_ptr& series, const T& scalar):
+      series(series), scalar(scalar)
+    {
+    }
+  };
   
   template<size_t d, class T>
   std::shared_ptr<POWERSERIES<d, T>> get_series(std::shared_ptr<SERIES_OPERATOR<d,T>> op) 

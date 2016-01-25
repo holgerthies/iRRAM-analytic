@@ -47,3 +47,6 @@ bin/*
 *.log
 *.pdf
 *.thm
+/*.pdf#
+/*.pdf#
+/docs/#analytic.pdf#

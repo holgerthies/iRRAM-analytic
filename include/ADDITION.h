@@ -30,6 +30,35 @@ namespace iRRAM
     }
   };
   
+  template <size_t d, class T>
+  class SERIES_SCALAR_ADDITION : public SERIES_SCALAR_OPERATOR<d,T>
+  {
+    using SERIES_SCALAR_OPERATOR<d,T>::SERIES_SCALAR_OPERATOR;
+  public:
+    std::shared_ptr<POWERSERIES<d-1,T>> get_coeff(const unsigned long n) const override 
+    {
+      if(n == 0)
+      {
+        std::shared_ptr<SERIES_OPERATOR<d-1,T>> addition = std::make_shared<SERIES_SCALAR_ADDITION<d-1, T>>((*this->series)[n], this->scalar);
+      return get_series(addition);
+      }
+      return (*this->series)[n];
+    }
+
+  };
+
+  template<class T>
+  class SERIES_SCALAR_ADDITION<1,T> : public SERIES_SCALAR_OPERATOR<1,T>
+  {
+    using SERIES_SCALAR_OPERATOR<1,T>::SERIES_SCALAR_OPERATOR;
+  public:
+    std::shared_ptr<T> get_coeff(const unsigned long n) const override
+    {
+      if(n==0) return std::make_shared<T>(this->series->get(0)+this->scalar);
+      return (*this->series)[n];
+    }
+  };
+  
 
   template <class R, class... Args>
   class ADDITION : public BinaryNode<R, Args...>{
@@ -40,14 +69,9 @@ namespace iRRAM
   };
 
   template <class R, class... Args>
-  class SCALAR_ADDITION : public Node<R, Args...>{
-    using node_ptr = std::shared_ptr<Node<R, Args...>>;
-  private:
-    R scalar;
-    node_ptr node;
+  class SCALAR_ADDITION : public ScalarNode<R, Args...>{
+    using ScalarNode<R,Args...>::ScalarNode;
   public:
-    SCALAR_ADDITION(const node_ptr& node, const R& scalar):
-      scalar(scalar), node(node) {};
     R evaluate(const Args&... args) const;
     std::shared_ptr<ANALYTIC<R,Args...>> to_analytic() const;
   };
@@ -62,7 +86,7 @@ namespace iRRAM
   template <class R, class... Args>
   R SCALAR_ADDITION<R, Args...>::evaluate(const Args&... args) const
   {
-    return node->evaluate(args...)+scalar;
+    return this->node->evaluate(args...)+this->scalar;
   }
 
   template <class R, class... Args>
@@ -77,13 +101,37 @@ namespace iRRAM
       return std::make_shared<ANALYTIC<R, Args...>> (add_pwr, add_M, add_r);
     }
 
-  // addition operator
+  template <class R, class... Args>
+  std::shared_ptr<ANALYTIC<R,Args...>> SCALAR_ADDITION<R,Args...>::to_analytic() const
+    {
+      auto f = this->node->to_analytic();
+      std::shared_ptr<SERIES_OPERATOR<sizeof...(Args), R>> addition= std::make_shared<SERIES_SCALAR_ADDITION<sizeof...(Args), R>>(f->get_series(), this->scalar);
+      auto add_pwr = get_series(addition);
+      auto add_M = f->get_M()+this->scalar;
+      auto add_r = f->get_r();
+      return std::make_shared<ANALYTIC<R, Args...>> (add_pwr, add_M, add_r);
+    }
+
+  // addition operators
   template <class R, class... Args>
   std::shared_ptr<Node<R, Args...>> operator+(const std::shared_ptr<Node<R,Args...>>& lhs,const std::shared_ptr<Node<R,Args...>>& rhs)
   {
     return std::make_shared<ADDITION<R, Args...>>(lhs, rhs);
   }
 
+
+  template <class R, class... Args>
+  std::shared_ptr<Node<R, Args...>> operator+(const std::shared_ptr<Node<R,Args...>>& lhs,const R& rhs)
+  {
+    return std::make_shared<SCALAR_ADDITION<R, Args...>>(lhs, rhs);
+  }
+
+  template <class R, class... Args>
+  std::shared_ptr<Node<R, Args...>> operator+(const R& lhs, const std::shared_ptr<Node<R,Args...>>& rhs)
+  {
+    return rhs+lhs;
+    
+  }
 
 } // namespace iRRAM
 

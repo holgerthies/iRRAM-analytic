@@ -1,6 +1,8 @@
 #include "iRRAM.h"
 #include "ANALYTIC.h"
 #include "ADDITION.h"
+#include "SUBTRACTION.h"
+#include "MULTIPLICATION.h"
 #include "coefficient_computation.h"
 #include "combinatorics.h"
 using namespace iRRAM;
@@ -124,23 +126,29 @@ void compute(){
   // sol=sin(sin(x1*x2*x3));
   // checkResult(y, sol, prec);
 
-  auto sum = f+f;
+  auto sum = f-REAL(1)-f+f+REAL(2)+f;
   y = sum->evaluate(x1,x2,x3);
   iRRAM::cout << "checking addition" << endl;
-  sol=2*sin(x1*x2*x3);
+  sol=2*sin(x1*x2*x3)+REAL(1);
   checkResult(y, sol, prec);
 
-  auto sum2 = ( f+f )->to_analytic();
+  auto sum2 = (f-REAL(1)-f+f+REAL(2)+f)->to_analytic();
   y = sum2->evaluate(x1,x2,x3);
   iRRAM::cout << "checking addition by powerseries" << endl;
-  sol=2*sin(x1*x2*x3);
+  sol=2*sin(x1*x2*x3)+REAL(1);
   checkResult(y, sol, prec);
    
-  //  auto prod = f*sum;
-  //  y = prod(x1,x2,x3);
-  //  iRRAM::cout << "checking multiplication" << endl;
-  //  sol=(2*sin(x1*x2*x3)+2)*sin(x1*x2*x3);
-  //  checkResult(y, sol, prec);
+  auto prod = REAL(3)*f*sum*REAL(2);
+  y = prod->evaluate(x1,x2,x3);
+  iRRAM::cout << "checking multiplication" << endl;
+  sol=6*(2*sin(x1*x2*x3)+1)*sin(x1*x2*x3);
+  checkResult(y, sol, prec);
+
+  auto prod2 = ( REAL(3)*f*sum*REAL(2) )->to_analytic();
+  y = prod->evaluate(x1,x2,x3);
+  iRRAM::cout << "checking multiplication by powerseries" << endl;
+  sol=6*(2*sin(x1*x2*x3)+1)*sin(x1*x2*x3);
+  checkResult(y, sol, prec);
   //  ANALYTIC<1,REAL> gmod(std::function<REAL(unsigned long)>(sinseriesmod1d), 3,2);
   //  ANALYTIC<3,REAL> fmod(std::function<REAL(unsigned long, unsigned long, unsigned long)>(sinseriesmod), 3,2);
 

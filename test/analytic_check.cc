@@ -3,6 +3,7 @@
 #include "ADDITION.h"
 #include "SUBTRACTION.h"
 #include "MULTIPLICATION.h"
+#include "DIVISION.h"
 #include "coefficient_computation.h"
 #include "combinatorics.h"
 using namespace iRRAM;
@@ -134,7 +135,7 @@ void compute(){
 
   auto sum2 = (f-REAL(1)-f+f+REAL(2)+f)->to_analytic();
   y = sum2->evaluate(x1,x2,x3);
-  iRRAM::cout << "checking addition by powerseries" << endl;
+  iRRAM::cout << "checking addition by power series" << endl;
   sol=2*sin(x1*x2*x3)+REAL(1);
   checkResult(y, sol, prec);
    
@@ -144,23 +145,33 @@ void compute(){
   sol=6*(2*sin(x1*x2*x3)+1)*sin(x1*x2*x3);
   checkResult(y, sol, prec);
 
-  auto prod2 = ( REAL(3)*f*sum*REAL(2) )->to_analytic();
-  y = prod->evaluate(x1,x2,x3);
-  iRRAM::cout << "checking multiplication by powerseries" << endl;
-  sol=6*(2*sin(x1*x2*x3)+1)*sin(x1*x2*x3);
+  if(prec < 30)
+  {
+    auto prod2 = ( REAL(3)*f*sum*REAL(2) )->to_analytic();
+    y = prod2->evaluate(x1,x2,x3);
+    iRRAM::cout << "checking multiplication by power series" << endl;
+    sol=6*(2*sin(x1*x2*x3)+1)*sin(x1*x2*x3);
+    checkResult(y, sol, prec);
+  }
+  auto gmod = make_analytic<REAL,REAL>(std::function<REAL(unsigned long)>(sinseriesmod1d), 3,2);
+  auto fmod = make_analytic<REAL,REAL,REAL,REAL>(std::function<REAL(unsigned long, unsigned long, unsigned long)>(sinseriesmod), 3,2);
+  
+
+
+  iRRAM::cout << "checking division (1d)" << endl;
+  // sin(x)/(sin(x)+1)
+  auto inv_test = (g/gmod)/REAL( 2 );   
+  y = inv_test->evaluate(x1);
+  sol=sin(x1)/(1+sin(x1))/2;
   checkResult(y, sol, prec);
-  //  ANALYTIC<1,REAL> gmod(std::function<REAL(unsigned long)>(sinseriesmod1d), 3,2);
-  //  ANALYTIC<3,REAL> fmod(std::function<REAL(unsigned long, unsigned long, unsigned long)>(sinseriesmod), 3,2);
 
 
-  // iRRAM::cout << "checking division (1d)" << endl;
-  // // sin(x)/(sin(x)+1)
-  // auto inv_test = g/gmod;   
-  // y = inv_test(x1);
-  // sol=sin(x1)/(1+sin(x1));
-  // checkResult(y, sol, prec);
-
-
+  iRRAM::cout << "checking division (1d) by power series" << endl;
+  // sin(x)/(sin(x)+1)
+  auto inv_test2 = ( (g/gmod)/REAL(2))->to_analytic();   
+  y = inv_test2->evaluate(x1);
+  sol=sin(x1)/(1+sin(x1))/2;
+  checkResult(y, sol, prec);
   // iRRAM::cout << "checking derivative (1d)" << endl;
   // // sin(x)
   // auto d1 = derive(g,0, 2);
@@ -175,29 +186,20 @@ void compute(){
   // checkResult(y, sol, prec);
 
 
-  // // check predefined functions
-  // auto mon1=AnalyticFunction::monomial<3,2,REAL>(5); // x2^5
-  // auto mon2=AnalyticFunction::monomial<3,1,REAL>(3); // x1^3
-  // auto mon3=AnalyticFunction::monomial<3,3,REAL>(2); // x3^2
-  // auto mon4=AnalyticFunction::monomial<3,1,REAL>(1); // x1
+  iRRAM::cout << "checking division (3d)" << endl;
 
-  // iRRAM::cout << "checking monomial (3d)" << endl;
-  // y = mon1(x1, x2,x3);
-  // sol=power(x2,5);
-  // checkResult(y, sol, prec);
-  // // x1^3*x3^2 - x2^5/(x1+1)
-  // auto composed = mon2*mon3-mon1/(ANALYTIC<3,REAL>(1)+mon4);
-  // y = composed(x1, x2,x3);
-  // sol=power(x1,3)*power(x3,2)-power(x2,5)/(1+x1);
-  // checkResult(y, sol, prec);
+  // sin(x*y*z)/(sin(x*y*z)+1)
+  auto inv_test3d = f/fmod;   
+  y = inv_test3d->evaluate(x1,x2,x3);
+  sol=sin(x1*x2*x3)/(1+sin(x1*x2*x3));
+  checkResult(y, sol, prec);
 
-  // iRRAM::cout << "checking division (3d)" << endl;
+  iRRAM::cout << "checking division (3d) by power series" << endl;
 
-  // // sin(x*y*z)/(sin(x*y*z)+1)
-  // auto inv_test2 = f/fmod;   
-  // y = inv_test2(x1,x2,x3);
-  // sol=sin(x1*x2*x3)/(1+sin(x1*x2*x3));
-  // checkResult(y, sol, prec);
-
+  // sin(x*y*z)/(sin(x*y*z)+1)
+  auto inv_test3d2 = (f/fmod)->to_analytic();   
+  y = inv_test3d2->evaluate(x1,x2,x3);
+  sol=sin(x1*x2*x3)/(1+sin(x1*x2*x3));
+  checkResult(y, sol, prec);
 
 }

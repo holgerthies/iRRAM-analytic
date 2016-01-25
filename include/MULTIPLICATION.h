@@ -61,7 +61,7 @@ namespace iRRAM
   public:
     std::shared_ptr<T> get_coeff(const unsigned long n) const override
     {
-      return std::make_shared<T>(this->series->get(0)*this->scalar);
+      return std::make_shared<T>(this->series->get(n)*this->scalar);
     }
   };
 

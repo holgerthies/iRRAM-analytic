@@ -18,33 +18,32 @@
 \newcommand{\irram}{\texttt{iRRAM}\xspace}
 
 \begin{document}
-\section*{Types for multidimensional functions in \irram}
-Numerical Engineering largely employs `recipes' whose correctness and efficiency is demonstrated empirically.
-Real Computability and Complexity Theory employ methods from theoretical computer science to give a
-While concepts and tools from Theoretical Computer Science are regularly applied,
-and significantly support, software development for discrete problems,
+\section*{On data-types for multidimensional functions in Exact Real Arithmetic}
+Exact Real Arithmetic deals with computing exactly with real numbers in the sense of arbitrary exact approximations. 
+A theoretical foundation for such computations is given by real computability and complexity theory (see e.g. \cite{MR0089809, MR1137517,Weihrauch}).
+In contrast to the usual approach in Numerical Engineering where correctness and efficiency is mostly demonstrated empirically, algorithms in Exact Real Arithmetic can be verified to be correct, have sound semantics and are closed under composition.
 
-We advertise Real Complexity Theory as resource-oriented algorithmic foundation to computations over continuous universes in the bit-model by approximation up to given absolute error with sound semantics,
-closure under composition, and proofs of optimal runtime.
 
-Norbert Müller's \cc library \irram provides an implementation of Real Complexity Theory and makes error-free computations with real numbers possible \cite{Mueller00}.
-Going one step further, the current work deals with extending the \irram library by types for multidimensional functions $f: \RR^d \to \RR$ and operators on such functions.
+An Implementation of Exact Real Arithmetic in \cc can be found in Norbert Müller's library \irram \cite{Mueller00}.
+\irram extends \cc by data-types for real numbers and provides functions on them.
+Of great practical importance are also operators on real functions, i.e., functions mapping real functions to real functions.
+Examples include Differentiation, Integration or solving Initial Value Problems for Differential Equations.
+Such problems commonly occur in applications in science and engineering and are heavily studied in numerical analysis.
 
 However, results from real complexity suggest that many basic operations on functions are computationally hard. 
 For example, parametric maximization corresponds to $\p$ vs. $\np$ \cite{MR666209} and integration to the stronger $\fp$ vs. $\sharpp$ \cite{MR748898}.
-This remains true if one restricts to smooth functions.
-However, the situation improves drastically if only analytic functions are considered: Many operators that are hard in the general case become computable in polynomial time \cite{Kawamura2012}.
-It is therefore desirable, to restrict to analytic functions whenever possible.
+This remains true even if one restricts to smooth functions.
+However, when only analytic functions are considered, many operators that are hard in the general case become computable in polynomial time \cite{Kawamura2012}.
+It is therefore desirable to restrict to analytic functions whenever possible.
 
 Analytic functions can be locally represented by a power series around some point.
 For uniform computability, however, knowledge of the power series alone is not sufficient.
-The data type has to be enriched by some additional information, encoding e.g. the radius of convergence and the maximum of the function in its domain.
+The data type has to be enriched by some additional natural information about the function \cite{Mueller87}.
 
-The current work gives a \cc implementation of a data-type for multi-dimensional analytic functions based on the \irram library.
-It provides efficient implementations of the following operations: Addition, Subtraction, Multiplication, Division, Function Composition, Parametric Maximization, Partial Derivatives and Integration.
-Further it is possible to solve initial value problems for ordinary differential equations of the form
-$$ \dot y_i(t) = F_i(t, y_1(t), \dots, y_d(t))\, , y_i(t_0) = w_0\, , i = 1, \dots, d$$
-where $F_i : \RR^{d+1} \to \RR$ are analytic.
+Based on this, we give a prototypical implementation of data-types for functions $f: \RR^d \to \RR$ for arbitrary $d \in \NN$ where $f$ is at least analytic on some compact domain $D \subseteq \RR^d$.
+Operators for Addition, Subtraction, Multiplication, Division,Composition, Partial Differentiation,Parametric Maximization and Analytic Continuation on such functions have been implemented.
+Further a solver for Systems of Ordinary Differential Equations where the right-hand side is given by an analytic function based on recent work of M\"uller and Korovina \cite{DBLP:journals/corr/abs-1006-0401} has been implemented.
+Different algorithms for those operators are evaluated and empirical results are compared with complexity bounds known from theory. 
 
 
 \bibliography{bib}{}

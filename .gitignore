@@ -55,3 +55,4 @@ bin/*
 *.fdb_latexmk
 *.fls
 *.gz
+*.dvi

@@ -4,6 +4,7 @@
 #include "SUBTRACTION.h"
 #include "MULTIPLICATION.h"
 #include "DIVISION.h"
+#include "DERIVATIVE.h"
 #include "coefficient_computation.h"
 #include "combinatorics.h"
 using namespace iRRAM;
@@ -172,18 +173,18 @@ void compute(){
   y = inv_test2->evaluate(x1);
   sol=sin(x1)/(1+sin(x1))/2;
   checkResult(y, sol, prec);
-  // iRRAM::cout << "checking derivative (1d)" << endl;
-  // // sin(x)
-  // auto d1 = derive(g,0, 2);
-  // y = d1(x1);
-  // sol=-sin(x1);
-  // checkResult(y, sol, prec);
+  iRRAM::cout << "checking derivative (1d)" << endl;
+  // sin(x)
+  auto d1 = derive(g,2);
+  y = d1->evaluate(x1);
+  sol=-sin(x1);
+  checkResult(y, sol, prec);
 
-  // iRRAM::cout << "checking derivative (3d)" << endl;
-  // auto d2 = derive(derive(f,1, 1), 2, 2);
-  // y = d2(x1, x2,x3);
-  // sol=-cos(x1*x2*x3)*x1*x1*x1*x2*x2*x3-sin(x1*x2*x3)*x1*x1*x2-x1*x1*x2*sin(x1*x2*x3);
-  // checkResult(y, sol, prec);
+  iRRAM::cout << "checking derivative (3d)" << endl;
+  auto d2 = derive(f, 0, 1, 2);
+  y = d2->evaluate(x1, x2,x3);
+  sol=-cos(x1*x2*x3)*x1*x1*x1*x2*x2*x3-sin(x1*x2*x3)*x1*x1*x2-x1*x1*x2*sin(x1*x2*x3);
+  checkResult(y, sol, prec);
 
 
   iRRAM::cout << "checking division (3d)" << endl;
@@ -194,12 +195,12 @@ void compute(){
   sol=sin(x1*x2*x3)/(1+sin(x1*x2*x3));
   checkResult(y, sol, prec);
 
-  iRRAM::cout << "checking division (3d) by power series" << endl;
+  // iRRAM::cout << "checking division (3d) by power series" << endl;
 
-  // sin(x*y*z)/(sin(x*y*z)+1)
-  auto inv_test3d2 = (f/fmod)->to_analytic();   
-  y = inv_test3d2->evaluate(x1,x2,x3);
-  sol=sin(x1*x2*x3)/(1+sin(x1*x2*x3));
-  checkResult(y, sol, prec);
+  // // sin(x*y*z)/(sin(x*y*z)+1)
+  // auto inv_test3d2 = (f/fmod)->to_analytic();   
+  // y = inv_test3d2->evaluate(x1,x2,x3);
+  // sol=sin(x1*x2*x3)/(1+sin(x1*x2*x3));
+  // checkResult(y, sol, prec);
 
 }

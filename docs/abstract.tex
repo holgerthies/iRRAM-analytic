@@ -14,6 +14,7 @@
 \newcommand{\np}{\ensuremath{\mathcal{NP}}\xspace}
 \newcommand{\fp}{\ensuremath{\mathcal{FP}}\xspace}
 \newcommand{\sharpp}{\ensuremath{\# \mathcal{P}}\xspace}
+\newcommand{\pspace}{\ensuremath{ \mathcal{PSPACE}}\xspace}
 \newcommand{\cc}{\texttt{C++}\xspace}
 \newcommand{\irram}{\texttt{iRRAM}\xspace}
 
@@ -31,18 +32,24 @@ Examples include Differentiation, Integration or solving Initial Value Problems 
 Such problems commonly occur in applications in science and engineering and are heavily studied in numerical analysis.
 
 However, results from real complexity suggest that many basic operations on functions are computationally hard. 
-For example, parametric maximization corresponds to $\p$ vs. $\np$ \cite{MR666209} and integration to the stronger $\fp$ vs. $\sharpp$ \cite{MR748898}.
+For example, parametric maximization relates to the $\p$ vs. $\np$ problem \cite{MR666209} and integration to the stronger $\fp$ vs. $\sharpp$ problem \cite{MR748898} in the sense that those complexity classes are equal if there is a polynomial time algorithm for those problems.
 This remains true even if one restricts to smooth functions.
 However, when only analytic functions are considered, many operators that are hard in the general case become computable in polynomial time \cite{Kawamura2012}.
 It is therefore desirable to restrict to analytic functions whenever possible.
 
+For practical purposes of particular interest is the problem of solving Initial Value Problems for Systems of Ordinary Differential Equations where the right-hand side function is given by analytic functions. 
+It has been shown, that the solution of such a system will be analytic and can be computed in polynomial time if the right-hand side functions are polynomial time computable, while in the general case the problem has been shown to be \pspace-hard \cite{Kawamura10}.
+An implementation for polynomial right-hand side functions has recently been presented by M\"{u}ller and Korovina \cite{DBLP:journals/corr/abs-1006-0401}.
+To extend this solver to the analytic case, one first needs to define how to represent analytic functions in a programming language like \cc.
+
 Analytic functions can be locally represented by a power series around some point.
 For uniform computability, however, knowledge of the power series alone is not sufficient.
-The data type has to be enriched by some additional natural information about the function \cite{Mueller87}.
+The data type has to be enriched by some additional natural information about the function \cite{Mueller95}.
 
 Based on this, we give a prototypical implementation of data-types for functions $f: \RR^d \to \RR$ for arbitrary $d \in \NN$ where $f$ is at least analytic on some compact domain $D \subseteq \RR^d$.
-Operators for Addition, Subtraction, Multiplication, Division,Composition, Partial Differentiation,Parametric Maximization and Analytic Continuation on such functions have been implemented.
-Further a solver for Systems of Ordinary Differential Equations where the right-hand side is given by an analytic function based on recent work of M\"uller and Korovina \cite{DBLP:journals/corr/abs-1006-0401} has been implemented.
+Operators for Addition, Subtraction, Multiplication, Division,Composition, Partial Differentiation and Analytic Continuation as well as a solver for Initial Value Problems on such functions have been implemented.
+
+
 Different algorithms for those operators are evaluated and empirical results are compared with complexity bounds known from theory. 
 
 

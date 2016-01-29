@@ -5,6 +5,7 @@
 #include "MULTIPLICATION.h"
 #include "DIVISION.h"
 #include "DERIVATIVE.h"
+#include "COMPOSITION.h"
 #include "coefficient_computation.h"
 #include "combinatorics.h"
 using namespace iRRAM;
@@ -84,7 +85,7 @@ void compute(){
   auto f = make_analytic<REAL,REAL,REAL,REAL>(std::function<REAL(unsigned long, unsigned long, unsigned long)>(sinseries), 2, 2);
   auto g = make_analytic<REAL,REAL>(std::function<REAL(unsigned long)>(sinseries1d), 2,2);
   // ANALYTIC<1,REAL> h( 2,2, sin_pwr);
-  // ANALYTIC<2,REAL> h3( 2,2,sin_pwr3);
+  auto h2 = make_analytic<REAL,REAL,REAL>(std::function<REAL(unsigned long, unsigned long)>(sinseries2d), 2, 2);
   //auto g = AnalyticFunction::projection<3,1,REAL>();
   //g = power(g,5);
   int l,prec;
@@ -116,17 +117,29 @@ void compute(){
   // // iRRAM::cout << "checking sin(x1*x2) from function" << endl;
   // // chec
 
-  // auto comp = compose(g,g);
-  //  iRRAM::cout << "checking composition (1d)" << endl;
-  //  y = comp(x1);
-  //  sol=sin(sin(x1));
-  //  checkResult(y, sol, prec);
+  auto comp = compose(g,g);
+  iRRAM::cout << "checking composition (1d)" << endl;
+  y = comp->evaluate(x1);
+  sol=sin(sin(x1));
+  checkResult(y, sol, prec);
 
-  // auto comp2 = compose(g,f);
-  // iRRAM::cout << "checking composition (3d)" << endl;
-  // y = comp2(x1,x2,x3);
-  // sol=sin(sin(x1*x2*x3));
-  // checkResult(y, sol, prec);
+  auto comp2 = compose(g,g)->to_analytic();
+  iRRAM::cout << "checking composition (1d) by power series" << endl;
+  y = comp->evaluate(x1);
+  sol=sin(sin(x1));
+  checkResult(y, sol, prec);
+
+  auto comp3 = compose(g,h2);
+  iRRAM::cout << "checking composition (2d)" << endl;
+  y = comp3->evaluate(x1,x2);
+  sol=sin(sin(x1*x2));
+  checkResult(y, sol, prec);
+
+  auto comp4 = compose(g,h2)->to_analytic();
+  iRRAM::cout << "checking composition (2d) by power series" << endl;
+  y = comp4->evaluate(x1,x2);
+  sol=sin(sin(x1*x2));
+  checkResult(y, sol, prec);
 
   auto sum = f-REAL(1)-f+f+REAL(2)+f;
   y = sum->evaluate(x1,x2,x3);

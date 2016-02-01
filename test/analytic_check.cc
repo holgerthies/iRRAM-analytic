@@ -6,6 +6,7 @@
 #include "DIVISION.h"
 #include "DERIVATIVE.h"
 #include "COMPOSITION.h"
+#include "IVPSOLVER.h"
 #include "coefficient_computation.h"
 #include "combinatorics.h"
 using namespace iRRAM;

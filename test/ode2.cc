@@ -1,5 +1,5 @@
 #include "iRRAM.h"
-#include "IVP.h"
+#include "IVPSOLVER.h"
 #include "combinatorics.h"
 using namespace iRRAM;
 using std::endl;
@@ -35,74 +35,72 @@ REAL FUN2(const REAL& t){
 }
 void compute(){
 	
-  ANALYTIC<3,REAL> f1(std::function<REAL(unsigned long, unsigned long, unsigned long)>(series1),1, 2);
-ANALYTIC<3,REAL> f2(std::function<REAL(unsigned long, unsigned long, unsigned long)>(series2),1, 2);
-  std::shared_ptr<IVP<3,REAL>> P(new IVP<3,REAL>({f1,f2}));
-
-	int l,prec;
-	//iRRAM::cin >>l>> prec;
+  auto f1 = make_analytic<REAL,REAL,REAL, REAL>(std::function<REAL(unsigned long, unsigned long, unsigned long)>(series1),1, 2);
+  auto f2 = make_analytic<REAL, REAL, REAL, REAL>(std::function<REAL(unsigned long, unsigned long, unsigned long)>(series2),1, 2);
+  auto F = ivp_solve({f1,f2});
+  int l,prec;
+  //iRRAM::cin >>l>> prec;
   prec=150;
   l=10;
-	// f continuation prec
-	REAL x1= REAL(1)/REAL(16*l);
-	REAL x2= REAL(1)/REAL(8*l);
-	REAL x3= REAL(1)/REAL(10*l);
+  // f continuation prec
+  REAL x1= REAL(1)/REAL(16*l);
+  REAL x2= REAL(1)/REAL(8*l);
+  REAL x3= REAL(1)/REAL(10*l);
   iRRAM::cout << "computing f1("<<x1<<","<<x2<<","<< x3 << ")..."<<endl;
-	REAL y = f1(x1,x2,x3);
-	iRRAM::cout << "result: " << endl;
-	rwrite(y, prec);
-	iRRAM::cout << endl;
-	REAL sol=fun1(x1,x2,x3);
-	iRRAM::cout << "should be " << endl;
-	rwrite(sol,prec);
-	iRRAM::cout << endl;
-	if(!bound(abs(sol-y), -prec)){
-		iRRAM::cout << "ERRROR" << endl;
-	} else {
-		iRRAM::cout << "OK!" << endl;
-	}
+  REAL y = f1->evaluate(x1,x2,x3);
+  iRRAM::cout << "result: " << endl;
+  rwrite(y, prec);
+  iRRAM::cout << endl;
+  REAL sol=fun1(x1,x2,x3);
+  iRRAM::cout << "should be " << endl;
+  rwrite(sol,prec);
+  iRRAM::cout << endl;
+  if(!bound(abs(sol-y), -prec)){
+    iRRAM::cout << "ERRROR" << endl;
+  } else {
+    iRRAM::cout << "OK!" << endl;
+  }
   iRRAM::cout << "computing f2("<<x1<<","<<x2<<","<< x3 << ")..."<<endl;
-	y = f2(x1,x2,x3);
-	iRRAM::cout << "result: " << endl;
-	rwrite(y, prec);
-	iRRAM::cout << endl;
-	sol=fun2(x1,x2,x3);
-	iRRAM::cout << "should be " << endl;
-	rwrite(sol,prec);
-	iRRAM::cout << endl;
-	if(!bound(abs(sol-y), -prec)){
-		iRRAM::cout << "ERRROR" << endl;
-	} else {
-		iRRAM::cout << "OK!" << endl;
-	}
+  y = f2->evaluate(x1,x2,x3);
+  iRRAM::cout << "result: " << endl;
+  rwrite(y, prec);
+  iRRAM::cout << endl;
+  sol=fun2(x1,x2,x3);
+  iRRAM::cout << "should be " << endl;
+  rwrite(sol,prec);
+  iRRAM::cout << endl;
+  if(!bound(abs(sol-y), -prec)){
+    iRRAM::cout << "ERRROR" << endl;
+  } else {
+    iRRAM::cout << "OK!" << endl;
+  }
   iRRAM::cout << "solving ode..." << endl;
-  auto F = solve(P);
   iRRAM::cout << "computing F1("<<x1<<")..."<<endl;
-	REAL Y = F[0](x1);
-	iRRAM::cout << "result: " << endl;
-	rwrite(Y, prec);
-	iRRAM::cout << endl;
-	REAL SOL=FUN1(x1);
-	iRRAM::cout << "should be " << endl;
-	rwrite(SOL,prec);
-	iRRAM::cout << endl;
-	if(!bound(abs(SOL-Y), -prec)){
-		iRRAM::cout << "ERRROR" << endl;
-	} else {
-		iRRAM::cout << "OK!" << endl;
-	}
+  REAL Y = F[0]->evaluate(x1);
+  iRRAM::cout << "result: " << endl;
+  rwrite(Y, prec);
+  iRRAM::cout << endl;
+  REAL SOL=FUN1(x1);
+  iRRAM::cout << "should be " << endl;
+  rwrite(SOL,prec);
+  iRRAM::cout << endl;
+  if(!bound(abs(SOL-Y), -prec)){
+    iRRAM::cout << "ERRROR" << endl;
+  } else {
+    iRRAM::cout << "OK!" << endl;
+  }
   iRRAM::cout << "computing F2("<<x1<<")..."<<endl;
-	Y = F[1](x1);
-	iRRAM::cout << "result: " << endl;
-	rwrite(Y, prec);
-	iRRAM::cout << endl;
-	SOL=FUN2(x1);
-	iRRAM::cout << "should be " << endl;
-	rwrite(SOL,prec);
-	iRRAM::cout << endl;
-	if(!bound(abs(SOL-Y), -prec)){
-		iRRAM::cout << "ERRROR" << endl;
-	} else {
-		iRRAM::cout << "OK!" << endl;
-	}
+  Y = F[1]->evaluate(x1);
+  iRRAM::cout << "result: " << endl;
+  rwrite(Y, prec);
+  iRRAM::cout << endl;
+  SOL=FUN2(x1);
+  iRRAM::cout << "should be " << endl;
+  rwrite(SOL,prec);
+  iRRAM::cout << endl;
+  if(!bound(abs(SOL-Y), -prec)){
+    iRRAM::cout << "ERRROR" << endl;
+  } else {
+    iRRAM::cout << "OK!" << endl;
+  }
 }

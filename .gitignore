@@ -56,3 +56,7 @@ bin/*
 *.fls
 *.gz
 *.dvi
+/GPATH
+/GRTAGS
+/GTAGS
+*.h#

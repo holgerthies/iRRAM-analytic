@@ -11,5 +11,11 @@ namespace iRRAM{
   INTEGER factorial(int n);
   INTEGER choose(int n, int k);
   REAL inv_factorial(const int n);
+  REAL inv_factorial();
+  template<class... Args>
+  REAL inv_factorial(const int n, Args... rest)
+  {
+    return inv_factorial(n)*inv_factorial(rest...);
+  }
 }
 #endif

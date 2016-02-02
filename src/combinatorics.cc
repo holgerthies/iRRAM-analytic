@@ -66,8 +66,12 @@ namespace iRRAM
   }
   vector<vector<unsigned long>> bounded_count(const vector<unsigned long>& bound){
     return bounded_count(bound, bound.size());
+  } 
+  REAL inv_factorial()
+  {
+    return 1;
+    
   }
-
 REAL inv_factorial(const int n){
   using std::log;
   if ((n!=0)&&(n*log(n)-n > 2*-ACTUAL_STACK.actual_prec)){

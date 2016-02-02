@@ -7,6 +7,7 @@
 #include "DERIVATIVE.h"
 #include "COMPOSITION.h"
 #include "IVPSOLVER.h"
+#include "CONTINUATION.h"
 #include "coefficient_computation.h"
 #include "combinatorics.h"
 using namespace iRRAM;
@@ -113,10 +114,19 @@ void compute(){
   iRRAM::cout << "checking sin(x1*x2*x3)" << endl;
   checkResult(y, sol, prec);
 
-  // // y = h3(x1,x2);
-  // // sol=sin(x1*x2);
-  // // iRRAM::cout << "checking sin(x1*x2) from function" << endl;
-  // // chec
+  iRRAM::cout << "checking analytic continuation (1d)" << endl;
+  // sin(x)/(sin(x)+1
+  auto cont = continue_around(g, 2,2, REAL(x1));
+  y = cont->evaluate(x1);
+  sol=sin(x1+x1);
+  checkResult(y, sol, prec);
+
+  // iRRAM::cout << "checking analytic continuation (3d)" << endl;
+  // // sin(x)/(sin(x)+1
+  // auto cont2 = continue_around(f, 2,2, x3, x3, x3);
+  // y = cont2->evaluate(x1,x2,x3);
+  // sol=sin((x1+x3)*(x2+x3)*(x3+x3));
+  // checkResult(y, sol, prec);
 
   auto comp = compose(g,g);
   iRRAM::cout << "checking composition (1d)" << endl;
@@ -147,6 +157,7 @@ void compute(){
   iRRAM::cout << "checking addition" << endl;
   sol=2*sin(x1*x2*x3)+REAL(1);
   checkResult(y, sol, prec);
+  
 
   auto sum2 = (f-REAL(1)-f+f+REAL(2)+f)->to_analytic();
   y = sum2->evaluate(x1,x2,x3);

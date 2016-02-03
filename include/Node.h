@@ -7,6 +7,8 @@
 #include "POWERSERIES.h"
 namespace iRRAM
 {
+  enum class ANALYTIC_OPERATION {ANALYTIC, ADDITION, SUBTRACTION, MULTIPLICATION, DIVISION, DERIVATIVE, COMPOSITION, IVP, SINE, COSINE, EXPONENTIATION};
+
   // forward declaration 
   template<class R, class... Args>
   class ANALYTIC;

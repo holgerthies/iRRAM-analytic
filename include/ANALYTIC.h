@@ -9,6 +9,8 @@
 #include <memory>
 namespace iRRAM
 {
+
+  
   template <class R, class... Args>
   class ANALYTIC : public Node<R,Args...> {
     using pwr_series = POWERSERIES<sizeof...(Args),R>;
@@ -65,7 +67,20 @@ namespace iRRAM
     auto series = std::make_shared<POWERSERIES<sizeof...(Args),REAL>>(pwr);
      return std::make_shared<ANALYTIC<R,Args...>>(series, M, r);
   }
+
+  
 } // namespace iRRAM
+
+#include "ADDITION.h"
+#include "SUBTRACTION.h"
+#include "MULTIPLICATION.h"
+#include "DIVISION.h"
+#include "DERIVATIVE.h"
+#include "COMPOSITION.h"
+#include "IVPSOLVER.h"
+#include "CONTINUATION.h"
+#include "SINE.h"
+#include "EXPONENTIATION.h"
 
 
 #endif

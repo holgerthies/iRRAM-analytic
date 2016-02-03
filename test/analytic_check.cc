@@ -1,13 +1,5 @@
 #include "iRRAM.h"
 #include "ANALYTIC.h"
-#include "ADDITION.h"
-#include "SUBTRACTION.h"
-#include "MULTIPLICATION.h"
-#include "DIVISION.h"
-#include "DERIVATIVE.h"
-#include "COMPOSITION.h"
-#include "IVPSOLVER.h"
-#include "CONTINUATION.h"
 #include "coefficient_computation.h"
 #include "combinatorics.h"
 using namespace iRRAM;
@@ -152,7 +144,32 @@ void compute(){
   sol=sin(sin(x1*x2));
   checkResult(y, sol, prec);
 
-  auto sum = f-REAL(1)-f+f+REAL(2)+f;
+  auto cos1 = cos(h2);
+  iRRAM::cout << "checking cosine (2d)" << endl;
+  y = cos1->evaluate(x1,x2);
+  sol=cos(sin(x1*x2));
+  checkResult(y, sol, prec);
+
+  auto cos2 = cos(h2)->to_analytic();
+  iRRAM::cout << "checking cosine (2d) by power series" << endl;
+  y = cos2->evaluate(x1,x2);
+  sol=cos(sin(x1*x2));
+  checkResult(y, sol, prec);
+
+
+  auto exp1 = exp(h2);
+  iRRAM::cout << "checking exp (2d)" << endl;
+  y = exp1->evaluate(x1,x2);
+  sol=exp(sin(x1*x2));
+  checkResult(y, sol, prec);
+
+  auto exp2 = exp(h2)->to_analytic();
+  iRRAM::cout << "checking exp (2d) by power series" << endl;
+  y = exp2->evaluate(x1,x2);
+  sol=exp(sin(x1*x2));
+  checkResult(y, sol, prec);
+
+ auto sum = f-REAL(1)-f+f+REAL(2)+f;
   y = sum->evaluate(x1,x2,x3);
   iRRAM::cout << "checking addition" << endl;
   sol=2*sin(x1*x2*x3)+REAL(1);

@@ -129,7 +129,7 @@ namespace iRRAM
     }
 
   // composition operators
-  template <class R, class... Args, class... orders>
+  template <class R, class... Args>
   std::shared_ptr<Node<R, Args...>> compose(const std::shared_ptr<Node<R,R>>& lhs,const std::shared_ptr<Node<R,Args...>>& rhs)
   {
     

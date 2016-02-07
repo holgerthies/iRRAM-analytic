@@ -69,16 +69,24 @@ namespace iRRAM
   class MULTIPLICATION : public BinaryNode<R, Args...>{
     using BinaryNode<R,Args...>::BinaryNode;
   public:
-    R evaluate(const Args&... args) const;
-    std::shared_ptr<ANALYTIC<R,Args...>> to_analytic() const;
+    R evaluate(const Args&... args) const override;
+    std::shared_ptr<ANALYTIC<R,Args...>> to_analytic() const override;
+    ANALYTIC_OPERATION get_type() const override
+    {
+      return ANALYTIC_OPERATION::MULTIPLICATION;
+    }
   };
 
   template <class R, class... Args>
   class SCALAR_MULTIPLICATION : public ScalarNode<R, Args...>{
     using ScalarNode<R,Args...>::ScalarNode;
   public:
-    R evaluate(const Args&... args) const;
-    std::shared_ptr<ANALYTIC<R,Args...>> to_analytic() const;
+    R evaluate(const Args&... args) const override; 
+    std::shared_ptr<ANALYTIC<R,Args...>> to_analytic() const override;
+    ANALYTIC_OPERATION get_type() const override
+    {
+      return ANALYTIC_OPERATION::SCALAR_MULTIPLICATION;
+    }
   };
 
   // member definitions 

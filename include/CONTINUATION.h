@@ -39,7 +39,7 @@ namespace iRRAM
     {
       pwr = std::make_shared<POWERSERIES<1,T>>([node, orders..., args...] (unsigned long n) {
           
-          return std::make_shared<T>(inv_factorial(n, orders...)*derive(node,n, orders...)->evaluate(args...));
+          return std::make_shared<T>(inv_factorial(n, orders...)*derive(node,orders..., n)->evaluate(args...));
         });
     };
 
@@ -69,10 +69,15 @@ namespace iRRAM
     std::shared_ptr<ANALYTIC<R,Args...>> to_analytic() const override{
       return analytic;
     };
+
+    ANALYTIC_OPERATION get_type() const override
+    {
+      return ANALYTIC_OPERATION::CONTINUATION;
+    }
   };
 
   template <class R, class... Args>
-  std::shared_ptr<Node<R, Args...>> continue_around(const std::shared_ptr<Node<R,Args...>>& node, const REAL& new_M, const REAL& new_r, Args... args)
+  std::shared_ptr<Node<R, Args...>> continuation(const std::shared_ptr<Node<R,Args...>>& node, const REAL& new_M, const REAL& new_r, Args... args)
   {
     return std::make_shared<CONTINUATION<R, Args...>>(node, new_M, new_r, args...);
   }

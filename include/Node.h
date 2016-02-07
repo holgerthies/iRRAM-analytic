@@ -7,7 +7,7 @@
 #include "POWERSERIES.h"
 namespace iRRAM
 {
-  enum class ANALYTIC_OPERATION {ANALYTIC, ADDITION, SUBTRACTION, MULTIPLICATION, DIVISION, DERIVATIVE, COMPOSITION, IVP, SINE, COSINE, EXPONENTIATION};
+  enum class ANALYTIC_OPERATION {ANALYTIC, ADDITION,SCALAR_ADDITION, SUBTRACTION, MULTIPLICATION,SCALAR_MULTIPLICATION, INVERSION, DERIVATIVE, COMPOSITION, IVP, SINE, COSINE, EXPONENTIATION,CONTINUATION};
 
   // forward declaration 
   template<class R, class... Args>
@@ -20,6 +20,7 @@ namespace iRRAM
     virtual ~Node() = default;
     virtual R evaluate(const Args&... args) const = 0;
     virtual std::shared_ptr<ANALYTIC<R, Args...>> to_analytic() const = 0;
+    virtual ANALYTIC_OPERATION get_type() const = 0;
     
   };
 

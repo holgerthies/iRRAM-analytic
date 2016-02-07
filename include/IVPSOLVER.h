@@ -140,6 +140,8 @@ namespace iRRAM
         r = minimum(r, f->get_r());
         pwrs.push_back(f->get_series());
       }
+      r = minimum(r, r/M);
+      
       series = std::make_shared<SERIES_IVP_SOLVER<sizeof...(Args), R>>(pwrs);
       for(int i=0; i<sizeof...(Args)-1; i++){
         solutions.push_back(std::make_shared<ANALYTIC<R, R>>(get_series(i, series), M, r));
@@ -167,12 +169,17 @@ namespace iRRAM
     {
     }
 
-    R evaluate(const R& arg) const{
+    R evaluate(const R& arg) const override{
       return solver->evaluate(v, arg);
     };
-    std::shared_ptr<ANALYTIC<R,R>> to_analytic() const{
+    std::shared_ptr<ANALYTIC<R,R>> to_analytic() const override{
       return solver->to_analytic(v);
     };
+
+    ANALYTIC_OPERATION get_type() const override
+    {
+      return ANALYTIC_OPERATION::IVP;
+    }
   };
 
   template <class R, class... Args>

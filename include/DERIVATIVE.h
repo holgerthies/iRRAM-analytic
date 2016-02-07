@@ -100,8 +100,12 @@ namespace iRRAM
       this->analytic = std::make_shared<ANALYTIC<R,Args...>>(dpwr, new_M, new_r);
     }
 
-    R evaluate(const Args&... args) const;
-    std::shared_ptr<ANALYTIC<R,Args...>> to_analytic() const;
+    R evaluate(const Args&... args) const override;
+    std::shared_ptr<ANALYTIC<R,Args...>> to_analytic() const override;
+    ANALYTIC_OPERATION get_type() const override
+    {
+      return ANALYTIC_OPERATION::DERIVATIVE;
+    }
   };
 
   // member definitions 

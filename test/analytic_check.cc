@@ -1,5 +1,15 @@
 #include "iRRAM.h"
 #include "ANALYTIC.h"
+#include "ADDITION.h"
+#include "SUBTRACTION.h"
+#include "MULTIPLICATION.h"
+#include "DIVISION.h"
+#include "DERIVATIVE.h"
+#include "COMPOSITION.h"
+#include "IVPSOLVER.h"
+#include "CONTINUATION.h"
+#include "SINE.h"
+#include "EXPONENTIATION.h"
 #include "coefficient_computation.h"
 #include "combinatorics.h"
 using namespace iRRAM;
@@ -108,14 +118,14 @@ void compute(){
 
   iRRAM::cout << "checking analytic continuation (1d)" << endl;
   // sin(x)/(sin(x)+1
-  auto cont = continue_around(g, 2,2, REAL(x1));
+  auto cont = continuation(g, 2,2, REAL(x1));
   y = cont->evaluate(x1);
   sol=sin(x1+x1);
   checkResult(y, sol, prec);
 
   // iRRAM::cout << "checking analytic continuation (3d)" << endl;
   // // sin(x)/(sin(x)+1
-  // auto cont2 = continue_around(f, 2,2, x3, x3, x3);
+  // auto cont2 = continuation(f, 2,2, x3, x3, x3);
   // y = cont2->evaluate(x1,x2,x3);
   // sol=sin((x1+x3)*(x2+x3)*(x3+x3));
   // checkResult(y, sol, prec);

@@ -27,7 +27,7 @@ namespace iRRAM
     // template<typename... ARGS>
     // T get_coeff(ARGS... args);
 
-    R evaluate(const Args&... args) const;
+    R evaluate(const Args&... args) const override;
 
     template<class... Indices>
     R get_coeff(const Indices&... ind)
@@ -35,7 +35,7 @@ namespace iRRAM
       return pwr->get_coeff(ind...);
     }
 
-    std::shared_ptr<ANALYTIC> to_analytic() const
+    std::shared_ptr<ANALYTIC> to_analytic() const override
     {
       return std::make_shared<ANALYTIC>(*this);
     }
@@ -43,6 +43,11 @@ namespace iRRAM
     REAL get_r() const{return r;}
 
     REAL get_M() const{return M;}
+
+    ANALYTIC_OPERATION get_type() const override 
+    {
+      return ANALYTIC_OPERATION::ANALYTIC;
+    }
 
     pwr_series_ptr get_series()
     {
@@ -52,7 +57,7 @@ namespace iRRAM
   };
 
   template <class R, class... Args>
-  R ANALYTIC<R, Args...>::evaluate(const Args&... args) const
+  R ANALYTIC<R, Args...>::evaluate(const Args&... args) const 
   {
     return PWRSERIES_IMPL::evaluate(pwr, M, r, args...);
   }

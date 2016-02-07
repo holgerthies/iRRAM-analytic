@@ -64,16 +64,24 @@ namespace iRRAM
   class ADDITION : public BinaryNode<R, Args...>{
     using BinaryNode<R,Args...>::BinaryNode;
   public:
-    R evaluate(const Args&... args) const;
-    std::shared_ptr<ANALYTIC<R,Args...>> to_analytic() const;
+    R evaluate(const Args&... args) const override;
+    std::shared_ptr<ANALYTIC<R,Args...>> to_analytic() const override;
+    ANALYTIC_OPERATION get_type() const override
+    {
+      return ANALYTIC_OPERATION::ADDITION;
+    }
   };
 
   template <class R, class... Args>
   class SCALAR_ADDITION : public ScalarNode<R, Args...>{
     using ScalarNode<R,Args...>::ScalarNode;
   public:
-    R evaluate(const Args&... args) const;
-    std::shared_ptr<ANALYTIC<R,Args...>> to_analytic() const;
+    R evaluate(const Args&... args) const override;
+    std::shared_ptr<ANALYTIC<R,Args...>> to_analytic() const override;
+    ANALYTIC_OPERATION get_type() const override
+    {
+      return ANALYTIC_OPERATION::SCALAR_ADDITION;
+    }
   };
 
   // member definitions 

@@ -52,6 +52,7 @@ namespace iRRAM
     SERIES_DERIVATIVE(const std::shared_ptr<POWERSERIES<1,T>>& pwr, const unsigned int variable, const int order ):
       pwr(pwr), variable(variable), order(order) 
     {
+      
     }
 
     std::shared_ptr<T> get_coeff(const unsigned long n) const override 
@@ -66,18 +67,18 @@ namespace iRRAM
 
   };
 
-  REAL get_deriv_M_factor()
+  REAL get_deriv_M_factor(const REAL& r)
   {
     return 1;
   }
 
   template<class... orders>
-  REAL get_deriv_M_factor(int d, orders... rest)
+  REAL get_deriv_M_factor(const REAL& r,int d, orders... rest)
   {
-    auto p = power(2, d+1);
+    auto p = power(2/r, d+1);
     REAL fact=1;
     for(int j=2; j<=d; j++) fact *= j;
-    return fact*p*get_deriv_M_factor(rest...);
+    return fact*p*get_deriv_M_factor(r, rest...);
   }
 
 
@@ -96,7 +97,7 @@ namespace iRRAM
       auto f = node->to_analytic();
       auto dpwr= get_derivative_series<sizeof...(Args), R>(f->get_series(),0, ods...);
       auto new_r = f->get_r()/2;
-      auto new_M =  f->get_M()/f->get_r()*get_deriv_M_factor(ods...);
+      auto new_M =  f->get_M()/get_deriv_M_factor(f->get_r(), ods...);
       this->analytic = std::make_shared<ANALYTIC<R,Args...>>(dpwr, new_M, new_r);
     }
 

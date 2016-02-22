@@ -1,5 +1,5 @@
 \documentclass{article}
-\usepackage[margin=1.2in]{geometry}
+\usepackage[margin=1.1in]{geometry}
 \usepackage[utf8]{inputenc}
 \usepackage{xspace}
 \usepackage{amsmath,amssymb}
@@ -32,13 +32,13 @@ Such problems commonly occur in applications in science and engineering and are 
 However, results from real complexity suggest that many basic operators are computationally hard. 
 For example, parametric maximization relates to the $\p$ vs. $\np$ problem \cite{MR666209} and integration to the stronger $\fp$ vs. $\sharpp$ problem \cite{MR748898} in the sense that the complexity classes are equal if those operators map polynomial time computable functions to polynomial time computable functions.
 This remains true even if one restricts the input to smooth functions.
-However, when only analytic functions are considered, many operators that are hard in the general case become computable in polynomial time \cite{Kawamura2012}.
-It is therefore desirable to restrict to analytic functions whenever possible.
+However, for many of those operators, the result when applied only to polynomial time computable analytic functions will again be a polynomial time computable analytic function.
+This can often even be turned into uniform algorithms for those operators by choosing the right representation.
 
 One example is the problem of finding the solution of Initial Value Problems for Systems of Ordinary Differential Equations of the form 
 $$ \dot y_i = F_i(t, y_1, \dots, y_d),\,y_i(0)=0,\, d \in \NN$$
 where the functions $F_i : \RR^{d+1} \to \RR$ are analytic.
-It has been shown that the solution of such a system will again be analytic and polynomial-time computable if the right-hand side functions are polynomial time computable, while in the general case the problem has been shown to be \pspace-hard \cite{Kawamura10}.
+It is well known that the solution of such a system will again be analytic and polynomial-time computable if the right-hand side functions are polynomial time computable, while in the general case the problem has been shown to be \pspace-hard \cite{Kawamura10}.
 An implementation for polynomial right-hand side functions has recently been presented by M\"{u}ller and Korovina \cite{DBLP:journals/corr/abs-1006-0401}.
 To extend this solver to the analytic case, one first needs to define how to represent analytic functions in a programming language like \cc.
 
@@ -46,15 +46,15 @@ Analytic functions can be locally represented by a power series around some poin
 For uniform computability, however, knowledge of the power series alone is not sufficient.
 The data type has to be enriched by some additional natural information about the function \cite{Mueller95}.
 Such enrichment has been studied in theory and parameterized complexity bounds are known.
-However, usually only one-dimensional analytic functions are considered, while for the aforementioned problem of solving Initial Value Problems at least two-dimensional functions are necessary.
-When generalizing to the multi-dimensional case, several design choices have to be made.
+However, previous work considered only one-dimensional analytic functions, while for the aforementioned problem of solving Initial Value Problems at least two-dimensional functions are necessary.
+There are several ways to generalize the theory to the multidimensional case.
 One possibility is to view a $d$-dimensional function as a one-dimensional function where the coefficients of the power series are given by evaluating a $(d-1)$-dimensional analytic function.
 For this it is necessary to find the right parameters for the recursive evaluation.
 
 An implementation of Exact Real Arithmetic in \cc can be found in Norbert Müller's library \irram \cite{Mueller00}.
 \irram extends \cc by data-types to compute (seemingly) exactly with real numbers and already provides implementations for many standard functions over the reals.
 
-Based on this library, we give a prototypical implementation of data-types for functions $f: \RR^d \to \RR$ for arbitrary $d \in \NN$ where $f$ is at least analytic on some compact domain $D \subseteq \RR^d$.
+Based on this library, we give a prototypical implementation of data-types for functions $f: \RR^d \to \RR$ for arbitrary $d \in \NN$ where $f$ is at least (complex) analytic on some compact domain $D \subseteq \RR^d$.
 Operators for Addition, Subtraction, Multiplication, Division, Composition, Partial Differentiation and Analytic Continuation as well as a solver for Initial Value Problems on such functions have been implemented.
 
 While all those operations have been studied in real complexity theory, for an efficient implementation many details that are usually neglected have to be considered and various design choices have to be made.

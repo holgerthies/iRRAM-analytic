@@ -131,20 +131,23 @@ namespace iRRAM
   public:
     IVP_SOLVER(std::initializer_list<std::shared_ptr<Node<R, Args...>>> funs)
     {
+      
       M = (*funs.begin())->to_analytic()->get_M();
       r = (*funs.begin())->to_analytic()->get_r();
       std::vector<std::shared_ptr<POWERSERIES<sizeof...(Args),R>>> pwrs;
       for(auto p : funs){
+        
         auto f = p->to_analytic();
         M = maximum(M, f->get_M());
         r = minimum(r, f->get_r());
         pwrs.push_back(f->get_series());
       }
-      r = minimum(r, r/M);
+      auto sol_M = r;
+      auto sol_r = minimum(r, r/M);
       
       series = std::make_shared<SERIES_IVP_SOLVER<sizeof...(Args), R>>(pwrs);
       for(int i=0; i<sizeof...(Args)-1; i++){
-        solutions.push_back(std::make_shared<ANALYTIC<R, R>>(get_series(i, series), M, r));
+        solutions.push_back(std::make_shared<ANALYTIC<R, R>>(get_series(i, series), sol_M, sol_r));
       }
     }
     R evaluate(const int v, const R& arg) const

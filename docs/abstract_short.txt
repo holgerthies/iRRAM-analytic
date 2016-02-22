@@ -1,0 +1,7 @@
+We consider the problem of solving systems of ordinary differential equations in exact real arithmetic, i.e., in the sense of arbitrarily precise numerical computations.
+It is known from real complexity theory that this problem is PSPACE-hard in the general case.
+However, when restricting the right hand side functions of the ODE System to polynomial time computable analytic functions, the solutions will again be polynomial time computable analytic functions.
+By carefully selecting the representation, this result can be turned into uniform algorithms on analytic functions.
+We present a practical implementation of such a solver in the C++ programming language based on the iRRAM library for exact real arithmetic.
+To that end, we also give a representation for multidimensional analytic functions in terms of an abstract data type and an implementation of such a type.
+Different algorithms are evaluated from a practical point of view and compared with complexity bounds known from theory.

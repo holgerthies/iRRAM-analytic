@@ -60,3 +60,8 @@ bin/*
 /GRTAGS
 /GTAGS
 *.h#
+*.toc
+*.snm
+*.nav
+/docs/presentation/complexity.svg
+/docs/presentation/complexity.png

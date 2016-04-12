@@ -82,6 +82,7 @@
   \newcommand{\func}{\code{FUNC}\xspace}
   \newcommand{\real}{\code{REAL}\xspace}
   \newcommand{\complex}{\code{COMPLEX}\xspace}
+	\newcommand{\abs}[1]{\left|#1\right|}
   \newcommand{\temp}{\textcolor{red}}
   \newcommand{\seq}{\mathbf}
 \newcommand{\fpu}{\ensuremath{\mathcal{FP}_1}\xspace}
@@ -350,10 +351,46 @@ can be computed in polynomial time if the $F_v$ are polynomial time computable.
   \end{frame}
 \begin{frame}
   \frametitle{Multi-Dimensional Functions}
+  Consider functions $f: \RR^d \to \RR$ complex analytic in a neighborhood of $0 \in \C^d$ and their power series $\sum_{n_1, \dots, n_d \in \N} a_{n_1,\dots,n_d}x_1^{ n_1 } \dots x_d^{ n_d }$
+  \begin{itemize}
+  \item The beforementioned representation can be generalized for the multi-dimensional case
+    \item Let $B$ and $q_i$ s.t. 
+$ \abs{a_{i_1, \dots, i_d}} \leq \frac{B}{q_1^{i_1} \dots q_d^{i_d}} $
+    \item Let $b_{i_1} := \sum_{i_2, \dots, i_d \in \N^{d-1}} a_{i_1, \dots, i_d} \cdot x_2^{i_2} \dots x_d^{i_d}$.
+    \item Then $f(x_1, \dots, x_d) = \sum_{i \in \N} b_i\cdot x^i$
+\item $\abs{b_i} \leq \frac{B}{q_1^i \cdot (1-\frac{x_2}{q_1}) \dots (1-\frac{x_d}{q_d})}$
+  \item $b_i$ can be computed by evaluating a $d-1$ dimensional analytic function
+  \end{itemize}
   \end{frame}
 \section{Implementation}
 \begin{frame}
-  \frametitle{Overview}
+  \frametitle{DAG approach}
+  \begin{center}
+        \begin{tikzpicture}[remember picture 
+            ,->,shorten >=1pt,auto,node distance=2.5cm,minimum
+              size=0.8cm,main node/.style={circle,fill=yellow!20,draw,font=\sffamily\small}]
+    
+    \node<2->[main node] (1) {$\times$};
+    \node<2->[main node] (2) [below left of=1] {$sin$};
+    \node<2->[main node] (6) [below left of=2] {$f$};
+    \node<2->[main node] (3) [below right of=1] {$\circ$};
+    \node<2->[main node] (4) [below left of=3] {$g$};
+    \node<2->[main node] (5) [below right of=3] {$h$};
+
+    \path<2->[every node/.style={font=\sffamily\small}]
+    (1) edge (2)
+    (2) edge (6)
+    (1) edge (3)
+    (3) edge (4)
+    (3) edge (5);
+  \end{tikzpicture}
+  \end{center}
+        \vfill
+  Such a DAG can be evaluated or transformed to an analytic function.
+\end{frame}
+\begin{frame}
+  \frametitle{Implementation}
+
   \end{frame}
 \begin{frame}
   \frametitle{ODE solving}

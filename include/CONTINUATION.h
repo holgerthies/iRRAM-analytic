@@ -100,6 +100,17 @@ namespace iRRAM
       return (1-abs(x)/q);
     }
 
+    template<class... Orders>
+    static REAL get_B(const REAL& r, const REAL& M,const REAL& q, const int k, const Orders... ks)
+    {
+      return power(r-q, -k)*get_B(r, M, q, ks...);
+    }
+
+    static REAL get_B(const REAL& r, const REAL& M,const REAL& q)
+    {
+      return M;
+    }
+
     T evaluate(const std::shared_ptr<POWERSERIES<1, T>>& pwr, const REAL& B, const REAL& q, const int k)
     {
       int J=0;

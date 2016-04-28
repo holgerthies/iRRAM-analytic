@@ -477,7 +477,12 @@ namespace iRRAM{
         }
         sum += b*x0;
         error *= error_factor_step;
-        sizetype_add(trunc_error,error.vsize,error.error);
+        sizetype error_error, error_vsize;
+        error.geterror(error_error);
+        error.getsize(error_vsize);
+        
+        sizetype_add(trunc_error,error_error, error_vsize);
+        
         sum.geterror(sum_error); // get error of partial sum
         sizetype_add(local_error, sum_error, trunc_error);
         x0 = x1;

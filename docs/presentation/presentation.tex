@@ -1,4 +1,4 @@
-\documentclass[handout,xcolor=pdftex,dvipsnames,table]{beamer}
+\documentclass[xcolor=pdftex,dvipsnames,table]{beamer}
 \usetheme{Darmstadt}
 \usepackage{etex}
 \providecommand\thispdfpagelabel[1]{}
@@ -15,6 +15,7 @@
 \usepackage[outline]{contour}
 \usepackage[absolute,overlay]{textpos}
 \usepackage{hhline}
+\usepackage{pgffor}
 \usepackage[square,sort,comma,numbers]{natbib}
 \usepackage{CJKutf8}
 \setbeamertemplate{footline}[frame number]
@@ -73,6 +74,11 @@
 \newcommand{\irram}{\texttt{iRRAM}\xspace}
 \newcommand{\code}[1]{\texttt{#1}}
 \newcommand{\sharpp}{\ensuremath{\#\mathcal P}\xspace}
+\newcommand{\p}{\ensuremath{\mathcal P}\xspace}
+\newcommand{\np}{\ensuremath{\mathcal{ NP }}\xspace}
+\newcommand{\pspace}{\ensuremath{\mathcal{ PSPACE }}\xspace}
+\newcommand{\npc}{\ensuremath{\mathcal{ NP }c}\xspace}
+\newcommand{\eXp}{\ensuremath{\mathcal{EXP}}\xspace}
 \newcommand{\sharppu}{\ensuremath{\#{\mathcal P}_1}\xspace}
 \newcommand{\fp}{\ensuremath{\mathcal{FP}}\xspace}
   \newcommand{\baana}{\code{BA\_ANA}\xspace}
@@ -101,33 +107,25 @@
 }
 \begin{document}
 \setbeamercolor{note}{fg=black,bg=lightgray} 
-\date{May 5, 2015}
+\date{May 9, 2016}
 \frame{
 \titlepage
 }
-\section{Computing with Real Numbers}
-\subsection{Computable Numbers and Functions}
-\begin{frame}[t]{Outline}
- \tableofcontents 
-\end{frame}
-\begin{frame}
-  \frametitle{Computers and Real Numbers}
-  \begin{itemize}[<+->]
-    \item Usually real numbers are represented by a fixed-length string (e.g. floating point)
-      \item Rounding is necessary
-    \item Can be implemented in hardware, thus very fast
-     \item Does not behave well from a mathematical point of view (closure under composition,...) 
-       \item Not a safe way to do computations
-    \end{itemize}
-  \end{frame}
+\section{Real Computability}
+\subsection{Computable Reals}
 \begin{frame}
   \frametitle{Computers and Real Numbers}
   \begin{itemize}[<+->]
   \item The set of real numbers is uncountable
     \item It is not possible to write every real number as finite string over a finite alphabet
-      \item 
-  \end{itemize}
-  \end{frame}\begin{frame}
+    \item Most common way: represented by a fixed-length string (e.g. floating point)
+    \item Can be implemented in hardware, thus very fast
+      \item Rounding is necessary
+     \item Does not behave well from a mathematical point of view (closure under composition,...) 
+       \item Not a safe way to do computations
+    \end{itemize}
+  \end{frame}
+\begin{frame}
 \frametitle{Computable Real Numbers}
   A real number is called computable if it can be approximated up to any desired precision.
   \vfill
@@ -136,17 +134,17 @@
 		\begin{figure}
 		\centering
     \vfill
-		\begin{tikzpicture}<2->
+		\begin{tikzpicture}
 				\path (0,0) rectangle (3.5,-2.7);
 			%x
-				\draw<2->[thick] (0,0) rectangle (3,-2);
-				\node<2-> at (1.5,-1) {$x$};
-				\draw<2-> (.5,-2) -- (.5,-2.2);
-				\draw<2->[-triangle 90] (.5,-2.5) -- (.5,-2.2);
-				\node<2-> at (.25,-2.25) {$1^n$};
-				\draw<2->[-triangle 90] (2.5,-2) -- (2.5,-2.3);
-				\draw<2-> (2.5,-2.3) -- (2.5,-2.5);
-				\node<2-> at (2.75,-2.25) {$d_n$};
+				\draw[thick] (0,0) rectangle (3,-2);
+				\node at (1.5,-1) {$x$};
+				\draw (.5,-2) -- (.5,-2.2);
+				\draw[-triangle 90] (.5,-2.5) -- (.5,-2.2);
+				\node at (.25,-2.25) {$1^n$};
+				\draw[-triangle 90] (2.5,-2) -- (2.5,-2.3);
+				\draw (2.5,-2.3) -- (2.5,-2.5);
+				\node at (2.75,-2.25) {$d_n$};
 				%\node<4-> at (2.85,-2.25) {$d_{n,i}$};
 				%\node<4-> at (1.5,-1) {$(a_i)$};
 				%\draw<4-> (1,-2) -- (1,-2.2);
@@ -156,60 +154,79 @@
 		\end{figure}
 	\end{minipage}
 	\hfill
-	\begin{minipage}{.45\textwidth}
-	\begin{definition}
-		A real number $x$ is called computable if there is a computable function $d:\N\to\Z$, such that $ \left|\frac{d(n)}{2^{n+1}} - x\right|\leq 2^{-n}$.   
-	\end{definition}
-	\end{minipage}
-\end{frame}
-\begin{frame}
-  \frametitle{Computable Functions}
+        \pause
 	\begin{minipage}{.45\textwidth}
 		\begin{tikzpicture}
 			\path (-1.7,1.7) rectangle (3.7,-5.2);
 			%x
-				\draw<2-> (0,0) rectangle (3,-2);
-				\node<2-> at (1.5,-1) {$x$};
-				\draw<2-> (1,-2) -- (1,-2.2);
-				\draw<2->[-triangle 90] (1,-2.5) -- (1,-2.2);
-				\node<2-> at (.5,-2.25) {$1^m$};
-				\draw<2->[-triangle 90] (2,-2) -- (2,-2.3);
-				\draw<2-> (2,-2.3) -- (2,-2.5);
-				\node<2-> at (2.5,-2.25) {$d_m$};
+				\draw<4-> (0,0) rectangle (3,-2);
+				\node<4-> at (1.5,-1) {$x$};
+				\draw<4-> (1,-2) -- (1,-2.2);
+				\draw<4->[-triangle 90] (1,-2.5) -- (1,-2.2);
+				\node<4-> at (.5,-2.25) {$1^m$};
+				\draw<4->[-triangle 90] (2,-2) -- (2,-2.3);
+				\draw<4-> (2,-2.3) -- (2,-2.5);
+				\node<4-> at (2.5,-2.25) {$d_m$};
 			%f
-				\draw<2->[thick] (0,-2.5) rectangle (3,-4.5);
-				\node<2-> at (1.5,-3.5) {$f$};
-				\draw<1-> (1,-4.5) -- (1,-4.7);
-				\draw<1->[-triangle 90] (1,-5) -- (1,-4.7);
-				\node<1-> at (.5,-4.75) {$1^n$};
-				\draw<1->[-triangle 90] (2,-4.5) -- (2,-4.8);
-				\draw<1-> (2,-4.8) -- (2,-5);
-				\node<1-> at (2.5,-4.75) {$d_n$};
+				\draw[thick] (0,-2.5) rectangle (3,-4.5);
+				\node at (1.5,-3.5) {$f$};
+				\draw (1,-4.5) -- (1,-4.7);
+				\draw[-triangle 90] (1,-5) -- (1,-4.7);
+				\node at (.5,-4.75) {$1^n$};
+				\draw[-triangle 90] (2,-4.5) -- (2,-4.8);
+				\draw (2,-4.8) -- (2,-5);
+				\node at (2.5,-4.75) {$d_n$};
 			%f(x)
-				\draw<1-> (-1.5,.5) rectangle (3.5,-4.5);
-				\node<1-> at (-.75,-2) {$f(x)$};
+				%\draw (-1.5,.5) rectangle (3.5,-4.5);
+				%\node at (-.75,-2) {$f(x)$};
 		\end{tikzpicture}
 	\end{minipage}
-	\hfill
-	\begin{minipage}{.47\textwidth}
-		\begin{definition}
-			\small
-			A function $f:[0,1]\to\RR$ is called computable, \newline if there is a machine that,\newline when given oracle access to approximations to the argument $x$,\newline returns approximations to the value $f(x)$.
-		\end{definition}
-	\end{minipage}
 \end{frame}
+\subsection{Computable Functions}
 \begin{frame}
   \frametitle{Representations}
-  The definition can be generalized for general functions $f: A \to B$ with non-countable $A$ and $B$.
-  
+  A representation for a set $X$ is a partial surjective function $\rho: \Sigma^{**} \to X$.
+  \pause
+  \vfill
+  \begin{minipage}{.37\textwidth}
+  \begin{displaymath}
+    \xymatrix{
+        \Sigma^{**} \ar[r]^F \ar[d]_\alpha & \Sigma^{**} \ar[d]^{\beta} \\
+        X \ar[r]_{f}       & Y }
+  \end{displaymath} 
+  \end{minipage}
+  \hfill
+  \pause
+  \begin{minipage}{.45\textwidth}
+    \begin{tikzpicture}
+      %x
+      \draw (0,0) rectangle (3,-2);
+      \node at (1.5,-1) {Oracle $\varphi$};
+      \draw (1,-2) -- (1,-2.2);
+      \draw[-triangle 90] (1,-2.5) -- (1,-2.2);
+      \node at (.5,-2.25) {r};
+      \draw[-triangle 90] (2,-2) -- (2,-2.3);
+      \draw (2,-2.3) -- (2,-2.5);
+      \node at (2.5,-2.25) {$\varphi(r)$};
+      %f
+      \draw[thick] (0,-2.5) rectangle (3,-4.5);
+      \node at (1.5,-3.5) {$F$};
+      \draw (1,-4.5) -- (1,-4.7);
+      \draw[-triangle 90] (1,-5) -- (1,-4.7);
+      \node at (.5,-4.75) {$q$};
+      \draw[-triangle 90] (2,-4.5) -- (2,-4.8);
+      \draw (2,-4.8) -- (2,-5);
+      \node at (2.8,-4.75) {$F(\varphi)(q)$};
+      %f(x)
+    \end{tikzpicture}
+  \end{minipage}
   \end{frame}
 \subsection{The iRRAM framework}
 \begin{frame}
   \frametitle{The \irram Framework}
   \begin{itemize}[<+->]
   \item The computational model can be implemented
-  \item \irram is a \cc framework for exact real arithmetic
-  \item Written by Norbert M\"{u}ller (University of Trier)
+  \item \irram is a \cc framework for exact real arithmetic written by Norbert M\"{u}ller (University of Trier)
   \item \real as data type
   \item can perform arithmetic operations on \real without introducing rounding errors
   \item In the end, the user can output an approximation to the \emph{result} of the computation with any desired precision
@@ -217,11 +234,26 @@
   \item New real numbers and functions can be defined (limit operator)
   \end{itemize}
 \end{frame}
-
+\section{Complexity Results}
+\subsection{Complexity}
 \begin{frame}
   \frametitle{Complexity Theory}
   \centering
-  \includegraphics[width=0.6\textwidth]{complexity}
+  \begin{tikzpicture}
+    \path (4.6,0) ellipse (5.6 and 1.3);
+    \draw<1-> (0,0) ellipse (1 and .5);
+    \node<1-> at (0,0) {$\p$};
+    \draw<4-> (3.5,0) ellipse (4.5 and 1);
+    \node<4-> at (7,0) {$\pspace$};
+    \draw<3-> (1.5,0) ellipse (2.5 and .75);
+    \node<3-> at (1.5,0) {$\np$};
+    \draw<5-> (3,0) ellipse (1 and .5);
+    \node<5-> at (3,0) {$\npc$};
+    \draw<6-> (2.5,0) ellipse (3.5 and .9);
+    \node<6-> at (5,0) {\lq$\sharpp$\rq};
+    \draw<2-> (4.5,0) ellipse (5.5 and 1.2);
+    \node<2-> at (9,0) {$\eXp$};
+   \end{tikzpicture}
   \end{frame}
 \subsection{Analytic Functions}
 \begin{frame}
@@ -238,8 +270,6 @@ For example
 \item Integration is \#P-hard. (Friedman (1984))
 \end{itemize}
 \end{fact}
-\pause
-Thus, we can not expect to have efficient algorithms for those operators unless we restrict the possible functions.
 \end{frame}
 \begin{frame}
 \frametitle{Analytic Function}
@@ -250,11 +280,6 @@ An analytic function is a function locally given by a complex power series.\\
 $f : D \to \C $, $D \subseteq \C$ is analytic if for any $x_0 \in D$ the Taylor-series
 $$ T(x) := \sum^\infty_{n=0} a_n(x-x_0)^n$$
 converges to $f(x)$ for $x$ in a neighborhood of $x_0$.  
-% \end{column}
-% \begin{column}{0.4\linewidth}
-% \includegraphics[width=4.5cm]{TaylorComplexConv}
-% \end{column}
-% \end{columns}
 \end{definition}
 \end{frame}
 \begin{frame}
@@ -290,18 +315,21 @@ However, if we supply some additional (discrete) information those operators bec
 \begin{frame}
 \frametitle{A practical representation for power series}
 \begin{lemma}
-  Let $f : [0,1] \to \R$ be real analytic.\\
-  Then there exists an $l \in \N$ such that 
-  $$ \forall x \in [0,1]: \, \left | \frac{f^{(j)}(x)}{j!} \right | \leq 2^l\cdot l^j $$
+  Let $f : \overline B(0,1) \to \R$ be real analytic and $(a_n)_{n \in \N}$ its power series around $0$.\\
+  Then there exists an $k,A \in \N$ such that 
+  \begin{enumerate}
+  \item $\sqrt[k]{2}$ is a lower bound on the radius of convergence
+  \item $\abs{a_n} \leq A \cdot 2^{-\frac{n}{k}}$
+  \end{enumerate}
 \end{lemma}
 \pause
-$l$ can be used to make a tail estimate on
+$A$ and $k$ can be used to make a tail estimate on
 $$ \left | \sum_{n \geq N} a_n z^n \right |  $$
 \end{frame}
-\begin{frame}[<+->]
+\begin{frame}
 \frametitle{Analytic Functions and Computational Complexity}
 \begin{theorem}[Kawamura, R\"osnick, M\"uller, Ziegler (2013)]
-  The following operators are computable in time polynomial in $n+l$, where $2^{-n}$ is the output precision.
+  The following operators are computable in time polynomial in $n+k+\log(A)$, where $2^{-n}$ is the output precision.
 \begin{enumerate}
 \item evaluation
 \item addition and multiplication
@@ -310,6 +338,8 @@ $$ \left | \sum_{n \geq N} a_n z^n \right |  $$
 \end{enumerate}
 \end{theorem}
 \end{frame}
+\section{Differential Equations}
+\subsection{IVP Solving}
 \begin{frame}
   \frametitle{Ordinary Differential Equations}
   We are further interested in the following problem:\newline
@@ -351,18 +381,30 @@ can be computed in polynomial time if the $F_v$ are polynomial time computable.
   \end{frame}
 \begin{frame}
   \frametitle{Multi-Dimensional Functions}
-  Consider functions $f: \RR^d \to \RR$ complex analytic in a neighborhood of $0 \in \C^d$ and their power series $\sum_{n_1, \dots, n_d \in \N} a_{n_1,\dots,n_d}x_1^{ n_1 } \dots x_d^{ n_d }$
-  \begin{itemize}
-  \item The beforementioned representation can be generalized for the multi-dimensional case
-    \item Let $B$ and $q_i$ s.t. 
-$ \abs{a_{i_1, \dots, i_d}} \leq \frac{B}{q_1^{i_1} \dots q_d^{i_d}} $
-    \item Let $b_{i_1} := \sum_{i_2, \dots, i_d \in \N^{d-1}} a_{i_1, \dots, i_d} \cdot x_2^{i_2} \dots x_d^{i_d}$.
-    \item Then $f(x_1, \dots, x_d) = \sum_{i \in \N} b_i\cdot x^i$
-\item $\abs{b_i} \leq \frac{B}{q_1^i \cdot (1-\frac{x_2}{q_1}) \dots (1-\frac{x_d}{q_d})}$
-  \item $b_i$ can be computed by evaluating a $d-1$ dimensional analytic function
-  \end{itemize}
+  Consider functions $f: \RR^d \to \RR$ complex analytic in a neighborhood of $0 \in \C^d$.
+  \pause
+  Their power series is given by
+  $$\sum_{n_1, \dots, n_d \in \N} a_{n_1,\dots,n_d}x_1^{ n_1 } \dots x_d^{ n_d }$$
+  \pause
+  The beforementioned representation can be generalized.\\
+  The main idea is let
+  $$f(x_1, \dots, x_d) = \sum_{i \in \N} b_i\cdot x^i$$
+  with
+  $$b_{i} := \sum_{i_2, \dots, i_d \in \N^{d-1}} a_{i, \dots, i_d} \cdot x_2^{i_2} \dots x_d^{i_d}$$
+  \pause
+  $b_i$ can be evaluated by evaluating a $d-1$ dimensional analytic function.
+%%   \begin{itemize}
+%%   \item The beforementioned representation can be generalized for the multi-dimensional case
+%%     \item Let $B$ and $q_i$ s.t. 
+%% $ \abs{a_{i_1, \dots, i_d}} \leq \frac{B}{q_1^{i_1} \dots q_d^{i_d}} $
+%%     \item Let $b_{i_1} := \sum_{i_2, \dots, i_d \in \N^{d-1}} a_{i_1, \dots, i_d} \cdot x_2^{i_2} \dots x_d^{i_d}$.
+%%     \item Then $f(x_1, \dots, x_d) = \sum_{i \in \N} b_i\cdot x^i$
+%% \item $\abs{b_i} \leq \frac{B}{q_1^i \cdot (1-\frac{x_2}{q_1}) \dots (1-\frac{x_d}{q_d})}$
+%%   \item $b_i$ can be computed by evaluating a $d-1$ dimensional analytic function
+%%   \end{itemize}
   \end{frame}
 \section{Implementation}
+\subsection{Implementation Details}
 \begin{frame}
   \frametitle{DAG approach}
   \begin{center}
@@ -370,16 +412,15 @@ $ \abs{a_{i_1, \dots, i_d}} \leq \frac{B}{q_1^{i_1} \dots q_d^{i_d}} $
             ,->,shorten >=1pt,auto,node distance=2.5cm,minimum
               size=0.8cm,main node/.style={circle,fill=yellow!20,draw,font=\sffamily\small}]
     
-    \node<2->[main node] (1) {$\times$};
-    \node<2->[main node] (2) [below left of=1] {$sin$};
-    \node<2->[main node] (6) [below left of=2] {$f$};
-    \node<2->[main node] (3) [below right of=1] {$\circ$};
-    \node<2->[main node] (4) [below left of=3] {$g$};
-    \node<2->[main node] (5) [below right of=3] {$h$};
+    \node[main node] (1) {$\times$};
+    \node[main node] (2) [below left of=1] {$sin$};
+    \node[main node] (3) [below right of=1] {$\circ$};
+    \node[main node] (4) [below left of=3] {$f$};
+    \node[main node] (5) [below right of=3] {$g$};
 
-    \path<2->[every node/.style={font=\sffamily\small}]
+    \path[every node/.style={font=\sffamily\small}]
     (1) edge (2)
-    (2) edge (6)
+    (2) edge (4)
     (1) edge (3)
     (3) edge (4)
     (3) edge (5);
@@ -390,10 +431,46 @@ $ \abs{a_{i_1, \dots, i_d}} \leq \frac{B}{q_1^{i_1} \dots q_d^{i_d}} $
 \end{frame}
 \begin{frame}
   \frametitle{Implementation}
-
-  \end{frame}
+  \foreach \x in {1,...,8} {
+    \only<\x>{
+      \includegraphics[width=1.1\textwidth]{class_overview\x}
+    }
+  }
+\end{frame}
 \begin{frame}
   \frametitle{ODE solving}
+ Additionally there is an operator \code{solve\_ivp} for initial value problems of the form 
+\begin{eqnarray*}
+  \dot y_v(t) &=& F_v(t, y_1(t), \dots, y_t(t)) \\
+  y_v(0) &=& 0 \text{ for }v=1,\dots,d
+\end{eqnarray*}
+\pause
+The solution has parameters
+$r' = \min(r, \frac{r}{M})$ 
+$M' = r$ \newline
+\pause
+For initial values different from $0$ first use analytic continuation.
+  \end{frame}
+\begin{frame}
+  \frametitle{Increasing the radius}
+  \begin{itemize}
+  \item Usually radius of the solution function will get very small
+  \item One can use analytic continuation on the original function
+  \item Compute $y_1 = y(t')$ for some small enough $t'$
+  \item Solve the ODE $\dot y(t) = F(t, y(t))$; $y(t') = y_1$ 
+  \end{itemize}
+  \end{frame}
+\begin{frame}
+  \frametitle{Conclusion}
+  \begin{itemize}
+  \item Presented a data-type for multi dimensional analytic functions
+  \item Several operators implemented
+  \item Experiments show that from dimension $4$ operations on the power series become quite slow
+  \item Can also solve systems of ordinary differential equations with the right hand side functions given by the type
+  \item Radius of solution will usually get small so that many steps are needed
+  \item Specialized functions for different types of ODEs?
+  \item Parallelization
+  \end{itemize}
   \end{frame}
 %{
 %\makeatletter % to change template

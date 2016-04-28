@@ -9,7 +9,7 @@
 \DeclareMathOperator{\C}{\mathcal C}
 \DeclareMathOperator{\laplace}{\Delta}
 \bibliographystyle{amsalpha}
-
+\usepackage{authblk}
 \newcommand{\p}{\ensuremath{\mathcal P}\xspace}
 \newcommand{\np}{\ensuremath{\mathcal{NP}}\xspace}
 \newcommand{\fp}{\ensuremath{\mathcal{FP}}\xspace}
@@ -18,8 +18,16 @@
 \newcommand{\cc}{\texttt{C++}\xspace}
 \newcommand{\irram}{\texttt{iRRAM}\xspace}
 
+\renewcommand\Authands{ and }
+\author[1]{Akitoshi Kawamura}
+\author[1,2]{Florian Steinberg}
+\author[1]{Holger Thies}
+\title{On data-types for multidimensional functions in Exact Real Arithmetic}
+\affil[1]{The University of Tokyo}
+\affil[2]{TU Darmstadt}
+\date{}
 \begin{document}
-\section*{On data-types for multidimensional functions in Exact Real Arithmetic}
+\maketitle
 Exact Real Arithmetic deals with error free computations on real numbers in the sense of arbitrarily precise approximations. 
 A theoretical foundation for such computations is given by real computability and complexity theory (see e.g. \cite{MR0089809, MR1137517,Weihrauch}).
 In contrast to the usual approach in Numerical Engineering where correctness and efficiency is mostly demonstrated empirically, algorithms in Exact Real Arithmetic can be verified to be correct, have sound semantics and are closed under composition.

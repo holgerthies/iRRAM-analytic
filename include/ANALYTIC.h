@@ -54,11 +54,19 @@ namespace iRRAM
       return pwr;
     }
 
+    void add_algorithm(std::function<R(const Args&...)> f)
+    {
+      algorithm = f;
+      has_algorithm = true;
+    }
   };
+    
 
   template <class R, class... Args>
   R ANALYTIC<R, Args...>::evaluate(const Args&... args) const 
   {
+    if(has_algorithm)
+      return algorithm(args...);
     return PWRSERIES_IMPL::evaluate(pwr, M, r, args...);
   }
 

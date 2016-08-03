@@ -65,3 +65,7 @@ bin/*
 *.nav
 /docs/presentation/complexity.svg
 /docs/presentation/complexity.png
+/docs/presentation/class_overview.dia~
+/docs/presentation/odesolving.dia~
+*.png
+/include/TaylorModel.h

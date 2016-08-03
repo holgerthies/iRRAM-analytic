@@ -8,6 +8,7 @@
 #include <functional>
 #include <cstdarg>
 #include "combinatorics.h"
+#include "AAREAL.h"
 
 namespace iRRAM{
   // forward declarations
@@ -445,57 +446,97 @@ namespace iRRAM{
       REAL error = B*get_error_constant(q,x,rest...);
       REAL next_B = B;
     
-      REAL sum(evaluate<n-1,T>((*pwr)[0], next_B, q, rest...));
-      REAL best=sum;
+      AAREAL sum(evaluate<n-1,T>((*pwr)[0], next_B, q, rest...));
+      REAL best=sum.to_real();
       sizetype best_error, trunc_error, local_error,sum_error;
-      REAL log2=log(REAL(2));
-      double stepsize_factor=(log2/log(error_factor)).as_double();
-      int stepsize=stepsize_factor*ACTUAL_STACK.actual_prec+1;
-      sum.geterror(sum_error);
-      
-      sizetype_add(trunc_error,error.vsize,error.error);
-      sizetype_add(local_error, sum_error, trunc_error);
-      best.seterror(local_error);
-      best_error = local_error;
-      REAL x0=1; // x[0]^J
-      REAL error_factor_step = power(error_factor, stepsize);
-      REAL next_B_factor = power(1/q, stepsize);
+      //REAL log2=log(REAL(2));
+      //double stepsize_factor=(log2/log(error_factor)).as_double();
+      //int stepsize=stepsize_factor*ACTUAL_STACK.actual_prec+1;
+      best.geterror(sum_error);
+      AAREAL trunc_error_term;
+      trunc_error_term.add_error(error);
+      trunc_error = real_to_error(error);
+      best = (sum+trunc_error_term).to_real();
+      // sizetype_add(trunc_error,error.vsize,error.error);
+      // sizetype_add(local_error, sum_error, trunc_error);
+      // best.seterror(local_error);
+      best.geterror(best_error);
+      AAREAL x0=REAL(1); // x[0]^J
+      AAREAL xorig=x;
+      //REAL error_factor_step = power(error_factor, stepsize);
+      REAL next_B_factor = 1/q;
 
       while (sizetype_less(sum_error, trunc_error) &&
              (trunc_error.exponent >= ACTUAL_STACK.actual_prec) ){
-        J+=stepsize;
+        J++;
+        //std::cout << J <<","<<trunc_error.exponent<< " " <<std::endl;
+        
         next_B *= next_B_factor;
-        // horner's method to evaluate polynomial 
-        x0 *= x;
-        T b = evaluate<n-1,T>((*pwr)[J], next_B, q, rest...);
-        REAL curr_B = next_B;
-        REAL x1=x0; // x^J
-        for(int j=J-1; j>J-stepsize; j--){
-          curr_B *= q;
-          b = evaluate<n-1,T>((*pwr)[j], curr_B, q, rest...) + b*x;
-          x1 *= x;
-        }
+        REAL b = evaluate<n-1,T>((*pwr)[J], next_B, q, rest...);
+        x0 = x0*xorig;
         sum += b*x0;
-        error *= error_factor_step;
-        sizetype error_error, error_vsize;
-        error.geterror(error_error);
-        error.getsize(error_vsize);
+        if(J % 4 == 0)
+        {
+          x0.clean();
+        sum.clean();
+        }
         
-        sizetype_add(trunc_error,error_error, error_vsize);
-        
-        sum.geterror(sum_error); // get error of partial sum
-        sizetype_add(local_error, sum_error, trunc_error);
-        x0 = x1;
+        error *= error_factor;
+        trunc_error_term = AAREAL();
+        trunc_error_term.add_error(error);
+        trunc_error = real_to_error(error);
+        REAL local = (sum+trunc_error_term).to_real();
+        local.geterror(local_error);
         if (sizetype_less(local_error, best_error)) { 
-          best = sum;
-          best.seterror(local_error);
+          best = local;
           best_error = local_error;
         }
-        stepsize = 3;
-        next_B_factor = power(1/q, stepsize);
-        error_factor_step = power(error_factor, stepsize);
-              
+   
       }
+      //std::cout << "accesed " << J << std::endl;
+      
+      // while (sizetype_less(sum_error, trunc_error) &&
+      //        (trunc_error.exponent >= ACTUAL_STACK.actual_prec) ){
+      //   J+=stepsize;
+      //   next_B *= next_B_factor;
+      //   // horner's method to evaluate polynomial 
+      //   x0 *= x;
+        
+      //   AAREAL b = evaluate<n-1,T>((*pwr)[J], next_B, q, rest...);
+      //   REAL curr_B = next_B;
+      //   AAREAL x1=x0; // x^J
+      //   for(int j=J-1; j>J-stepsize; j--){
+      //     curr_B *= q;
+      //     b = AAREAL(evaluate<n-1,T>((*pwr)[j], curr_B, q, rest...)) + b*x;
+      //     b.clean();
+      //     x1 *= x;
+      //     //x1.clean();
+          
+      //   }
+      //   x1.clean();
+      //   sum += b*x0;
+      //   //sum.clean();
+      //   error *= error_factor_step;
+      //   sizetype error_error, error_vsize;
+      //   error.geterror(error_error);
+      //   error.getsize(error_vsize);
+        
+      //   sizetype_add(trunc_error,error_error, error_vsize);
+      //   sum.clean();
+        
+      //   sum.to_real().geterror(sum_error); // get error of partial sum
+      //   sizetype_add(local_error, sum_error, trunc_error);
+      //   x0 = x1;
+      //   if (sizetype_less(local_error, best_error)) { 
+      //     best = sum.to_real();
+      //     best.seterror(local_error);
+      //     best_error = local_error;
+      //   }
+      //   stepsize = 3;
+      //   next_B_factor = power(1/q, stepsize);
+      //   error_factor_step = power(error_factor, stepsize);
+              
+      // }
       
       return best;
     }

@@ -1,4 +1,4 @@
-\documentclass[xcolor=pdftex,dvipsnames,table]{beamer}
+\documentclass[xcolor=pdftex,dvipsnames,table,handout]{beamer}
 \usetheme{Darmstadt}
 \usepackage{etex}
 \providecommand\thispdfpagelabel[1]{}
@@ -18,7 +18,8 @@
 \usepackage{pgffor}
 \usepackage[square,sort,comma,numbers]{natbib}
 \usepackage{CJKutf8}
-\setbeamertemplate{footline}[frame number]
+ \setbeamertemplate{footline}{%
+      \raisebox{5pt}{\makebox[\paperwidth]{\hfill\makebox[10pt]{\scriptsize\insertframenumber}}}}
 \tikzset{
     onslide/.code args={<#1>#2}{% http://tex.stackexchange.com/a/6155/16595
         \only<#1>{\pgfkeysalso{#2}}
@@ -97,8 +98,7 @@
 \newtheorem{representation1}{Representation 1} 
 \newtheorem{representation1b}{Representation 1'} 
 \newtheorem{representation2}{Representation 2} 
-\title[data-types for multidimensional functions]{On data-types for multidimensional functions in Exact Real Arithmetic
-}
+\title[data-types for multidimensional functions]{Analytic Functions and Ordinary Differential Equations in Exact Real Arithmetic}
 \author[ H. Thies]{
 		Holger Thies \footnote{Joint work with Akitoshi Kawamura and Florian Steinberg}
 }
@@ -107,30 +107,30 @@
 }
 \begin{document}
 \setbeamercolor{note}{fg=black,bg=lightgray} 
-\date{May 9, 2016}
+\date{May 12, 2016}
 \frame{
 \titlepage
 }
 \section{Real Computability}
 \subsection{Computable Reals}
-\begin{frame}
-  \frametitle{Computers and Real Numbers}
-  \begin{itemize}[<+->]
-  \item The set of real numbers is uncountable
-    \item It is not possible to write every real number as finite string over a finite alphabet
-    \item Most common way: represented by a fixed-length string (e.g. floating point)
-    \item Can be implemented in hardware, thus very fast
-      \item Rounding is necessary
-     \item Does not behave well from a mathematical point of view (closure under composition,...) 
-       \item Not a safe way to do computations
-    \end{itemize}
-  \end{frame}
+%% \begin{frame}
+%%   \frametitle{Computers and Real Numbers}
+%%   \begin{itemize}[<+->]
+%%   \item The set of real numbers is uncountable
+%%     \item It is not possible to write every real number as finite string over a finite alphabet
+%%     \item Most common way: represented by a fixed-length string (e.g. floating point)
+%%     \item Can be implemented in hardware, thus very fast
+%%       \item Rounding is necessary
+%%      \item Does not behave well from a mathematical point of view (closure under composition,...) 
+%%        \item Not a safe way to do computations
+%%     \end{itemize}
+%%   \end{frame}
 \begin{frame}
 \frametitle{Computable Real Numbers}
+\pause
   A real number is called computable if it can be approximated up to any desired precision.
   \vfill
   \pause
-\begin{minipage}{.45\textwidth}
 		\begin{figure}
 		\centering
     \vfill
@@ -152,21 +152,23 @@
 				%\node<4-> at (1.25,-2.25) {$1^i$};
 		\end{tikzpicture}
 		\end{figure}
-	\end{minipage}
-	\hfill
-        \pause
-	\begin{minipage}{.45\textwidth}
+ \end{frame}
+ \begin{frame}
+   \frametitle{Computable Real Functions}
+  \begin{figure}
+  \centering
+  \vfill
 		\begin{tikzpicture}
-			\path (-1.7,1.7) rectangle (3.7,-5.2);
+			\path (0,0) rectangle (3.7,-5.2);
 			%x
-				\draw<4-> (0,0) rectangle (3,-2);
-				\node<4-> at (1.5,-1) {$x$};
-				\draw<4-> (1,-2) -- (1,-2.2);
-				\draw<4->[-triangle 90] (1,-2.5) -- (1,-2.2);
-				\node<4-> at (.5,-2.25) {$1^m$};
-				\draw<4->[-triangle 90] (2,-2) -- (2,-2.3);
-				\draw<4-> (2,-2.3) -- (2,-2.5);
-				\node<4-> at (2.5,-2.25) {$d_m$};
+				\draw<2-> (0,0) rectangle (3,-2);
+				\node<2-> at (1.5,-1) {$x$};
+				\draw<2-> (1,-2) -- (1,-2.2);
+				\draw<2->[-triangle 90] (1,-2.5) -- (1,-2.2);
+				\node<2-> at (.5,-2.25) {$1^m$};
+				\draw<2->[-triangle 90] (2,-2) -- (2,-2.3);
+				\draw<2-> (2,-2.3) -- (2,-2.5);
+				\node<2-> at (2.5,-2.25) {$d_m$};
 			%f
 				\draw[thick] (0,-2.5) rectangle (3,-4.5);
 				\node at (1.5,-3.5) {$f$};
@@ -180,7 +182,7 @@
 				%\draw (-1.5,.5) rectangle (3.5,-4.5);
 				%\node at (-.75,-2) {$f(x)$};
 		\end{tikzpicture}
-	\end{minipage}
+  \end{figure}
 \end{frame}
 \subsection{Computable Functions}
 \begin{frame}
@@ -227,8 +229,7 @@
   \begin{itemize}[<+->]
   \item The computational model can be implemented
   \item \irram is a \cc framework for exact real arithmetic written by Norbert M\"{u}ller (University of Trier)
-  \item \real as data type
-  \item can perform arithmetic operations on \real without introducing rounding errors
+  \item \real as data type that can perform arithmetic operations on \real without introducing rounding errors
   \item In the end, the user can output an approximation to the \emph{result} of the computation with any desired precision
   \item Many predefined functions already exist (sine,...)
   \item New real numbers and functions can be defined (limit operator)
@@ -243,16 +244,16 @@
     \path (4.6,0) ellipse (5.6 and 1.3);
     \draw<1-> (0,0) ellipse (1 and .5);
     \node<1-> at (0,0) {$\p$};
-    \draw<4-> (3.5,0) ellipse (4.5 and 1);
-    \node<4-> at (7,0) {$\pspace$};
-    \draw<3-> (1.5,0) ellipse (2.5 and .75);
-    \node<3-> at (1.5,0) {$\np$};
-    \draw<5-> (3,0) ellipse (1 and .5);
-    \node<5-> at (3,0) {$\npc$};
-    \draw<6-> (2.5,0) ellipse (3.5 and .9);
-    \node<6-> at (5,0) {\lq$\sharpp$\rq};
-    \draw<2-> (4.5,0) ellipse (5.5 and 1.2);
-    \node<2-> at (9,0) {$\eXp$};
+    \draw<1-> (3.5,0) ellipse (4.5 and 1);
+    \node<1-> at (7,0) {$\pspace$};
+    \draw<1-> (1.5,0) ellipse (2.5 and .75);
+    \node<1-> at (1.5,0) {$\np$};
+    \draw<2-> (3,0) ellipse (1 and .5);
+    \node<2-> at (3,0) {$\npc$};
+    \draw<1-> (2.5,0) ellipse (3.5 and .9);
+    \node<1-> at (5,0) {\lq$\sharpp$\rq};
+    \draw<1-> (4.5,0) ellipse (5.5 and 1.2);
+    \node<1-> at (9,0) {$\eXp$};
    \end{tikzpicture}
   \end{frame}
 \subsection{Analytic Functions}
@@ -263,8 +264,7 @@ We want to implement a data-type for functions and perform operations on this ty
 \begin{fact}
 For general polynomial time computable functions, many important operators have been shown to be computationally hard.\\
 For example
-\pause
-\begin{itemize}[<+->]
+\begin{itemize}
 \item Polynomial time computable functions may have noncomputable derivatives. (Ko 1983)
 \item Parametric maximization is NP-hard. (Ko/Friedman (1982))
 \item Integration is \#P-hard. (Friedman (1984))
@@ -308,14 +308,12 @@ $$
 \item The evaluation operator $((a_m)_{m \in \N},x) \to f(x) $ is not computable.
 \end{itemize}
 \end{theorem}
-\pause
-However, if we supply some additional (discrete) information those operators become computable.
 \end{frame}
 \subsection{Representing power series}
 \begin{frame}
 \frametitle{A practical representation for power series}
 \begin{lemma}
-  Let $f : \overline B(0,1) \to \R$ be real analytic and $(a_n)_{n \in \N}$ its power series around $0$.\\
+  Let $f : \overline B(0,1) \to \R$ be analytic and $(a_n)_{n \in \N}$ its power series around $0$.\\
   Then there exists an $k,A \in \N$ such that 
   \begin{enumerate}
   \item $\sqrt[k]{2}$ is a lower bound on the radius of convergence
@@ -346,7 +344,7 @@ $$ \left | \sum_{n \geq N} a_n z^n \right |  $$
 Consider Systems of Ordinary Differential Equations of the form
 \begin{eqnarray*}
   \dot y_v(t) &=& F_v(t, y_1(t), \dots, y_t(t)) \\
-  y_v(0) &=& 0 
+  y_v(w_0) &=& y_0 
 \end{eqnarray*}
 for $v=1,\dots,d$ and $F_v : \RR^{d+1} \to \RR$.
   \end{frame}
@@ -357,12 +355,14 @@ Consider the IVP
 $$
 y'(t)=f(t,y(t)) \quad;\quad y(0)=0.
 $$
+There exists functions $f: [0,1] \times [-1,1] \to \RR$ and  $y: [0,1] \to [-1,1]$  as above such that
 \pause
-There exist functions $f: [0,1] \times [-1,1] \to \RR$ and $y: [0,1] \to [-1,1]$
-such that $f$ is computable in polynomial time and Lipschitz continuous
-but $y$ is PSPACE-hard.
+\begin{enumerate}
+\item $f$ is Lipschitz-continuous and polynomial time computable
+\item $y$ is PSPACE-hard.
+\end{enumerate}
 \end{theorem}
-The problem can be solved in PSPACE by applying the Euler method. (Ko)
+% The problem can be solved in PSPACE by applying the Euler method. (Ko)
 \end{frame}
 \begin{frame}
   \frametitle{Ordinary Differential Equations}
@@ -372,23 +372,25 @@ Consider Systems of Ordinary Differential Equations of the form
   \dot y_v(t) &=& F_v(t, y_1(t), \dots, y_t(t)) \\
   y_v(0) &=& 0 
 \end{eqnarray*}
-for $v=1,\dots,d$ and $F_v : \RR^{d+1} \to \RR$.
+for $v=1,\dots,d$ and $F_v : \RR^{d+1} \to \RR$.\\
+\textbf{This is hard in the general case.}\\
 \pause
-This is hard in the general case.
-\pause
-But if all $F_v$ are analytic, the solutions $y_v$ will again be analytic and the coefficients of the power series
-can be computed in polynomial time if the $F_v$ are polynomial time computable.
+If all $F_v$ are analytic
+\begin{itemize}
+\item the solutions $y_v$ will again be analytic
+\item the coefficients of the power series can be computed in polynomial time if the $F_v$ are polynomial time computable.
+\end{itemize}
   \end{frame}
 \begin{frame}
   \frametitle{Multi-Dimensional Functions}
-  Consider functions $f: \RR^d \to \RR$ complex analytic in a neighborhood of $0 \in \C^d$.
+  Consider functions $f: \RR^d \to \RR$ analytic in a neighborhood of $0 \in \C^d$.
   \pause
   Their power series is given by
   $$\sum_{n_1, \dots, n_d \in \N} a_{n_1,\dots,n_d}x_1^{ n_1 } \dots x_d^{ n_d }$$
   \pause
   The beforementioned representation can be generalized.\\
   The main idea is let
-  $$f(x_1, \dots, x_d) = \sum_{i \in \N} b_i\cdot x^i$$
+  $$f(x_1, \dots, x_d) = \sum_{i \in \N} b_i\cdot x_1^i$$
   with
   $$b_{i} := \sum_{i_2, \dots, i_d \in \N^{d-1}} a_{i, \dots, i_d} \cdot x_2^{i_2} \dots x_d^{i_d}$$
   \pause
@@ -431,7 +433,7 @@ can be computed in polynomial time if the $F_v$ are polynomial time computable.
 \end{frame}
 \begin{frame}
   \frametitle{Implementation}
-  \foreach \x in {1,...,8} {
+  \foreach \x in {8,...,8} {
     \only<\x>{
       \includegraphics[width=1.1\textwidth]{class_overview\x}
     }
@@ -444,25 +446,25 @@ can be computed in polynomial time if the $F_v$ are polynomial time computable.
   \dot y_v(t) &=& F_v(t, y_1(t), \dots, y_t(t)) \\
   y_v(0) &=& 0 \text{ for }v=1,\dots,d
 \end{eqnarray*}
+For initial values different from $0$ first compute the power series around another point.\\
 \pause
 The solution has parameters
 $r' = \min(r, \frac{r}{M})$ 
 $M' = r$ \newline
-\pause
-For initial values different from $0$ first use analytic continuation.
   \end{frame}
 \begin{frame}
   \frametitle{Increasing the radius}
-  \begin{itemize}
+  $$r' = \min(r, \frac{r}{M})$$
+  \begin{itemize}[<+->]
   \item Usually radius of the solution function will get very small
-  \item One can use analytic continuation on the original function
+  \item One can iteratively compute new initial values
   \item Compute $y_1 = y(t')$ for some small enough $t'$
   \item Solve the ODE $\dot y(t) = F(t, y(t))$; $y(t') = y_1$ 
   \end{itemize}
   \end{frame}
 \begin{frame}
   \frametitle{Conclusion}
-  \begin{itemize}
+  \begin{itemize}[<+->]
   \item Presented a data-type for multi dimensional analytic functions
   \item Several operators implemented
   \item Experiments show that from dimension $4$ operations on the power series become quite slow

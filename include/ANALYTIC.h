@@ -18,6 +18,8 @@ namespace iRRAM
   private:
     pwr_series_ptr pwr;
     REAL M,r; // maximum of the function and radius of convergence
+    std::function<R(const Args&...)> algorithm;
+    bool has_algorithm=false;
   public:
     ANALYTIC(const pwr_series_ptr& pwr, const REAL M, const REAL r):
       pwr(pwr), M(M), r(r) 

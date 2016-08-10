@@ -4,9 +4,16 @@
 #ifndef IVP_SOLVER_H
 #define IVP_SOLVER_H
 #include "ANALYTIC.h"
+#include <vector>
 namespace iRRAM
 {
-
+  // for debugging
+  struct DEBUG_INFORMATION
+  {
+    int steps;
+    REAL r_end;
+  };
+  
   template <size_t d, class T>
   class SERIES_IVP_SOLVER
   {
@@ -129,7 +136,7 @@ namespace iRRAM
     std::vector<std::shared_ptr<ANALYTIC<R, R>>> solutions;
     REAL M,r;
   public:
-    IVP_SOLVER(std::initializer_list<std::shared_ptr<Node<R, Args...>>> funs)
+    IVP_SOLVER(std::vector<std::shared_ptr<Node<R, Args...>>> funs)
     {
       
       M = (*funs.begin())->to_analytic()->get_M();
@@ -185,17 +192,131 @@ namespace iRRAM
     }
   };
 
+  
+  template <class... Args>
+  REAL abs_maximum(const REAL& x, const Args&... xs )
+  {
+    return maximum(abs(x), abs_maximum(xs...));
+  }
+
+  REAL abs_maximum(const REAL& x)
+  {
+    return abs(x);
+  }
+
+  // class to specify IVP system together with initial values
   template <class R, class... Args>
-  std::vector<std::shared_ptr<Node<R,R>>> ivp_solve(std::initializer_list<std::shared_ptr<Node<R,Args...>>> F)
+  class IVPSYSTEM
+  {
+  public:
+    std::vector<std::shared_ptr<Node<R, Args...>>> F;
+    std::vector<R> y;
+  };
+  
+
+  template <class R, class... Args>
+  std::vector<std::shared_ptr<Node<R,R>>> ivp_solve(std::vector<std::shared_ptr<Node<R,Args...>>> F)
   {
     auto solver = std::make_shared<IVP_SOLVER<R,Args...>>(F);
     std::vector<std::shared_ptr<Node<R,R>>> ans;
     for(int i=0; i<sizeof...(Args)-1; i++){
-      
       std::shared_ptr<Node<R,R>> sol = std::make_shared<IVP<R,Args...>>(solver, i);
       ans.push_back(sol);
     }
     return ans;
+  }
+
+  // solve ODE system by taylor method and evaluate at some point x
+  template<class R, class... Args>
+  std::vector<R> solve_taylor(const IVPSYSTEM<R, Args...>& S, const R& max_time,  DEBUG_INFORMATION& debug)
+  {
+    std::vector<R> Y(S.y);
+    // transposed functions
+    std::vector<std::shared_ptr<Node<R, Args...>>> Fc(S.F);
+    REAL M = S.F[0]->to_analytic()->get_M();
+    REAL r0 = S.F[0]->to_analytic()->get_r();
+    REAL r = r0;
+    int iter=0;
+    while(Y[0] < max_time){
+      iter++;
+      
+      for(int i=0; i<Fc.size(); i++){
+        // transpose function such that y(0)=0
+        Fc[i] = continuation(S.F[i], M,r, Y );
+      }
+      
+      auto F = ivp_solve(Fc);
+      REAL h=F[0]->to_analytic()->get_r()/8;
+      //iRRAM::cout << Y[0] << std::endl;
+      REAL max_y = Y[0];
+      for(int i=0; i<Fc.size(); i++){
+        REAL p = minimum(h, max_time-Y[0]);
+        Y[i+1] += F[i]->evaluate(p);
+        max_y = maximum(max_y, Y[i+1]);
+      }
+      
+      debug.r_end = F[0]->to_analytic()->get_r();
+      
+      r = r0-max_y;
+      Y[0] += h;
+      
+      iRRAM::cout << Y[0]<<"  "<<Y[1]<<std::endl;
+    }
+    debug.steps = iter;
+    return  Y;
+  }
+
+  // template<class R, class... Args>
+  // void heun_step(const std::vector<std::shared_ptr<Node<R, Args...>>& F, std::vector<R>& Y)
+  // {
+    
+  //   REAL M = F[0]->to_analytic()->get_M();
+  //   for(const auto& f : F){
+  //     M = maximum(M, f->to_analytic()->get_M();)
+  //   }
+  
+  
+  //   sizetype eval_error1, eval_error2, eval_error, trunc_error;
+  //   REAL error;
+  
+  //   do{
+  //     h /= 2;
+  //     REAL ev1 = f1->evaluate(t0,y00.to_real(), y01.to_real());
+  //     AAREAL y00p = y00+h*ev1;
+  //     AAREAL y01p = y01+h*ev1;
+  //     y10 = y00+(h/2)*(ev1+f1->evaluate(t0+h, y00p.to_real(), y01p.to_real()));
+  //     REAL ev2 = f2->evaluate(t0,y00.to_real(), y01.to_real());
+  //     AAREAL y10p = y00+h*ev2;
+  //     AAREAL y11p = y01+h*ev2;
+  //     y11 = y01+(h/2)*(ev2+f2->evaluate(t0+h, y10p.to_real(), y11p.to_real()));
+  //     y10.to_real().geterror(eval_error1);
+  //     y11.to_real().geterror(eval_error2);
+  //     sizetype_max(eval_error, eval_error1, eval_error2);
+  //     //error = power(h,3)*M;
+  //     trunc_error = real_to_error(error);
+  //   } while (
+  //     (trunc_error.exponent >= ACTUAL_STACK.actual_prec) );
+  //   y10.add_error(error);
+  //   y11.add_error(error);
+  
+  //   y10.geterror(eval_error1);
+  //   y11.geterror(eval_error2);
+  //   sizetype_add(total_error1, eval_error1, trunc_error);
+  //   sizetype_add(total_error2, eval_error2, trunc_error);
+  //   y10.seterror(total_error1);
+  //   y11.seterror(total_error2);
+  // }
+
+  // solve ODE system by heun's method and evaluate at some point x
+  template<class R, class... Args>
+  std::vector<R> solve_heun(const IVPSYSTEM<R, Args...>& S, const R& max_time,  DEBUG_INFORMATION& debug)
+  {
+    std::vector<R> Y(S.y);
+    REAL M = S.F[0]->to_analytic()->get_M();
+    REAL r = S.F[0]->to_analytic()->get_r();
+    while(Y[0] < max_time){
+      
+    }
   }
 
 } // namespace iRRAM

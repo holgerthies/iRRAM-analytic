@@ -35,6 +35,13 @@ namespace iRRAM
       rec_evaluator(DERIVATIVE_EVALUATOR<Args...>(xs...))
     {
     }
+
+    DERIVATIVE_EVALUATOR(const std::vector<T>& xs):
+      x(xs[xs.size()-sizeof...(Args)-1]),
+      rec_evaluator(DERIVATIVE_EVALUATOR<Args...>(xs))
+    {
+    }
+
     REAL get_error_constant(const REAL& q){
       return (1-abs(x)/q)*rec_evaluator.get_error_constant(q);
     }
@@ -89,6 +96,10 @@ namespace iRRAM
     {
     }
 
+    DERIVATIVE_EVALUATOR(const std::vector<T>& xs):
+      x(xs[xs.size()-1])
+    {
+    }
   public:
     REAL get_q(const REAL& r)
     {
@@ -165,6 +176,14 @@ namespace iRRAM
         });
     };
 
+    template<class... Orders>
+    CONTINUATION_SERIES(const std::shared_ptr<ANALYTIC<T, Args...>>& node, const std::vector<T>& xs, const Orders... orders)
+    {
+      pwr = std::make_shared<POWERSERIES<d,T>>([node, orders..., &xs] (unsigned long n) {
+          auto continuation = std::make_shared<CONTINUATION_SERIES<d-1, T, Args...>>(node, xs, orders..., n);
+          return continuation->get_series();
+        });
+    };
     auto get_series() -> decltype(pwr)
     {
       return pwr;
@@ -191,6 +210,19 @@ namespace iRRAM
         });
     };
 
+    template<class... Orders>
+    CONTINUATION_SERIES(const std::shared_ptr<ANALYTIC<T, Args...>>& node, const std::vector<T>& xs, const Orders... orders)
+    {
+      auto series = node->get_series();
+      auto evaluator = std::make_shared<DERIVATIVE_EVALUATOR<Args...>>(xs);
+      auto r = node->get_r();
+      auto M = node->get_M();
+      auto q = evaluator->get_q(r);
+      pwr = std::make_shared<POWERSERIES<1,T>>([q,r,M, series, orders..., evaluator] (unsigned long n) {
+          auto B = evaluator->get_B(r, M, q, orders...);
+          return std::make_shared<T>(evaluator->evaluate(series, B, q, orders..., n));
+        });
+    };
     auto get_series() -> decltype(pwr)
     {
       return pwr;
@@ -212,6 +244,13 @@ namespace iRRAM
       auto dpwr= std::make_shared<CONTINUATION_SERIES<sizeof...(args),R,Args...>>(f,args...);
       this->analytic = std::make_shared<ANALYTIC<R,Args...>>(dpwr->get_series(), new_M, new_r);
     }
+    CONTINUATION(const node_ptr& node, const REAL& new_M, const REAL& new_r, const std::vector<R>& xs):
+      node(node)
+    {
+      auto f = node->to_analytic();
+      auto dpwr= std::make_shared<CONTINUATION_SERIES<sizeof...(Args),R,Args...>>(f,xs);
+      this->analytic = std::make_shared<ANALYTIC<R,Args...>>(dpwr->get_series(), new_M, new_r);
+    }
     R evaluate(const Args&... args) const override{
       return analytic->evaluate(args...);
     };
@@ -229,6 +268,12 @@ namespace iRRAM
   std::shared_ptr<Node<R, Args...>> continuation(const std::shared_ptr<Node<R,Args...>>& node, const REAL& new_M, const REAL& new_r, Args... args)
   {
     return std::make_shared<CONTINUATION<R, Args...>>(node, new_M, new_r, args...);
+  }
+
+  template <class R, class... Args>
+  std::shared_ptr<Node<R, Args...>> continuation(const std::shared_ptr<Node<R,Args...>>& node, const REAL& new_M, const REAL& new_r, const std::vector<R>& xs)
+  {
+    return std::make_shared<CONTINUATION<R, Args...>>(node, new_M, new_r, xs);
   }
 
 } // namespace iRRAM

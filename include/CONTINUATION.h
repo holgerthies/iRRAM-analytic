@@ -57,7 +57,10 @@ namespace iRRAM
       REAL best=sum;
       sizetype best_error, trunc_error, local_error,sum_error;
       sum.geterror(sum_error);
-      sizetype_add(trunc_error,error.vsize,error.error);
+      sizetype error_error, error_vsize;
+      error.geterror(error_error);
+      error.getsize(error_vsize);
+      sizetype_add(trunc_error,error_vsize,error_error);
       sizetype_add(local_error, sum_error, trunc_error);
       best.seterror(local_error);
       best_error = local_error;
@@ -70,7 +73,9 @@ namespace iRRAM
         x0 *= x*REAL(J+k)/J;
         sum += rec_evaluator.evaluate((*pwr)[J+k], next_B, q, ks...)*x0;
         error *= error_factor;
-        sizetype_add(trunc_error,error.vsize,error.error);
+        error.geterror(error_error);
+        error.getsize(error_vsize);
+        sizetype_add(trunc_error,error_vsize,error_error);
         sum.geterror(sum_error); // get error of partial sum
         sizetype_add(local_error, sum_error, trunc_error);
         if (sizetype_less(local_error, best_error)) { 
@@ -132,7 +137,10 @@ namespace iRRAM
       REAL best=sum;
       sizetype best_error, trunc_error, local_error,sum_error;
       sum.geterror(sum_error);
-      sizetype_add(trunc_error,error.vsize,error.error);
+      sizetype error_error, error_vsize;
+      error.geterror(error_error);
+      error.getsize(error_vsize);
+      sizetype_add(trunc_error,error_vsize,error_error);
       sizetype_add(local_error, sum_error, trunc_error);
       best.seterror(local_error);
       best_error = local_error;
@@ -145,7 +153,9 @@ namespace iRRAM
         x0 *= x*REAL(J+k)/J;
         sum += pwr->get(J+k)*x0;
         error *= error_factor;
-        sizetype_add(trunc_error,error.vsize,error.error);
+        error.geterror(error_error);
+        error.getsize(error_vsize);
+        sizetype_add(trunc_error,error_vsize,error_error);
         sum.geterror(sum_error); // get error of partial sum
         sizetype_add(local_error, sum_error, trunc_error);
         if (sizetype_less(local_error, best_error)) { 

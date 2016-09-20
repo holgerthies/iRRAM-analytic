@@ -145,7 +145,36 @@ namespace iRRAM
     return std::make_shared<DERIVATIVE<R, Args...>>(node, ods...);
   }
 
+  template<int dim>
+  struct vderive
+  {
+    template<class R, class... Args, class... orders>
+    static std::shared_ptr<Node<R, Args...>> get(const std::shared_ptr<Node<R,Args...>>& node,const int variable, const int order, const orders... ods)
+    {
+      if(sizeof...(Args) - dim == variable)
+        return vderive<dim-1>::get(node, variable, order, ods..., order);
+      return vderive<dim-1>::get(node, variable, order, ods..., 0);
+    }
+  };
 
+  template<>
+  struct vderive<0>
+  {
+    template<class R, class... Args, class... orders>
+    static std::shared_ptr<Node<R, Args...>> get(const std::shared_ptr<Node<R,Args...>>& node,const int variable, const int order, const orders... ods)
+    {
+      return derive(node, ods...);
+    }
+  };
+  
+    
+  template<class R, class... Args>
+  std::shared_ptr<Node<R, Args...>> pderive(const std::shared_ptr<Node<R,Args...>>& node,const int variable, const int order)
+  {
+    return vderive<sizeof...(Args)>::get(node, variable, order);
+    
+  }
+  
 } // namespace iRRAM
 
 

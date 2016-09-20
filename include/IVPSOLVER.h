@@ -11,7 +11,7 @@ namespace iRRAM
   struct DEBUG_INFORMATION
   {
     int steps;
-    REAL r_end;
+    int order;
   };
   
   template <size_t d, class T>
@@ -254,70 +254,383 @@ namespace iRRAM
         Y[i+1] += F[i]->evaluate(p);
         max_y = maximum(max_y, Y[i+1]);
       }
-      
-      debug.r_end = F[0]->to_analytic()->get_r();
-      
+
       r = r0-max_y;
       Y[0] += h;
       
-      iRRAM::cout << Y[0]<<"  "<<Y[1]<<std::endl;
+      //iRRAM::cout << Y[0]<<"  "<<Y[2]<<std::endl;
     }
     debug.steps = iter;
+    debug.order = S.F[0]->to_analytic()->get_series()->known_coeffs();
+    
     return  Y;
   }
 
-  // template<class R, class... Args>
-  // void heun_step(const std::vector<std::shared_ptr<Node<R, Args...>>& F, std::vector<R>& Y)
-  // {
+  template<class R, class... Args>
+  bool heun_step(const std::vector<std::shared_ptr<Node<R, Args...>>>& F, const REAL& max_time, std::vector<R>& Y)
+  {
+    REAL M = F[0]->to_analytic()->get_M();
+    REAL r = F[0]->to_analytic()->get_r();
+    for(const auto& f : F){
+      M = maximum(M, f->to_analytic()->get_M());
+      r = minimum(r, f->to_analytic()->get_r());
+    }
+  
+    sizetype eval_error, trunc_error;
+    sizetype_exact(eval_error);
+    REAL error=1;
+    REAL error_factor = (10*M+3*M*M)/(3*r*r);
+    REAL h = r/8-Y[0];
+    bool stop=false;
+    if(!positive(max_time-Y[0]-h, -3)){
+      h = max_time-Y[0];
+      stop=true;
+    }
     
-  //   REAL M = F[0]->to_analytic()->get_M();
-  //   for(const auto& f : F){
-  //     M = maximum(M, f->to_analytic()->get_M();)
-  //   }
-  
-  
-  //   sizetype eval_error1, eval_error2, eval_error, trunc_error;
-  //   REAL error;
-  
-  //   do{
-  //     h /= 2;
-  //     REAL ev1 = f1->evaluate(t0,y00.to_real(), y01.to_real());
-  //     AAREAL y00p = y00+h*ev1;
-  //     AAREAL y01p = y01+h*ev1;
-  //     y10 = y00+(h/2)*(ev1+f1->evaluate(t0+h, y00p.to_real(), y01p.to_real()));
-  //     REAL ev2 = f2->evaluate(t0,y00.to_real(), y01.to_real());
-  //     AAREAL y10p = y00+h*ev2;
-  //     AAREAL y11p = y01+h*ev2;
-  //     y11 = y01+(h/2)*(ev2+f2->evaluate(t0+h, y10p.to_real(), y11p.to_real()));
-  //     y10.to_real().geterror(eval_error1);
-  //     y11.to_real().geterror(eval_error2);
-  //     sizetype_max(eval_error, eval_error1, eval_error2);
-  //     //error = power(h,3)*M;
-  //     trunc_error = real_to_error(error);
-  //   } while (
-  //     (trunc_error.exponent >= ACTUAL_STACK.actual_prec) );
-  //   y10.add_error(error);
-  //   y11.add_error(error);
-  
-  //   y10.geterror(eval_error1);
-  //   y11.geterror(eval_error2);
-  //   sizetype_add(total_error1, eval_error1, trunc_error);
-  //   sizetype_add(total_error2, eval_error2, trunc_error);
-  //   y10.seterror(total_error1);
-  //   y11.seterror(total_error2);
-  // }
+    
+    std::vector<REAL> yp(Y.size());
+    std::vector<REAL> ny(Y.size());
+    bool halfed=false;
+    
+    do{
+      if(halfed) stop=false;
+      yp[0] = Y[0]+h;
+      ny[0] = Y[0]+h;
+      for(int i=0; i<F.size(); i++){
+        yp[i+1] = Y[i+1]+h*F[i]->evaluate(Y);
+      }
+      for(int i=0; i<F.size(); i++){
+        ny[i+1] = (Y[i+1]+yp[i+1]+h*F[i]->evaluate(yp))/2;
+        sizetype eval_error0, eval_error1;
+        sizetype_copy(eval_error1, eval_error);
+        ny[i+1].geterror(eval_error0);
+        sizetype_max(eval_error, eval_error0, eval_error1);
+      }
+      error = power(h,3)*error_factor;
+      sizetype error_error, error_vsize;
+      error.geterror(error_error);
+      error.getsize(error_vsize);
+      sizetype_add(trunc_error,error_vsize,error_error);
+      h /= 2;
+      halfed = true;
+      
+      
+    } while ( 
+      (trunc_error.exponent >= ACTUAL_STACK.actual_prec ) );
+    
+    
+    Y[0] = ny[0];
+    
+    for(int i=1; i<Y.size(); i++){
+      sizetype local_error, total_error;
+      Y[i] = ny[i];
+      Y[i].geterror(local_error);
+      sizetype_add(total_error, local_error, trunc_error);
+      Y[i].seterror(total_error);
+      
+    }
+    return stop;
+  }
 
+  
+  template<class R, class... Args>
+  bool heun_step_aff(const std::vector<std::shared_ptr<Node<R, Args...>>>& F, const REAL& max_time, std::vector<AAREAL>& Y)
+  {
+    REAL M = F[0]->to_analytic()->get_M();
+    REAL r = F[0]->to_analytic()->get_r();
+    for(const auto& f : F){
+      M = maximum(M, f->to_analytic()->get_M());
+      r = minimum(r, f->to_analytic()->get_r());
+    }
+  
+    sizetype eval_error, trunc_error;
+    sizetype_exact(eval_error);
+    REAL error=1;
+    REAL error_factor = (10*M+3*M*M)/(3*r*r);
+    AAREAL h = r/8-Y[0];
+    bool stop=false;
+    if(positive(max_time-Y[0].to_real()-h.to_real(), -3)){
+      h = max_time-Y[0];
+      stop=true;
+    }
+    
+    
+    std::vector<AAREAL> yp(Y.size());
+    std::vector<REAL> ypr(Y.size());
+    std::vector<AAREAL> ny(Y.size());
+    std::vector<REAL> Yr(Y.size());
+
+    for(int i = 0; i < Y.size(); i++){
+      Yr[i] = Y[i].to_real();
+    }
+
+    bool halfed=false;
+    
+    do{
+      if(halfed) stop=false;
+      yp[0] = Y[0]+h;
+      ypr[0] = yp[0].to_real();
+      ny[0] = Y[0]+h;
+      for(int i=0; i<F.size(); i++){
+        yp[i+1] = Y[i+1]+h*F[i]->evaluate(Yr);
+        ypr[i+1] = yp[i+1].to_real();
+      }
+      for(int i=0; i<F.size(); i++){
+        ny[i+1] = (Y[i+1]+yp[i+1]+h*F[i]->evaluate(ypr))*(REAL(1)/2);
+        sizetype eval_error0, eval_error1;
+        sizetype_copy(eval_error1, eval_error);
+        ny[i+1].to_real().geterror(eval_error0);
+        sizetype_max(eval_error, eval_error0, eval_error1);
+      }
+      error = power(h.to_real(),3)*error_factor;
+      sizetype error_error, error_vsize;
+      error.geterror(error_error);
+      error.getsize(error_vsize);
+      sizetype_add(trunc_error,error_vsize,error_error);
+      h = REAL(1)/REAL(2)*h;
+      
+      halfed = true;
+      
+      
+    } while ( 
+      (trunc_error.exponent >= ACTUAL_STACK.actual_prec ) );
+    
+    
+    Y[0] = ny[0];
+    
+    for(int i=1; i<Y.size(); i++){
+      Y[i] = ny[i];
+      Y[i].add_error(error);
+      
+    }
+    return stop;
+  }
+
+  template<class R, class... Args>
+  bool euler_step(const std::vector<std::shared_ptr<Node<R, Args...>>>& F, const REAL& max_time, std::vector<R>& Y)
+  {
+    REAL M = F[0]->to_analytic()->get_M();
+    REAL r = F[0]->to_analytic()->get_r();
+    for(const auto& f : F){
+      M = maximum(M, f->to_analytic()->get_M());
+      r = minimum(r, f->to_analytic()->get_r());
+    }
+  
+    sizetype eval_error, trunc_error;
+    sizetype_exact(eval_error);
+    REAL error_factor=M*M;
+    REAL error=1;
+    REAL h = r/8-Y[0]+REAL(0.001);
+    bool stop=false;
+    if(!positive(max_time-Y[0]-h, -3)){
+      h = max_time-Y[0];
+      stop=true;
+    }
+    
+    
+    std::vector<REAL> ny(Y.size());
+    
+    bool halfed=false;
+    
+    do{
+      if(halfed) stop=false;
+      ny[0] = Y[0]+h;
+      for(int i=0; i<F.size(); i++){
+        ny[i+1] = Y[i+1]+h*F[i]->evaluate(Y);
+        sizetype eval_error0, eval_error1;
+        sizetype_copy(eval_error1, eval_error);
+        ny[i+1].geterror(eval_error0);
+        sizetype_max(eval_error, eval_error0, eval_error1);
+      }
+      error = power(h,2)*error_factor/(r-Y[0]-2*h);
+      trunc_error = real_to_error(error);
+      h /= 2;
+      halfed=true;
+    } while ( 
+      (trunc_error.exponent >= ACTUAL_STACK.actual_prec ) );
+    
+    
+    Y[0] = ny[0];
+    
+    for(int i=1; i<Y.size(); i++){
+      sizetype local_error, total_error;
+      Y[i] = ny[i];
+      Y[i].geterror(local_error);
+      sizetype_add(total_error, local_error, trunc_error);
+      Y[i].seterror(total_error);
+    }
+    return stop;
+  }
+
+  
+  // solve ODE system by heun's method and evaluate at some point x
+  template<class R, class... Args>
+  std::vector<R> solve_euler(const IVPSYSTEM<R, Args...>& S, const R& max_time,  DEBUG_INFORMATION& debug)
+  {
+    std::vector<R> Y(S.y);
+    
+    int iter=0;
+    REAL before = Y[0];
+    
+    while(!euler_step(S.F, max_time, Y)){
+      //std::cout << iter << " " << Y[0].as_double()  << "\n";
+      ++iter;
+    }
+    debug.steps = iter;
+    debug.order = 1;
+    return Y;
+  }
+
+  
   // solve ODE system by heun's method and evaluate at some point x
   template<class R, class... Args>
   std::vector<R> solve_heun(const IVPSYSTEM<R, Args...>& S, const R& max_time,  DEBUG_INFORMATION& debug)
   {
-    std::vector<R> Y(S.y);
-    REAL M = S.F[0]->to_analytic()->get_M();
-    REAL r = S.F[0]->to_analytic()->get_r();
-    while(Y[0] < max_time){
+    std::vector<REAL> Y(S.y);
+    int iter=0;
+    
+    while(!heun_step(S.F, max_time, Y)){
+      ++iter;
+      //std::cout <<iter << " " << Y[0].as_double() << "\n";
+      // std::cout << "error:" << Y[1].error.mantissa << "&"<<Y[1].error.exponent << std::endl;
       
     }
+    debug.steps = iter;
+    debug.order = 2;
+    
+    return Y;
   }
+
+  template<class R, class... Args>
+  std::vector<R> solve_heun_aff(const IVPSYSTEM<R, Args...>& S, const R& max_time,  DEBUG_INFORMATION& debug)
+  {
+    std::vector<AAREAL> Y(S.y.size());
+    std::vector<REAL> Yr(S.y);
+    for(int i=0; i<Y.size(); i++){
+      Y[i] = S.y[i];
+      
+    }
+    int iter=0;
+    
+    while(!heun_step_aff(S.F, max_time, Y)){
+      ++iter;
+      if(iter % 5 == 0)
+        for(auto& y : Y) y.clean();
+      
+      //std::cout <<iter << " " << Y[0].to_real().as_double() << "\n";
+      // std::cout << "error:" << Y[1].error.mantissa << "&"<<Y[1].error.exponent << std::endl;
+      
+    }
+    debug.steps = iter;
+    debug.order = 2;
+    for(int i=0; i<Y.size();i++){
+      Yr[i] = Y[i].to_real();
+    }
+    std::cout << "returning" << std::endl;
+    
+    return Yr;
+  }
+
+  template<class R, class... Args>
+  std::shared_ptr<Node<R, Args...>> get_next_f(const int index, const std::shared_ptr<Node<R,Args...>>& f, const std::vector<std::shared_ptr<Node<R, Args...>>>& Fs)
+  {
+    auto ans = pderive(f, 0,1);
+    for(int i=0; i<Fs.size(); i++){
+            ans = ans+pderive(f, i+1, 1)*Fs[i];
+    }
+    ans = (REAL(1)/REAL(index))*ans;
+    return ans;
+    
+  }
+
+  template<class R, class... Args>
+  bool taylor_step(const int order, const std::vector<std::shared_ptr<Node<R, Args...>>>& F, const REAL& max_time, std::vector<R>& Y)
+  {
+    std::vector<std::shared_ptr<Node<R, Args...>>> Fc(F);
+    std::vector<std::shared_ptr<Node<R, Args...>>> Fco(F);
+
+    std::vector<REAL> Z(Y.size());
+    REAL M = F[0]->to_analytic()->get_M();
+    REAL r = F[0]->to_analytic()->get_r();
+    for(const auto& f : F){
+      M = maximum(M, f->to_analytic()->get_M());
+      r = minimum(r, f->to_analytic()->get_r());
+    }
+  
+    for(int i=0; i<Fc.size(); i++){
+        // transpose function such that y(0)=0
+        Fc[i] = continuation(F[i], M,r, Y );
+        Fco[i] = continuation(F[i], M,r, Y );
+    }
+    sizetype eval_error, trunc_error;
+    sizetype_exact(eval_error);
+    REAL error_factor=power(2,order+1)*M/power(r,order+1);
+    REAL error=1;
+    REAL h = 0.1;
+    do{
+      h /=2;
+      error = power(h,order+1)*error_factor;
+      
+      trunc_error = real_to_error(error);
+    } while ( 
+      (trunc_error.exponent >= ACTUAL_STACK.actual_prec ) );
+  
+    
+    bool stop=false;
+    
+    std::vector<REAL> ny(Y);
+    
+    
+    
+    ny[0] = Y[0]+h;
+    REAL hpow = 1;
+    h = minimum(max_time-Y[0],h);
+    
+    for(int i=1; i<=order; i++){
+      hpow *= h;
+      for(int j=0; j<F.size(); j++){
+        REAL m=Fc[j]->evaluate(Z);
+        Fc[j] = get_next_f(i+1, Fc[j], Fco);
+        REAL t=Fc[j]->evaluate(Z);
+        
+        ny[j+1] += m*hpow;
+      }
+    }
+
+    Y[0] = ny[0];
+    
+    for(int i=1; i<Y.size(); i++){
+      sizetype local_error, total_error;
+      Y[i] = ny[i];
+      Y[i].geterror(local_error);
+      sizetype_add(total_error, local_error, trunc_error);
+      Y[i].seterror(total_error);
+    }
+    if(Y[0] > max_time) return true;
+    
+    return stop;
+  }
+
+  template<class R, class... Args>
+  std::vector<R> solve_taylor_deriv(const IVPSYSTEM<R, Args...>& S, const R& max_time, DEBUG_INFORMATION& debug)
+  {
+    std::vector<REAL> Y(S.y);
+    int iter=0;
+    int order=20;
+    while(!taylor_step(order, S.F, max_time, Y)){
+      ++iter;
+      //std::cout <<iter << " " << Y[0].as_double() <<" " << Y[1].as_double()<< "\n";
+      
+      // std::cout << "error:" << Y[1].error.mantissa << "&"<<Y[1].error.exponent << std::endl;
+      
+    }
+    debug.steps = iter;
+    debug.order = order;
+    
+    return Y;
+  }
+
+
 
 } // namespace iRRAM
 

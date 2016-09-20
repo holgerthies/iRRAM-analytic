@@ -175,5 +175,14 @@ where
 Let $r_v$, $M_v$ be the parameters for the functions $F_v$ as above and let $M = \max M_v$ and $r = \min r_v$.
 By the Picard-Lindel\"{o}f Theorem the above solution is valid for all $t \in [-r', r']$ with $r' = \min(r, \frac{r}{M})$.
 Further $r$ is a upper bound for $\abs{y_v}$ on $B(0, r')$. 
+\section{Comparing Integration Methods}
+We compare several methods to solve ODEs
+\subsection{Taylor Series Method}
+See above
+\subsection{Euler Method}
+Repeat $y(t+h) = y(t)+h*F(t,y)$\\
+Error:
+$$ \frac{1}{2} h^2 y''(\xi) \leq h^2 \frac{M}{r}$$
+for $\xi < {r}{2}$
 \section{Computing coefficients}
 \end{document}

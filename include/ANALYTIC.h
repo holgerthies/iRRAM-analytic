@@ -73,8 +73,6 @@ namespace iRRAM
   }
 
   
-  
-
   // construct from anything that can be used to construct a powerseries
   template <class R, class... Args, class D>
   std::shared_ptr<Node<R,Args...>> make_analytic(const D&& pwr, const REAL& M, const REAL& r)
@@ -82,6 +80,40 @@ namespace iRRAM
     auto series = std::make_shared<POWERSERIES<sizeof...(Args),REAL>>(pwr);
      return std::make_shared<ANALYTIC<R,Args...>>(series, M, r);
   }
+  
+  template<int dim, class... Args>
+  struct real_analytic
+  {
+    using type = typename real_analytic<dim-1, REAL, Args...>::type;
+    template<class D>
+    static type make(const D&& pwr, const REAL& M, const REAL& r) 
+    {
+      return real_analytic<dim-1, REAL, Args...>::make(std::move(pwr), M, r);
+    }
+  };
+  
+
+  template<class... Args>
+  struct real_analytic<0, Args...>
+  {
+    using type = std::shared_ptr<Node<REAL, Args...>>;
+    
+    template<class D>
+    static type make(const D&& pwr, const REAL&M, const REAL& r)
+    {
+      return make_analytic<REAL, Args...>(std::move(pwr), M, r);
+
+
+    }
+  };
+
+  // template<class dim, class D>
+  // auto make_real_analytic(const D&& pwr, const REAL& M, const REAL& r) -> decltype(real_analytic<dim>::make(pwr, M, r))
+  // {
+  //   return real_analytic<dim>::make(pwr, M, r);
+    
+  // }
+  
 
   
 } // namespace iRRAM

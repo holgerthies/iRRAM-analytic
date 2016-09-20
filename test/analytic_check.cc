@@ -123,6 +123,18 @@ void compute(){
   sol=sin(x1+x1);
   checkResult(y, sol, prec);
 
+  iRRAM::cout << "checking derivative (1d)" << endl;
+  // sin(x)
+  auto d1 = pderive(g,0,2);
+  y = d1->evaluate(x1);
+  sol=-sin(x1);
+  checkResult(y, sol, prec);
+
+  iRRAM::cout << "checking derivative (3d)" << endl;
+  auto d2 = pderive(pderive(f, 1, 1),2,2);
+  y = d2->evaluate(x1, x2,x3);
+  sol=-cos(x1*x2*x3)*x1*x1*x1*x2*x2*x3-sin(x1*x2*x3)*x1*x1*x2-x1*x1*x2*sin(x1*x2*x3);
+  checkResult(y, sol, prec);
   // iRRAM::cout << "checking analytic continuation (3d)" << endl;
   // // sin(x)/(sin(x)+1
   // auto cont2 = continuation(f, 2,2, x3, x3, x3);
@@ -224,18 +236,6 @@ void compute(){
   auto inv_test2 = ( (g/gmod)/REAL(2))->to_analytic();   
   y = inv_test2->evaluate(x1);
   sol=sin(x1)/(1+sin(x1))/2;
-  checkResult(y, sol, prec);
-  iRRAM::cout << "checking derivative (1d)" << endl;
-  // sin(x)
-  auto d1 = derive(g,2);
-  y = d1->evaluate(x1);
-  sol=-sin(x1);
-  checkResult(y, sol, prec);
-
-  iRRAM::cout << "checking derivative (3d)" << endl;
-  auto d2 = derive(f, 0, 1, 2);
-  y = d2->evaluate(x1, x2,x3);
-  sol=-cos(x1*x2*x3)*x1*x1*x1*x2*x2*x3-sin(x1*x2*x3)*x1*x1*x2-x1*x1*x2*sin(x1*x2*x3);
   checkResult(y, sol, prec);
 
 

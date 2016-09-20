@@ -21,7 +21,22 @@ namespace iRRAM
     virtual R evaluate(const Args&... args) const = 0;
     virtual std::shared_ptr<ANALYTIC<R, Args...>> to_analytic() const = 0;
     virtual ANALYTIC_OPERATION get_type() const = 0;
-    
+    template<class... IArgs>
+    R evaluate_vector(const std::vector<R>& X, int pos, IArgs... iargs)
+    {
+      return evaluate_vector(X, pos+1, iargs..., X[pos]);
+      
+    }
+    R evaluate_vector(const std::vector<R>& X, int pos, Args... iargs)
+    {
+      return evaluate(iargs...);
+      
+    }
+    R evaluate(const std::vector<R>& X)
+    {
+      return evaluate_vector(X,0);
+      
+    }
   };
 
   template<class R, class... Args>

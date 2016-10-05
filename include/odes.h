@@ -4,6 +4,7 @@
 #include "iRRAM.h"
 #include "ANALYTIC.h"
 #include "IVPSOLVER.h"
+#include "POLYNOMIAL.h"
 #include "combinatorics.h"
 using namespace iRRAM;
 
@@ -30,8 +31,9 @@ REAL A2_max(const REAL& r)
 IVPSYSTEM<REAL, REAL, REAL> A2_SYSTEM(const REAL& r)
 {
 
-  auto A2_analytic = real_analytic<2>::make(std::function<REAL(unsigned long, unsigned long)>(A2_series),A2_max(r),r);
-  std::static_pointer_cast<ANALYTIC<REAL, REAL, REAL>>(A2_analytic)->add_algorithm(A2_fun);
+  auto A2_analytic = make_polynomial<2>({{0,0,0,-REAL(1)/REAL(3)}});
+  //auto A2_analytic = real_analytic<2>::make(std::function<REAL(unsigned long, unsigned long)>(A2_series),A2_max(r),r);
+  //std::static_pointer_cast<ANALYTIC<REAL, REAL, REAL>>(A2_analytic)->add_algorithm(A2_fun);
   IVPSYSTEM<REAL, REAL, REAL> A2_IVP;
   A2_IVP.F = {A2_analytic};
   A2_IVP.y = {0, 1};

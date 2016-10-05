@@ -246,6 +246,7 @@ namespace iRRAM
   private:
     node_ptr node;
     std::shared_ptr<ANALYTIC<R,Args...>> analytic;
+    
   public:
     CONTINUATION(const node_ptr& node, const REAL& new_M, const REAL& new_r, Args... args):
       node(node)
@@ -253,7 +254,30 @@ namespace iRRAM
       auto f = node->to_analytic();
       auto dpwr= std::make_shared<CONTINUATION_SERIES<sizeof...(args),R,Args...>>(f,args...);
       this->analytic = std::make_shared<ANALYTIC<R,Args...>>(dpwr->get_series(), new_M, new_r);
+      //simplified = std::make_shared<CONTINUATION>(this->node->simplify(), new_M, new_r, args...);
     }
+
+    std::shared_ptr<Node<R,Args...>> simplify() const override
+    {
+      return std::make_shared<CONTINUATION>(*this);
+    };
+
+    std::string to_string() const override
+    {
+      return "CONTINUATION";
+      
+    }
+
+
+    // todo: fix
+    REAL get_r() const override {
+      return node->get_r();
+    };
+
+    REAL get_M(const REAL& r, const Args&... args) const override {
+      return node->get_M(r, args...);
+    };
+
     CONTINUATION(const node_ptr& node, const REAL& new_M, const REAL& new_r, const std::vector<R>& xs):
       node(node)
     {

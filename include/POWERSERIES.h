@@ -4,7 +4,6 @@
  ----------------------------------------------------------*/
 #ifndef POWERSERIES_H
 #define POWERSERIES_H
-#include "POLYNOMIAL.h"
 #include <functional>
 #include <cstdarg>
 #include "combinatorics.h"

@@ -182,6 +182,26 @@ namespace iRRAM
     R evaluate(const R& arg) const override{
       return solver->evaluate(v, arg);
     };
+
+    REAL get_r() const override {
+      return solver->to_analytic(v)->get_r();
+    };
+    REAL get_M(const REAL& r, const R& x) const override {
+      return solver->to_analytic(v)->get_M();
+    };
+
+    std::shared_ptr<Node<R,R>> simplify() const override
+    {
+      return std::make_shared<IVP>(*this);
+    }
+
+    std::string to_string() const override
+    {
+      return "IVP";
+      
+    }
+    
+      
     std::shared_ptr<ANALYTIC<R,R>> to_analytic() const override{
       return solver->to_analytic(v);
     };
@@ -539,6 +559,8 @@ namespace iRRAM
             ans = ans+pderive(f, i+1, 1)*Fs[i];
     }
     ans = (REAL(1)/REAL(index))*ans;
+    ans = ans->simplify();
+    std::cout << ans->to_string() << std::endl;
     return ans;
     
   }
@@ -558,15 +580,17 @@ namespace iRRAM
     }
   
     for(int i=0; i<Fc.size(); i++){
-        // transpose function such that y(0)=0
-        Fc[i] = continuation(F[i], M,r, Y );
-        Fco[i] = continuation(F[i], M,r, Y );
+      // transpose function such that y(0)=0
+      Fc[i] = continuation(F[i], M,r, Y );
+      Fco[i] = continuation(F[i], M,r, Y );
     }
+
     sizetype eval_error, trunc_error;
     sizetype_exact(eval_error);
     REAL error_factor=power(2,order+1)*M/power(r,order+1);
     REAL error=1;
-    REAL h = 0.1;
+    REAL h = 1.0;
+    
     do{
       h /=2;
       error = power(h,order+1)*error_factor;
@@ -616,10 +640,10 @@ namespace iRRAM
   {
     std::vector<REAL> Y(S.y);
     int iter=0;
-    int order=20;
+    int order=30;
     while(!taylor_step(order, S.F, max_time, Y)){
       ++iter;
-      //std::cout <<iter << " " << Y[0].as_double() <<" " << Y[1].as_double()<< "\n";
+      std::cout <<iter << " " << Y[0].as_double() <<" " << Y[1].as_double()<< "\n";
       
       // std::cout << "error:" << Y[1].error.mantissa << "&"<<Y[1].error.exponent << std::endl;
       

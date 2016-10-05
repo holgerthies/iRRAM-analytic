@@ -42,9 +42,26 @@ namespace iRRAM
       return std::make_shared<ANALYTIC>(*this);
     }
 
-    REAL get_r() const{return r;}
+    REAL get_r() const override {return r;}
 
-    REAL get_M() const{return M;}
+    REAL get_M() const {
+      return M;
+    };
+    REAL get_M(const REAL& r, const Args&... args) const override {
+      return M;
+    };
+
+    std::shared_ptr<Node<R,Args...>> simplify() const override
+    {
+      return std::make_shared<ANALYTIC>(*this);
+    };
+
+    std::string to_string() const override
+    {
+      auto addr = reinterpret_cast<std::uintptr_t>(pwr.get()) % 100;
+      
+      return "f"+std::to_string(addr);
+    };
 
     ANALYTIC_OPERATION get_type() const override 
     {

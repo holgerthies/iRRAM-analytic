@@ -37,6 +37,19 @@ namespace iRRAM
   public:
     R evaluate(const Args&... args) const override;
     std::shared_ptr<ANALYTIC<R,Args...>> to_analytic() const override;
+
+    REAL get_r() const override {
+      return minimum(this->lhs->get_r(), this->rhs->get_r());
+    };
+    REAL get_M(const REAL& r, const Args&... args) const override {
+      return this->lhs->get_M(r, args...)+this->rhs->get_M(r, args...);
+    };
+
+    std::shared_ptr<Node<R,Args...>> simplify() const override
+    {
+      return std::make_shared<SUBTRACTION>(this->lhs->simplify(), this->rhs->simplify());
+    };
+
     ANALYTIC_OPERATION get_type() const override
     {
       return ANALYTIC_OPERATION::SUBTRACTION;

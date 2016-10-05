@@ -86,6 +86,7 @@ namespace iRRAM
   class INVERSION : public Node<R, Args...>{
   private:
     std::shared_ptr<Node<R,Args...>> node;
+    REAL M,r;
   public:
     INVERSION(const std::shared_ptr<Node<R, Args...>>& node):
       node(node) 
@@ -93,6 +94,15 @@ namespace iRRAM
     }
     R evaluate(const Args&... args) const override;
     std::shared_ptr<ANALYTIC<R,Args...>> to_analytic() const override;
+
+    REAL get_r() const override {
+      return r;
+    };
+    REAL get_M(const REAL& r, const Args&... args) const override {
+      return M;
+      
+    };
+
     ANALYTIC_OPERATION get_type() const override
     {
       return ANALYTIC_OPERATION::INVERSION;
@@ -121,6 +131,8 @@ namespace iRRAM
         lowerbound = abs(f0)-int(sizeof...(Args))*f->get_M()*newr/f->get_r();
       }
       auto new_M = R(1)/lowerbound;
+      this-M = new_M;
+      this->r = newr;
       return std::make_shared<ANALYTIC<R, Args...>> (inv_pwr, new_M, newr);
     }
 

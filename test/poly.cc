@@ -1,12 +1,12 @@
 #include "iRRAM.h"
-#include "POWERSERIES.h"
+#include "POLYNOMIAL.h"
 #include <iostream>
 #include <stdlib.h> 
 #include <time.h>
 using namespace std;
 using namespace iRRAM;
 
-template<unsigned int n, typename... ARGS>
+template<typename... ARGS, size_t n = sizeof...(ARGS)+1>
 REAL check_poly(const POLYNOMIAL<n,REAL>& p, const REAL& x, const ARGS&... rest){
   REAL ans=0;
   REAL pow=1;
@@ -28,16 +28,15 @@ REAL check_poly(const POLYNOMIAL<1,REAL>& p, const REAL& x){
   return ans;
 }
 POLYNOMIAL<1,REAL> rand_poly1d(){
-  srand (time(NULL));
-  int deg=rand() % 1000;
+  int deg=rand() % 10;
   std::vector<REAL> c(deg);
   for(int i=0; i<deg;i++){
-    c[i] = REAL(rand() % 1000)/REAL(rand() % 1000 + 1);
+    c[i] = REAL(rand() % 10); // /REAL(rand() % 1000 + 1);
   }
   return  POLYNOMIAL<1,REAL>(c);
 }
 
-template<unsigned int n>
+template<size_t n>
 POLYNOMIAL<n,REAL> rand_poly(){
   int deg=rand() % 10;
   std::vector<POLYNOMIAL<n-1,REAL>> c;
@@ -53,6 +52,10 @@ POLYNOMIAL<1,REAL> rand_poly<1>(){
 }
 
 void compute(){
+  auto test0 = make_polynomial<2>({{1,5,3}, {9,1}});
+  std::cout << test0->to_string() << std::endl;
+  iRRAM::cout << test0->evaluate(1,0) << std::endl;
+  
   srand (time(NULL));
   REAL x = REAL(rand() % 1000)/REAL(rand() % 1000 + 1);
   REAL y = REAL(rand() % 1000)/REAL(rand() % 1000 + 1);
@@ -60,9 +63,19 @@ void compute(){
   iRRAM::cout << std::endl;
   auto test = rand_poly1d();
   auto test2 = rand_poly1d();
+  std::cout << test.to_string() << std::endl;
+  std::cout << std::endl;
+  std::cout << test2.to_string() << std::endl;
+  std::cout << std::endl;
+  std::cout << (test*test2).to_string() << std::endl;
+  
   auto test2d = rand_poly<2>();
   auto test7d = rand_poly<7>();
   
+  std::cout << std::endl;
+  std::cout << (test2d).to_string() << std::endl;
+  std::cout << std::endl;
+  std::cout << (test2d*test2d).to_string() << std::endl;
   iRRAM::cout << test(x) << std::endl;
   iRRAM::cout << check_poly(test,x) << std::endl;
   iRRAM::cout << std::endl;

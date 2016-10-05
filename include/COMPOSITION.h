@@ -108,6 +108,24 @@ namespace iRRAM
 
     R evaluate(const Args&... args) const override;
     std::shared_ptr<ANALYTIC<R,Args...>> to_analytic() const override;
+    REAL get_r() const override {
+      return rhs->get_r();
+    };
+    REAL get_M(const REAL& r, const Args&... args) const override {
+      return lhs->get_M(r, rhs->evaluate(args...));
+    };
+
+    std::shared_ptr<Node<R,Args...>> simplify() const override
+    {
+      return std::make_shared<COMPOSITION>(this->lhs->simplify(), this->rhs->simplify());
+    };
+
+    std::string to_string() const override
+    {
+      return "COMPOSITION("+this->lhs->to_string()+","+this->rhs->to_string()+")";
+      
+    };
+
     ANALYTIC_OPERATION get_type() const override
     {
       return ANALYTIC_OPERATION::COMPOSITION;

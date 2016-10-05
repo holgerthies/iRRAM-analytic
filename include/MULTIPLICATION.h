@@ -71,6 +71,25 @@ namespace iRRAM
   public:
     R evaluate(const Args&... args) const override;
     std::shared_ptr<ANALYTIC<R,Args...>> to_analytic() const override;
+
+    REAL get_r() const override {
+      return minimum(this->lhs->get_r(), this->rhs->get_r());
+    };
+    REAL get_M(const REAL& r, const Args&... args) const override {
+      return this->lhs->get_M(r, args...)*this->rhs->get_M(r, args...);
+    };
+
+    std::shared_ptr<Node<R,Args...>> simplify() const override
+    {
+      
+      return std::make_shared<MULTIPLICATION>(this->lhs->simplify(), this->rhs->simplify());
+    };
+
+    virtual std::string to_string() const override
+    {
+      return "x("+this->lhs->to_string()+","+this->rhs->to_string()+")";
+    }
+
     ANALYTIC_OPERATION get_type() const override
     {
       return ANALYTIC_OPERATION::MULTIPLICATION;
@@ -83,6 +102,35 @@ namespace iRRAM
   public:
     R evaluate(const Args&... args) const override; 
     std::shared_ptr<ANALYTIC<R,Args...>> to_analytic() const override;
+    
+    virtual std::string to_string() const override
+    {
+      return "x("+this->node->to_string()+","+std::to_string(this->scalar.as_double())+")";
+      
+    }
+    REAL get_r() const override {
+      return this->node->get_r();
+    };
+    REAL get_M(const REAL& r, const Args&... args) const override {
+      return this->node->get_M(r, args...)*this->scalar;
+    };
+
+    std::shared_ptr<Node<R,Args...>> simplify() const override
+    {
+      
+      switch(this->node->get_type()){
+      case ANALYTIC_OPERATION::SCALAR_MULTIPLICATION:
+        {
+
+          auto child = std::dynamic_pointer_cast<SCALAR_MULTIPLICATION>(this->node);
+          auto new_node = std::make_shared<SCALAR_MULTIPLICATION>(child->node->simplify(), this->scalar*child->scalar);
+         return new_node->simplify();
+        }
+      default:
+        return std::make_shared<SCALAR_MULTIPLICATION>(this->node->simplify(), this->scalar);
+      }
+      
+    }
     ANALYTIC_OPERATION get_type() const override
     {
       return ANALYTIC_OPERATION::SCALAR_MULTIPLICATION;

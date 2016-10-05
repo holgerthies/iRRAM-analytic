@@ -7,7 +7,7 @@
 #include "POWERSERIES.h"
 namespace iRRAM
 {
-  enum class ANALYTIC_OPERATION {ANALYTIC, ADDITION,SCALAR_ADDITION, SUBTRACTION, MULTIPLICATION,SCALAR_MULTIPLICATION, INVERSION, DERIVATIVE, COMPOSITION, IVP, SINE, COSINE, EXPONENTIATION,CONTINUATION};
+  enum class ANALYTIC_OPERATION {ANALYTIC, ADDITION,SCALAR_ADDITION, SUBTRACTION, MULTIPLICATION,SCALAR_MULTIPLICATION, INVERSION, DERIVATIVE, COMPOSITION, IVP, SINE, COSINE, EXPONENTIATION,CONTINUATION, POLYNOMIAL};
 
   // forward declaration 
   template<class R, class... Args>
@@ -21,6 +21,10 @@ namespace iRRAM
     virtual R evaluate(const Args&... args) const = 0;
     virtual std::shared_ptr<ANALYTIC<R, Args...>> to_analytic() const = 0;
     virtual ANALYTIC_OPERATION get_type() const = 0;
+    virtual std::string to_string() const  = 0;
+    virtual REAL get_M(const REAL& r, const Args&... args) const = 0;
+    virtual REAL get_r() const = 0;
+    virtual std::shared_ptr<Node<R,Args...>> simplify() const = 0;
     template<class... IArgs>
     R evaluate_vector(const std::vector<R>& X, int pos, IArgs... iargs)
     {
@@ -43,10 +47,15 @@ namespace iRRAM
   class BinaryNode : public Node<R, Args...>
   {
     using node_ptr = std::shared_ptr<Node<R, Args...>>;
-  protected:
+  public:
     node_ptr lhs, rhs;
   public:
     virtual ~BinaryNode() = default;
+
+    virtual std::string to_string() const override
+    {
+      return "BIN_OP("+lhs->to_string()+","+rhs->to_string()+")";
+    }
     
     BinaryNode(const node_ptr& lhs, const node_ptr& rhs):
       lhs(lhs), rhs(rhs) 
@@ -58,7 +67,7 @@ namespace iRRAM
   class ScalarNode : public Node<R, Args...>
   {
     using node_ptr = std::shared_ptr<Node<R, Args...>>;
-  protected:
+  public:
     node_ptr node;
     R scalar;
   public:
@@ -67,6 +76,11 @@ namespace iRRAM
     ScalarNode(const node_ptr& node, const R& scalar):
       node(node), scalar(scalar)
     {
+    }
+    virtual std::string to_string() const override
+    {
+      return "SCALAR_OP("+node->to_string()+","+std::to_string(scalar.as_double())+")";
+      
     }
   };
 

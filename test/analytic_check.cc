@@ -116,24 +116,38 @@ void compute(){
   iRRAM::cout << "checking sin(x1*x2*x3)" << endl;
   checkResult(y, sol, prec);
 
-  iRRAM::cout << "checking analytic continuation (1d)" << endl;
-  // sin(x)/(sin(x)+1
-  auto cont = continuation(g, 2,2, REAL(x1));
-  y = cont->evaluate(x1);
-  sol=sin(x1+x1);
-  checkResult(y, sol, prec);
+  // iRRAM::cout << "checking analytic continuation (1d)" << endl;
+  // // sin(x)/(sin(x)+1
+  // auto cont = continuation(g, 2,2, REAL(x1));
+  // y = cont->evaluate(x1);
+  // sol=sin(x1+x1);
+  // checkResult(y, sol, prec);
 
   iRRAM::cout << "checking derivative (1d)" << endl;
   // sin(x)
-  auto d1 = pderive(g,0,2);
-  y = d1->evaluate(x1);
-  sol=-sin(x1);
+  // auto d1 = pderive(g*g,0,2);
+  // std::cout << d1->to_string() << std::endl;
+  // d1 = d1->simplify();
+  
+  // y = d1->evaluate(x1);
+  // std::cout << d1->to_string() << std::endl;
+  // sol=2*cos(2*x1);
+  
   checkResult(y, sol, prec);
 
   iRRAM::cout << "checking derivative (3d)" << endl;
-  auto d2 = pderive(pderive(f, 1, 1),2,2);
+  //auto d2 = f*pderive(f*pderive(f*f+f, 1, 1),2,100);
+  auto d2 = pderive(pderive(pderive(f*f, 1, 1),2,1),0,1);
+  
+  std::cout << d2->to_string() << std::endl;
+  d2 = d2->simplify();
+  
+  std::cout << d2->to_string() << std::endl;
   y = d2->evaluate(x1, x2,x3);
-  sol=-cos(x1*x2*x3)*x1*x1*x1*x2*x2*x3-sin(x1*x2*x3)*x1*x1*x2-x1*x1*x2*sin(x1*x2*x3);
+  //sol=-cos(x1*x2*x3)*x1*x1*x1*x2*x2*x3-sin(x1*x2*x3)*x1*x1*x2-x1*x1*x2*sin(x1*x2*x3);
+  sol=2*x1*x2*x3*cos(2*x1*x2*x3)+sin(2*x1*x2*x3)+x1*(4*x2*x3*cos(2*x1*x2*x3)-4*x1*x2*x2*x3*x3*sin(2*x1*x2*x3));
+  
+
   checkResult(y, sol, prec);
   // iRRAM::cout << "checking analytic continuation (3d)" << endl;
   // // sin(x)/(sin(x)+1
@@ -166,35 +180,45 @@ void compute(){
   sol=sin(sin(x1*x2));
   checkResult(y, sol, prec);
 
-  auto cos1 = cos(h2);
-  iRRAM::cout << "checking cosine (2d)" << endl;
-  y = cos1->evaluate(x1,x2);
-  sol=cos(sin(x1*x2));
-  checkResult(y, sol, prec);
+  // auto cos1 = cos(h2);
+  // iRRAM::cout << "checking cosine (2d)" << endl;
+  // y = cos1->evaluate(x1,x2);
+  // sol=cos(sin(x1*x2));
+  // checkResult(y, sol, prec);
 
-  auto cos2 = cos(h2)->to_analytic();
-  iRRAM::cout << "checking cosine (2d) by power series" << endl;
-  y = cos2->evaluate(x1,x2);
-  sol=cos(sin(x1*x2));
-  checkResult(y, sol, prec);
+  // auto cos2 = cos(h2)->to_analytic();
+  // iRRAM::cout << "checking cosine (2d) by power series" << endl;
+  // y = cos2->evaluate(x1,x2);
+  // sol=cos(sin(x1*x2));
+  // checkResult(y, sol, prec);
 
 
-  auto exp1 = exp(h2);
-  iRRAM::cout << "checking exp (2d)" << endl;
-  y = exp1->evaluate(x1,x2);
-  sol=exp(sin(x1*x2));
-  checkResult(y, sol, prec);
+  // auto exp1 = exp(h2);
+  // iRRAM::cout << "checking exp (2d)" << endl;
+  // y = exp1->evaluate(x1,x2);
+  // sol=exp(sin(x1*x2));
+  // checkResult(y, sol, prec);
 
-  auto exp2 = exp(h2)->to_analytic();
-  iRRAM::cout << "checking exp (2d) by power series" << endl;
-  y = exp2->evaluate(x1,x2);
-  sol=exp(sin(x1*x2));
-  checkResult(y, sol, prec);
+  // auto exp2 = exp(h2)->to_analytic();
+  // iRRAM::cout << "checking exp (2d) by power series" << endl;
+  // y = exp2->evaluate(x1,x2);
+  // sol=exp(sin(x1*x2));
+  // checkResult(y, sol, prec);
 
  auto sum = f-REAL(1)-f+f+REAL(2)+f;
   y = sum->evaluate(x1,x2,x3);
   iRRAM::cout << "checking addition" << endl;
   sol=2*sin(x1*x2*x3)+REAL(1);
+  checkResult(y, sol, prec);
+  
+  auto ssum = ((f+REAL(4))+REAL(5))+REAL(6)+f;
+  std::cout << ssum->to_string() << std::endl;
+  
+  ssum = ssum->simplify();
+  std::cout << ssum->to_string() << std::endl;
+  y = ssum->evaluate(x1,x2,x3);
+  iRRAM::cout << "checking scalar addition" << endl;
+  sol=2*sin(x1*x2*x3)+REAL(15);
   checkResult(y, sol, prec);
   
 
@@ -223,29 +247,29 @@ void compute(){
   
 
 
-  iRRAM::cout << "checking division (1d)" << endl;
-  // sin(x)/(sin(x)+1)
-  auto inv_test = (g/gmod)/REAL( 2 );   
-  y = inv_test->evaluate(x1);
-  sol=sin(x1)/(1+sin(x1))/2;
-  checkResult(y, sol, prec);
+  // iRRAM::cout << "checking division (1d)" << endl;
+  // // sin(x)/(sin(x)+1)
+  // auto inv_test = (g/gmod)/REAL( 2 );   
+  // y = inv_test->evaluate(x1);
+  // sol=sin(x1)/(1+sin(x1))/2;
+  // checkResult(y, sol, prec);
 
 
-  iRRAM::cout << "checking division (1d) by power series" << endl;
-  // sin(x)/(sin(x)+1)
-  auto inv_test2 = ( (g/gmod)/REAL(2))->to_analytic();   
-  y = inv_test2->evaluate(x1);
-  sol=sin(x1)/(1+sin(x1))/2;
-  checkResult(y, sol, prec);
+  // iRRAM::cout << "checking division (1d) by power series" << endl;
+  // // sin(x)/(sin(x)+1)
+  // auto inv_test2 = ( (g/gmod)/REAL(2))->to_analytic();   
+  // y = inv_test2->evaluate(x1);
+  // sol=sin(x1)/(1+sin(x1))/2;
+  // checkResult(y, sol, prec);
 
 
-  iRRAM::cout << "checking division (3d)" << endl;
+  // iRRAM::cout << "checking division (3d)" << endl;
 
-  // sin(x*y*z)/(sin(x*y*z)+1)
-  auto inv_test3d = f/fmod;   
-  y = inv_test3d->evaluate(x1,x2,x3);
-  sol=sin(x1*x2*x3)/(1+sin(x1*x2*x3));
-  checkResult(y, sol, prec);
+  // // sin(x*y*z)/(sin(x*y*z)+1)
+  // auto inv_test3d = f/fmod;   
+  // y = inv_test3d->evaluate(x1,x2,x3);
+  // sol=sin(x1*x2*x3)/(1+sin(x1*x2*x3));
+  // checkResult(y, sol, prec);
 
   // iRRAM::cout << "checking division (3d) by power series" << endl;
 

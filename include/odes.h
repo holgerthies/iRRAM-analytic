@@ -24,14 +24,14 @@ REAL A2_series(const unsigned long v0, const unsigned long v1)
 
 REAL A2_max(const REAL& r)
 {
-  
   return power(r,3)/2;
 }
 
 IVPSYSTEM<REAL, REAL, REAL> A2_SYSTEM(const REAL& r)
 {
 
-  auto A2_analytic = make_polynomial<2>({{0,0,0,-REAL(1)/REAL(3)}});
+  auto A2_analytic = make_polynomial<2>({{0,0,0,-REAL(1)/REAL(2)}});
+  //std::dynamic_pointer_cast<POLYNOMIAL<2,REAL>>(A2_analytic)->set_rM(10);
   //auto A2_analytic = real_analytic<2>::make(std::function<REAL(unsigned long, unsigned long)>(A2_series),A2_max(r),r);
   //std::static_pointer_cast<ANALYTIC<REAL, REAL, REAL>>(A2_analytic)->add_algorithm(A2_fun);
   IVPSYSTEM<REAL, REAL, REAL> A2_IVP;
@@ -132,8 +132,8 @@ REAL B1_fun1(const REAL& t, const REAL& y1, const REAL& y2)
 
 REAL B1_series1(const unsigned long v0, const unsigned long v1, const unsigned long v2)
 {
-  if(v1 == 1 && v2==0) return 2;
-  if(v1 == 1 && v2==1) return -2;
+  if(v0 == 0 && v1 == 1 && v2==0) return 2;
+  if(v0 == 0 && v1 == 1 && v2==1) return -2;
   return 0;
 }
 
@@ -154,18 +154,16 @@ REAL B1_max2(const REAL& r)
 
 REAL B1_series2(const unsigned long v0, const unsigned long v1, const unsigned long v2)
 {
-  if(v1 == 0 && v2==1) return -1;
-  if(v1 == 1 && v2==1) return 1;
+  if(v0 == 0 && v1 == 0 && v2==1) return -1;
+  if(v0 == 0 && v1 == 1 && v2==1) return 1;
   return 0;
 }
 
 IVPSYSTEM<REAL, REAL, REAL, REAL> B1_SYSTEM(const REAL& r)
 {
 
-  auto B1_analytic1 = make_analytic<REAL,REAL, REAL, REAL>(std::function<REAL(unsigned long, unsigned long, unsigned long)>(B1_series1),B1_max1(r),r);
-  auto B1_analytic2 = make_analytic<REAL,REAL, REAL,REAL>(std::function<REAL(unsigned long, unsigned long, unsigned long)>(B1_series2),B1_max2(r),r);
-  std::static_pointer_cast<ANALYTIC<REAL, REAL, REAL, REAL>>(B1_analytic1)->add_algorithm(B1_fun1);
-  std::static_pointer_cast<ANALYTIC<REAL, REAL, REAL, REAL>>(B1_analytic2)->add_algorithm(B1_fun2);
+  auto B1_analytic1 = make_polynomial<3>({{{},{2,-2}}});
+  auto B1_analytic2 = make_polynomial<3>({{{0,-1},{0,1}}});
   IVPSYSTEM<REAL, REAL, REAL, REAL> B1_IVP;
   B1_IVP.F = {B1_analytic1, B1_analytic2};
   B1_IVP.y = {0, 1, 3};

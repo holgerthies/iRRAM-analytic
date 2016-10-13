@@ -5,9 +5,10 @@
 #define NODE_H
 #include <memory>
 #include "POWERSERIES.h"
+#include "tutil.h"
 namespace iRRAM
 {
-  enum class ANALYTIC_OPERATION {ANALYTIC, ADDITION,SCALAR_ADDITION, SUBTRACTION, MULTIPLICATION,SCALAR_MULTIPLICATION, INVERSION, DERIVATIVE, COMPOSITION, IVP, SINE, COSINE, EXPONENTIATION,CONTINUATION, POLYNOMIAL};
+  enum class ANALYTIC_OPERATION {ANALYTIC, ADDITION,SCALAR_ADDITION, SUBTRACTION, MULTIPLICATION,SCALAR_MULTIPLICATION, INVERSION, DERIVATIVE, COMPOSITION, IVP, SINE, COSINE, EXPONENTIATION,CONTINUATION, POLYNOMIAL, CONSTANT};
 
   // forward declaration 
   template<class R, class... Args>
@@ -16,31 +17,59 @@ namespace iRRAM
   template<class R, class... Args>
   class Node
   {
+  private:
+    using pwr_series = POWERSERIES<sizeof...(Args),R>;
+    using pwr_series_ptr = std::shared_ptr<pwr_series>;
+    pwr_series_ptr pwr;
   public:
+    Node()
+    {
+      auto coeff_lambda = [this] (const auto... params) {return this->get_coefficient(std::make_tuple(params...));};
+      auto coeff_fun= tutil::repeat_fun<sizeof...(Args), R, const size_t>(coeff_lambda);
+      auto series = std::make_shared<POWERSERIES<sizeof...(Args),REAL>>(coeff_fun);
+      this->pwr = series;
+    }
+
+    virtual R evaluate(const Args&... args) const {
+      return PWRSERIES_IMPL::evaluate(pwr, this->get_r(), this->get_M(this->get_r()/2), args...);
+    };
     virtual ~Node() = default;
-    virtual R evaluate(const Args&... args) const = 0;
-    virtual std::shared_ptr<ANALYTIC<R, Args...>> to_analytic() const = 0;
+    //virtual R evaluate(const Args&... args) const = 0;
+    //virtual std::shared_ptr<ANALYTIC<R, Args...>> to_analytic() const = 0;
     virtual ANALYTIC_OPERATION get_type() const = 0;
     virtual std::string to_string() const  = 0;
-    virtual REAL get_M(const REAL& r, const Args&... args) const = 0;
+    virtual REAL get_M(const REAL& r) const = 0;
     virtual REAL get_r() const = 0;
     virtual std::shared_ptr<Node<R,Args...>> simplify() const = 0;
+    virtual R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>&) const = 0;
+    template<class... IDX>
+    R get_coefficient(size_t i, IDX... idx)
+    {
+      return get_coefficient(std::make_tuple(i,idx...));
+    }
+    // template<class... IDX>
+    // virtual std::shared_ptr<Node<R,Args...>> derive const
+    // {
+    //   return DERIVATIVE(std::make_shared(*this));
+      
+    // }
     template<class... IArgs>
-    R evaluate_vector(const std::vector<R>& X, int pos, IArgs... iargs)
+    R evaluate_vector(const std::vector<R>& X, int pos, IArgs... iargs) const
     {
       return evaluate_vector(X, pos+1, iargs..., X[pos]);
       
     }
-    R evaluate_vector(const std::vector<R>& X, int pos, Args... iargs)
+    R evaluate_vector(const std::vector<R>& X, int pos, Args... iargs) const
     {
       return evaluate(iargs...);
       
     }
-    R evaluate(const std::vector<R>& X)
+    R evaluate(const std::vector<R>& X) const
     {
       return evaluate_vector(X,0);
       
     }
+    
   };
 
   template<class R, class... Args>

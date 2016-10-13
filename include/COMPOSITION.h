@@ -7,91 +7,39 @@
 namespace iRRAM
 {
 
-  template <size_t d, class T>
-  class SERIES_COMPOSITION : public SERIES_OPERATOR<d,T>
+  template <size_t d, class R, class... Args>
+  struct coefficient_getter_cache
   {
-  private:
-    std::shared_ptr<POWERSERIES<1,T>> lhs;
-    std::shared_ptr<POWERSERIES<d,T>> rhs;
-    mutable std::vector<std::vector<std::shared_ptr<POWERSERIES<d-1,T>>>> B; // cache
-  public:
-    SERIES_COMPOSITION(const std::shared_ptr<POWERSERIES<1,T>>& lhs, const std::shared_ptr<POWERSERIES<d,T>>& rhs):
-      lhs(lhs), rhs(rhs)
-    {
-    }
+    using node_ptr = std::shared_ptr<Node<R, Args...>>;
+    std::shared_ptr<coefficient_getter_cache<d-1, R, Args...>> next;
+    node_ptr rhs;
+    coefficient_getter_cache(const node_ptr& rhs): rhs(rhs), next(std::make_shared<coefficient_getter_cache<d-1,R,Args...>>(rhs)) {}
 
-    std::shared_ptr<POWERSERIES<d-1,T>> get_coeff(const unsigned long n) const override 
+    R get(const size_t k, const tutil::n_tuple<d,size_t>& idx, const tutil::n_tuple<sizeof...(Args)-d,size_t>& r_ind, const tutil::n_tuple<sizeof...(Args)-d,size_t>& B_ind)
     {
-      
-      if(B.size() == 0){
-        auto one = std::make_shared<POWERSERIES<d-1,T>>(1);
-        B.push_back(std::vector<std::shared_ptr<POWERSERIES<d-1,T>>>{one});
-      }
-      auto zero = std::make_shared<POWERSERIES<d-1,T>>(0);
-      std::fill_n(std::back_inserter(B), n-B.size()+1, std::vector<std::shared_ptr<POWERSERIES<d-1,T>>>());
-      std::fill_n(std::back_inserter(B[0]), (n+1)-B[0].size(), zero);
-      for(int k=1; k<=n; k++){
-        auto Bksize = B[k].size();
-        std::fill_n(std::back_inserter(B[k-1]), n-B[k-1].size()+1, zero);
-        for(int j=Bksize; j<=n; j++){
-          std::shared_ptr<SERIES_OPERATOR<d-1,T>> bkj = std::make_shared<SERIES_MULTIPLICATION<d-1,T>>(B[k-1][j], (*rhs)[0]);
-          for(int t=1; t<=j; t++){
-            std::shared_ptr<SERIES_OPERATOR<d-1,T>> multiplication = std::make_shared<SERIES_MULTIPLICATION<d-1,T>>(B[k-1][j-t], (*rhs)[t]);
-            bkj = std::make_shared<SERIES_ADDITION<d-1,T>>(get_series(bkj), get_series(multiplication));
-          }
-          B[k].push_back(get_series(bkj));
-        }
-      }
-      auto ans = std::make_shared<POWERSERIES<d-1,T>>(0);
-      for(int k=0; k<=n; k++)
-      {
-        std::shared_ptr<SERIES_OPERATOR<d-1,T>> multiplication = std::make_shared<SERIES_SCALAR_MULTIPLICATION<d-1,T>>(B[k][n],lhs->get(k) );
-        std::shared_ptr<SERIES_OPERATOR<d-1,T>> addition = std::make_shared<SERIES_ADDITION<d-1,T>>(ans, get_series(multiplication));
-        ans = get_series(addition);
+      R ans=0;
+      if(k == 0 && std::get<0>(idx) == 0) return 1;
+      if(k == 0) return 0;
+      for(int i=0; i<=std::get<0>(idx); i++){
+        ans += next->get(k, tutil::tail(idx), std::tuple_cat(r_ind,std::make_tuple(i)), std::tuple_cat(B_ind, std::make_tuple(std::get<0>(idx)-i)));
       }
       return ans;
     }
-
   };
 
-  template <class T>
-    class SERIES_COMPOSITION<1,T> : public SERIES_OPERATOR<1,T>
+  template <class R, class... Args>
+  struct coefficient_getter_cache<0, R, Args...>
   {
-  private:
-    std::shared_ptr<POWERSERIES<1,T>> lhs;
-    std::shared_ptr<POWERSERIES<1,T>> rhs;
-    mutable std::vector<std::vector<T>> B; // cache
-  public:
-    SERIES_COMPOSITION(const std::shared_ptr<POWERSERIES<1,T>>& lhs, const std::shared_ptr<POWERSERIES<1,T>>& rhs):
-      lhs(lhs), rhs(rhs)
-    {
-    }
+    using node_ptr = std::shared_ptr<Node<R, Args...>>;
+    node_ptr rhs;
+    coefficient_getter_cache(const node_ptr& rhs): rhs(rhs) {}
 
-    std::shared_ptr<T> get_coeff(const unsigned long n) const override 
+    R get(const size_t k, const std::tuple<>& idx, const tutil::n_tuple<sizeof...(Args),size_t>& r_ind, const tutil::n_tuple<sizeof...(Args),size_t>& B_ind)
     {
-      if(B.size() == 0){
-        B.push_back(std::vector<T>{1});
-      }
-      std::fill_n(std::back_inserter(B), n-B.size()+1, std::vector<T>());
-      std::fill_n(std::back_inserter(B[0]), n-B[0].size()+1, 0);
-      for(int k=1; k<=n; k++){
-        std::fill_n(std::back_inserter(B[k]), n-B[k].size()+1, 0);
-        for(int j=0; j<=n; j++){
-          for(int t=0; t<=j; t++){
-            B[k][j] += rhs->get(t)*B[k-1][j-t];
-          }
-        }
-      }
-      T ans = 0;
-      for(int k=0; k<=n; k++)
-      {
-        ans += lhs->get(k)*B[k][n];
-      }
-      return std::make_shared<T>(ans);
+      auto root = std::make_shared<coefficient_getter_cache<sizeof...(Args), R, Args...>>(rhs);
+      return rhs->get_coefficient(r_ind)*root->get(k-1, B_ind, std::tuple<>(), std::tuple<>());
     }
-
   };
-
 
   template <class R, class... Args>
   class COMPOSITION : public Node<R, Args...>{
@@ -100,55 +48,52 @@ namespace iRRAM
   private:
     node_ptr1d lhs;
     node_ptr rhs;
+    std::shared_ptr<coefficient_getter_cache<sizeof...(Args), R, Args...>> cache;
+    mutable std::vector<std::vector<R>> B; // cache
   public:
-    COMPOSITION(const node_ptr1d& lhs, node_ptr rhs):
-      lhs(lhs), rhs(rhs)
+    COMPOSITION(const node_ptr1d& lhs, const node_ptr& rhs):
+      lhs(lhs), rhs(rhs), cache(std::make_shared<coefficient_getter_cache<sizeof...(Args), R, Args...>>(rhs))
     {
     }
 
-    R evaluate(const Args&... args) const override;
-    std::shared_ptr<ANALYTIC<R,Args...>> to_analytic() const override;
+    // R evaluate(const Args&... args) const override{
+    //   return lhs->evaluate(rhs->evaluate(args...));
+    // }
+
     REAL get_r() const override {
       return rhs->get_r();
-    };
-    REAL get_M(const REAL& r, const Args&... args) const override {
-      return lhs->get_M(r, rhs->evaluate(args...));
-    };
+    }
+    
+    REAL get_M(const REAL& r) const override {
+      return lhs->get_M(r);
+    }
 
     std::shared_ptr<Node<R,Args...>> simplify() const override
     {
       return std::make_shared<COMPOSITION>(this->lhs->simplify(), this->rhs->simplify());
-    };
+    }
 
     std::string to_string() const override
     {
       return "COMPOSITION("+this->lhs->to_string()+","+this->rhs->to_string()+")";
       
-    };
+    }
+
+    R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override
+    {
+      R ans=0;
+      for(int i=0;i<=std::get<0>(idx); i++)
+      {
+        ans += lhs->get_coefficient(i)*cache->get(i, idx, std::tuple<>(), std::tuple<>());
+      }
+      return ans;
+    }
 
     ANALYTIC_OPERATION get_type() const override
     {
       return ANALYTIC_OPERATION::COMPOSITION;
     }
   };
-
-  // member definitions 
-
-  template <class R, class... Args>
-  R COMPOSITION<R, Args...>::evaluate(const Args&... args) const
-  {
-    return lhs->evaluate(rhs->evaluate(args...));
-  }
-
-
-  template <class R, class... Args>
-  std::shared_ptr<ANALYTIC<R,Args...>> COMPOSITION<R,Args...>::to_analytic() const
-    {
-      auto l = lhs->to_analytic();
-      auto r = rhs->to_analytic();
-      std::shared_ptr<SERIES_OPERATOR<sizeof...(Args), R>> composition= std::make_shared<SERIES_COMPOSITION<sizeof...(Args), R>>(l->get_series(), r->get_series());
-      return std::make_shared<ANALYTIC<R, Args...>>(get_series(composition), l->get_M(), r->get_r());
-    }
 
   // composition operators
   template <class R, class... Args>

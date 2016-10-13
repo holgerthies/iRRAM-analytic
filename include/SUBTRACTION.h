@@ -6,45 +6,27 @@
 #include "ANALYTIC.h"
 namespace iRRAM
 {
-  template <size_t d, class T>
-  class SERIES_SUBTRACTION : public SERIES_BINARY_OPERATOR<d,T>
-  {
-    using SERIES_BINARY_OPERATOR<d,T>::SERIES_BINARY_OPERATOR;
-  public:
-    std::shared_ptr<POWERSERIES<d-1,T>> get_coeff(const unsigned long n) const override 
-    {
-      std::shared_ptr<SERIES_OPERATOR<d-1,T>> subtraction = std::make_shared<SERIES_SUBTRACTION<d-1, T>>((*this->lhs)[n], (*this->rhs)[n]);
-      return get_series(subtraction);
-    }
-
-  };
-
-  template<class T>
-  class SERIES_SUBTRACTION<1,T> : public SERIES_BINARY_OPERATOR<1,T>
-  {
-    using SERIES_BINARY_OPERATOR<1,T>::SERIES_BINARY_OPERATOR;
-  public:
-    std::shared_ptr<T> get_coeff(const unsigned long n) const override
-    {
-      return std::make_shared<T>(this->lhs->get(n)-this->rhs->get(n));
-    }
-  };
-  
 
   template <class R, class... Args>
   class SUBTRACTION : public BinaryNode<R, Args...>{
     using BinaryNode<R,Args...>::BinaryNode;
   public:
     R evaluate(const Args&... args) const override;
-    std::shared_ptr<ANALYTIC<R,Args...>> to_analytic() const override;
 
     REAL get_r() const override {
       return minimum(this->lhs->get_r(), this->rhs->get_r());
     };
-    REAL get_M(const REAL& r, const Args&... args) const override {
-      return this->lhs->get_M(r, args...)+this->rhs->get_M(r, args...);
+
+    REAL get_M(const REAL& r) const override {
+      return this->lhs->get_M(r)+this->rhs->get_M(r);
     };
 
+    R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override
+    {
+      return this->lhs->get_coefficient(idx)-this->rhs->get_coefficient(idx);
+    }
+ 
+    
     std::shared_ptr<Node<R,Args...>> simplify() const override
     {
       return std::make_shared<SUBTRACTION>(this->lhs->simplify(), this->rhs->simplify());
@@ -62,18 +44,6 @@ namespace iRRAM
   {
     return this->lhs->evaluate(args...)-this->rhs->evaluate(args...);
   }
-
-  template <class R, class... Args>
-  std::shared_ptr<ANALYTIC<R,Args...>> SUBTRACTION<R,Args...>::to_analytic() const
-    {
-      auto l = this->lhs->to_analytic();
-      auto r = this->rhs->to_analytic();
-      std::shared_ptr<SERIES_OPERATOR<sizeof...(Args), R>> subtraction= std::make_shared<SERIES_SUBTRACTION<sizeof...(Args), R>>(l->get_series(), r->get_series());
-      auto add_pwr = get_series(subtraction);
-      auto add_M = l->get_M()+r->get_M();
-      auto add_r = minimum(l->get_r(), r->get_r());
-      return std::make_shared<ANALYTIC<R, Args...>> (add_pwr, add_M, add_r);
-    }
 
   // subtraction operators
   template <class R, class... Args>

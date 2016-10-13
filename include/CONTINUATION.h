@@ -4,6 +4,7 @@
 #ifndef CONTINUATION_H
 #define CONTINUATION_H
 #include "ANALYTIC.h"
+#include "POLYNOMIAL.h"
 namespace iRRAM
 {
   // evaluate the series for f^(k)(x)/k!
@@ -245,51 +246,52 @@ namespace iRRAM
   using node_ptr = std::shared_ptr<Node<R, Args...>>;
   private:
     node_ptr node;
+    REAL M, r;
+    std::vector<R> center;
     std::shared_ptr<ANALYTIC<R,Args...>> analytic;
     
   public:
-    CONTINUATION(const node_ptr& node, const REAL& new_M, const REAL& new_r, Args... args):
-      node(node)
+
+    CONTINUATION(const node_ptr& node, const REAL& new_M, const REAL& new_r, const std::vector<R>& xs):
+      node(node), center(xs), r(new_r), M(new_M)
     {
-      auto f = node->to_analytic();
-      auto dpwr= std::make_shared<CONTINUATION_SERIES<sizeof...(args),R,Args...>>(f,args...);
-      this->analytic = std::make_shared<ANALYTIC<R,Args...>>(dpwr->get_series(), new_M, new_r);
-      //simplified = std::make_shared<CONTINUATION>(this->node->simplify(), new_M, new_r, args...);
+    }
+
+    CONTINUATION(const node_ptr& node, const REAL& new_M, const REAL& new_r, Args... args):
+      CONTINUATION(node, new_M, new_r, std::vector<R>{args...})
+    {
     }
 
     std::shared_ptr<Node<R,Args...>> simplify() const override
     {
+       if(node->get_type() == ANALYTIC_OPERATION::POLYNOMIAL)
+         return std::dynamic_pointer_cast<poly_impl::POLY<R,Args...>>(node)->continuation(center);
       return std::make_shared<CONTINUATION>(*this);
     };
 
     std::string to_string() const override
     {
-      return "CONTINUATION";
+      return "CONTINUATION("+node->to_string()+")";
       
     }
 
 
-    // todo: fix
     REAL get_r() const override {
-      return node->get_r();
+      return r;
     };
 
-    REAL get_M(const REAL& r, const Args&... args) const override {
-      return node->get_M(r, args...);
+    REAL get_M(const REAL& r) const override {
+      return M;
     };
 
-    CONTINUATION(const node_ptr& node, const REAL& new_M, const REAL& new_r, const std::vector<R>& xs):
-      node(node)
+    R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override
     {
-      auto f = node->to_analytic();
-      auto dpwr= std::make_shared<CONTINUATION_SERIES<sizeof...(Args),R,Args...>>(f,xs);
-      this->analytic = std::make_shared<ANALYTIC<R,Args...>>(dpwr->get_series(), new_M, new_r);
+      
     }
+
+    
     R evaluate(const Args&... args) const override{
-      return analytic->evaluate(args...);
-    };
-    std::shared_ptr<ANALYTIC<R,Args...>> to_analytic() const override{
-      return analytic;
+      //return analytic->evaluate(args...);
     };
 
     ANALYTIC_OPERATION get_type() const override

@@ -9,7 +9,7 @@ TESTDIR := test
 SRCEXT := cc
 SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
-CFLAGS := -g -Wall -std=c++11 -Xlinker -rpath -Xlinker /Users/holgerthies/iRRAM/installed/lib
+CFLAGS := -g -Wall -std=c++14 -Xlinker -rpath -Xlinker /Users/holgerthies/iRRAM/installed/lib
 LIB := -L/Users/holgerthies/iRRAM/installed/lib -liRRAM -lmpfr -lgmp -lm -lpthread
 
 INC := -I include -I/Users/holgerthies/iRRAM/installed/include

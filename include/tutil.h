@@ -31,12 +31,33 @@ namespace tutil{
     using type = U<T, Ts...>;
   };
 
+  template <template<typename...> class U, typename T, typename... Ts>
+  struct repeat_impl<0, U, T, Ts...>
+  {
+    using type = U<Ts...>;
+  };
+
   template <size_t n, template<typename...> class U, typename T>
   using repeat = typename repeat_impl<n, U, T>::type;
   
   template <size_t n, typename T>
   using n_tuple = repeat<n, std::tuple, T>;
 
+
+  template <size_t n, class U, typename T, typename... Ts>
+  struct repeat_fun_impl
+  {
+    using type = typename repeat_fun_impl<n-1,U, T, T, Ts...>::type;
+  };
+
+  template <class U, typename T, typename... Ts>
+  struct repeat_fun_impl<1, U, T, Ts...>
+  {
+    using type = std::function<U(T, Ts...)>;
+  };
+
+  template <size_t n, class U, typename T>
+  using repeat_fun = typename repeat_fun_impl<n, U, T>::type;
   
   template <size_t n, template<typename> class U, typename T>
   struct concat_impl
@@ -112,6 +133,27 @@ namespace tutil{
   template<typename... Ts>
   std::string to_string(const std::tuple<Ts...>& tuple){
     return std::to_string(std::get<0>(tuple))+", "+to_string(tail(tuple));
+  }
+
+  bool all_zero(){
+    return true;
+  }
+
+  template <class... Is>
+  bool all_zero(const int i, const Is... rest){
+    if(i != 0) return false;
+    return all_zero(rest...);
+  }
+
+  template <class T, class... Args>
+  bool all_zero(const std::tuple<T, Args...>& t){
+    if(std::get<0>(t) != 0) return false;
+    return all_zero(tail(t));
+  }
+
+  template<>
+  bool all_zero(const std::tuple<size_t>& t){
+    return (std::get<0>(t) == 0);
   }
 
 }

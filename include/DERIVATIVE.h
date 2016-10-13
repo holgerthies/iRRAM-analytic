@@ -7,45 +7,10 @@
 #include "tutil.h"
 namespace iRRAM
 {
-  template <size_t d, class T, class... orders>
-  std::shared_ptr<POWERSERIES<d,T>> get_derivative_series(const std::shared_ptr<POWERSERIES<d,T>>&, const int, const int, const orders...);
-
-  template <size_t d, class T>
-  std::shared_ptr<POWERSERIES<d,T>> get_derivative_series(const std::shared_ptr<POWERSERIES<d,T>>&, const int);
-
-  template <size_t d, class T>
-  class SERIES_DERIVATIVE : public SERIES_OPERATOR<d,T>
-  {
-  private:
-    std::shared_ptr<POWERSERIES<d,T>> pwr;
-    unsigned int variable;
-    int order;
-  public:
-    SERIES_DERIVATIVE(const std::shared_ptr<POWERSERIES<d,T>>& pwr, const unsigned int variable, const int order ):
-      pwr(pwr), variable(variable), order(order) 
-    {
-    }
-
-    std::shared_ptr<POWERSERIES<d-1,T>> get_coeff(const unsigned long n) const override 
-    {
-      if(variable >= d || order==0)
-        return (*pwr)[n];
-      if(variable == 0){
-        T fact=1;
-        for(int k=n+1; k<=n+order; k++) fact *= T(k);
-        std::shared_ptr<SERIES_OPERATOR<d-1,T>> multiplication = std::make_shared<SERIES_SCALAR_MULTIPLICATION<d-1,T>>((*pwr)[order+n], fact);
-        return get_series(multiplication);
-      }
-      std::shared_ptr<SERIES_OPERATOR<d-1,T>> ds = std::make_shared<SERIES_DERIVATIVE<d-1,T>>((*pwr)[n], variable-1, order);
-      return get_series(ds);
-    }
-
-  };
-
 
   template <class R, class... Args>
   class DERIVATIVE;
-  
+
     
   template<size_t v, class R, class... Args>
     struct simplify_multiplication_helper
@@ -78,92 +43,78 @@ namespace iRRAM
     
   
   
-    
-  template <class T>
-  class SERIES_DERIVATIVE<1,T> : public SERIES_OPERATOR<1,T>
+  template<class... Params>
+  REAL get_coefficient_factor(const std::tuple<Params...>& orders, const std::tuple<Params...>& idx)
   {
-  private:
-    std::shared_ptr<POWERSERIES<1,T>> pwr;
-    unsigned int variable;
-    int order;
-  public:
-    SERIES_DERIVATIVE(const std::shared_ptr<POWERSERIES<1,T>>& pwr, const unsigned int variable, const int order ):
-      pwr(pwr), variable(variable), order(order) 
+    REAL ans=1;
+    for(int j=std::get<0>(idx)+1; j<=std::get<0>(idx)+std::get<0>(orders); j++)
     {
-      
+      ans *= j;
     }
+    return ans*get_coefficient_factor(tutil::tail(orders), tutil::tail(idx));
+  }
 
-    std::shared_ptr<T> get_coeff(const unsigned long n) const override 
-    {
-      if(variable != 0 || order==0)
-        return (*pwr)[n];
-      T fact=1;
-      for(int k=n+1; k<=n+order; k++) fact *= T(k);
-      T multiplication = pwr->get(order+n)*fact;
-      return std::make_shared<T>(multiplication);
-    }
-
-  };
-
-  REAL get_deriv_M_factor(const REAL& r, const REAL& r0)
+  template<>
+  REAL get_coefficient_factor(const std::tuple<>& orders, const std::tuple<>& idx)
   {
     return 1;
   }
 
-  template<class... orders>
-  REAL get_deriv_M_factor(const REAL& r,const REAL& r0, int d, orders... rest)
+  template<class... Params>
+  REAL get_M_factor(const REAL& r, const REAL& new_r, const std::tuple<Params...>& orders)
   {
-    auto p = power(2/(r-r0), d);
-    REAL fact=1;
-    for(int j=2; j<=d; j++) fact *= j;
-    return fact*p*get_deriv_M_factor(r, r0, rest...);
+    auto n = std::get<0>(orders);
+    return REAL(factorial(n))*get_M_factor(r, new_r, tutil::tail(orders))*power(r-new_r,-(n+1));
   }
 
+  template<>
+  REAL get_M_factor(const REAL& r, const REAL& new_r,const std::tuple<>& orders)
+  {
+    return 1;
+  }
 
   template <class R, class... Args>
   class DERIVATIVE : public Node<R, Args...>{
     using node_ptr = std::shared_ptr<Node<R, Args...>>;
   private:
     node_ptr node;
+    
     template<size_t I, typename D, typename... Ts>
     friend struct simplify_multiplication_helper;
     
-    std::function<REAL(const REAL&, const Args&...)> M_function;
-    std::shared_ptr<ANALYTIC<R,Args...>> analytic;
-    tutil::repeat<sizeof...(Args), std::tuple, int> orders_t;
-    
+    tutil::repeat<sizeof...(Args), std::tuple, size_t> orders_t;
+
     
   public:
     template<class... orders>
     DERIVATIVE(const node_ptr& node, orders... ods):
-      node(node)
+      node(node), orders_t(std::tuple<orders...>(ods...))
     {
-      orders_t = std::tuple<orders...>(ods...);
-      auto f = node->to_analytic();
-      auto dpwr= get_derivative_series<sizeof...(Args), R>(f->get_series(),0, ods...);
-      auto new_r = f->get_r()/2;
-      auto new_M =  f->get_M()*get_deriv_M_factor(f->get_r(),0, ods...);
-      this->M_function = [node, ods...] (const REAL& r, const Args&... args) {
-        return node->get_M(r+node->get_r()/2,args...)*get_deriv_M_factor(node->get_r(), r, ods...);
-      };
-      this->analytic = std::make_shared<ANALYTIC<R,Args...>>(dpwr, new_M, new_r);
       
     }
 
-    REAL get_r() const override {
+    REAL get_r() const override
+    {
       return node->get_r();
-    };
-    REAL get_M(const REAL& r, const Args&... args) const override {
-      return M_function(r,args...);
-    };
+    }
 
-    R evaluate(const Args&... args) const override;
-    std::shared_ptr<ANALYTIC<R,Args...>> to_analytic() const override;
+    REAL get_M(const REAL& r) const override
+    {
+      REAL ans=get_M_factor(node->get_r(), r, orders_t);
+      int d =sizeof...(Args);
+      ans *= power(node->get_r()*node->get_M(node->get_r()), d);
+      return ans;
+    }
+
+    R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override
+    {
+      auto t = tutil::sum_tuples(idx, orders_t);
+      return get_coefficient_factor(orders_t, idx)*node->get_coefficient(t);
+    }
+
 
     std::shared_ptr<Node<R,Args...>> simplify() const override
     {
-      
-      
       switch(this->node->get_type()){
       case ANALYTIC_OPERATION::ADDITION:
         {
@@ -213,6 +164,13 @@ namespace iRRAM
           return new_node->simplify();
           
       }
+      case ANALYTIC_OPERATION::POLYNOMIAL:{
+        auto child = std::dynamic_pointer_cast<poly_impl::POLY<R, Args...>>(this->node);
+        auto new_node = std::make_shared<poly_impl::POLY<R, Args...>>(derive(*child, this->orders_t));
+        return new_node;
+          
+          
+      }
       case ANALYTIC_OPERATION::ANALYTIC:
         return std::make_shared<DERIVATIVE>(*this);
       default:
@@ -236,33 +194,8 @@ namespace iRRAM
     }
   };
 
-  // member definitions 
-  template <size_t d, class T, class... orders>
-  std::shared_ptr<POWERSERIES<d,T>> get_derivative_series(const std::shared_ptr<POWERSERIES<d,T>>& pwr,const int variable, const int order, const orders... rest) 
-  {
-    std::shared_ptr<SERIES_OPERATOR<d, T>> derivative = std::make_shared<SERIES_DERIVATIVE<d,T>>(pwr, variable, order);
-    auto dpwr = get_series(derivative);
-    return get_derivative_series<d,T>(dpwr,variable+1, rest...);
-  }
-
-  template <size_t d, class T>
-  std::shared_ptr<POWERSERIES<d,T>> get_derivative_series(const std::shared_ptr<POWERSERIES<d,T>>& pwr, const int variable)
-  {
-    return pwr;
-  }
-
-  template <class R, class... Args>
-  R DERIVATIVE<R, Args...>::evaluate(const Args&... args) const
-  {
-    return this->analytic->evaluate(args...);
-  }
 
 
-  template <class R, class... Args>
-  std::shared_ptr<ANALYTIC<R,Args...>> DERIVATIVE<R,Args...>::to_analytic() const
-    {
-      return analytic;
-    }
 
   // derivative operators
   template <class R, class... Args, class... orders>

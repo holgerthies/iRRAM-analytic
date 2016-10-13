@@ -186,9 +186,15 @@ namespace iRRAM
     REAL get_r() const override {
       return solver->to_analytic(v)->get_r();
     };
-    REAL get_M(const REAL& r, const R& x) const override {
+    REAL get_M(const REAL& r) const override {
       return solver->to_analytic(v)->get_M();
     };
+
+    R get_coefficient(const tutil::n_tuple<1,size_t>& idx) const override
+    {
+      return 0;
+    }
+
 
     std::shared_ptr<Node<R,R>> simplify() const override
     {
@@ -560,7 +566,8 @@ namespace iRRAM
     }
     ans = (REAL(1)/REAL(index))*ans;
     ans = ans->simplify();
-    std::cout << ans->to_string() << std::endl;
+    ans = ans->simplify();
+    
     return ans;
     
   }
@@ -572,52 +579,56 @@ namespace iRRAM
     std::vector<std::shared_ptr<Node<R, Args...>>> Fco(F);
 
     std::vector<REAL> Z(Y.size());
-    REAL M = F[0]->to_analytic()->get_M();
-    REAL r = F[0]->to_analytic()->get_r();
+    REAL r = F[0]->get_r();
+    REAL M = F[0]->get_M(r);
     for(const auto& f : F){
-      M = maximum(M, f->to_analytic()->get_M());
-      r = minimum(r, f->to_analytic()->get_r());
+      r = minimum(r, f->get_r());
+      M = maximum(M, f->get_M(r));
     }
   
+
     for(int i=0; i<Fc.size(); i++){
       // transpose function such that y(0)=0
       Fc[i] = continuation(F[i], M,r, Y );
+      Fc[i] = Fc[i]->simplify();
       Fco[i] = continuation(F[i], M,r, Y );
+      Fco[i] = Fco[i]->simplify();
     }
-
-    sizetype eval_error, trunc_error;
-    sizetype_exact(eval_error);
-    REAL error_factor=power(2,order+1)*M/power(r,order+1);
-    REAL error=1;
-    REAL h = 1.0;
-    
-    do{
-      h /=2;
-      error = power(h,order+1)*error_factor;
-      
-      trunc_error = real_to_error(error);
-    } while ( 
-      (trunc_error.exponent >= ACTUAL_STACK.actual_prec ) );
-  
-    
+    REAL error;
+    sizetype trunc_error;
     bool stop=false;
     
     std::vector<REAL> ny(Y);
     
-    
-    
-    ny[0] = Y[0]+h;
-    REAL hpow = 1;
-    h = minimum(max_time-Y[0],h);
-    
+    auto coefficients = std::vector<std::vector<R>>(F.size(), std::vector<R>(order+1));
     for(int i=1; i<=order; i++){
-      hpow *= h;
       for(int j=0; j<F.size(); j++){
         REAL m=Fc[j]->evaluate(Z);
         Fc[j] = get_next_f(i+1, Fc[j], Fco);
-        REAL t=Fc[j]->evaluate(Z);
-        
-        ny[j+1] += m*hpow;
+        coefficients[j][i] = m;
+      }
+    }
+
+    REAL h = minimum(0.99*r/M, 0.99*max_time);
+    do{
+      error = 0;
+      h /=2;
+      for(int j=0; j<F.size(); j++){
+        error = maximum(error, upper_bound(*std::dynamic_pointer_cast<POLYNOMIAL<3,REAL>>(Fc[j]), h)*power(h,order+1));
+      }
+      trunc_error = real_to_error(error);
+    } while ( 
+      (trunc_error.exponent >= ACTUAL_STACK.actual_prec ) );
+    ny[0] = Y[0]+h;
+    h = minimum(max_time-Y[0],h);
+
+    REAL hpow = 1;
+
+    for(int i=1; i<=order; i++){
+      error = 0;
+      hpow *= h;
+      for(int j=0; j<F.size(); j++){
+        ny[j+1] += coefficients[j][i]*hpow;
       }
     }
 
@@ -630,7 +641,8 @@ namespace iRRAM
       sizetype_add(total_error, local_error, trunc_error);
       Y[i].seterror(total_error);
     }
-    if(Y[0] > max_time) return true;
+    
+    //if(Y[0] > max_time) return true;
     
     return stop;
   }
@@ -638,10 +650,12 @@ namespace iRRAM
   template<class R, class... Args>
   std::vector<R> solve_taylor_deriv(const IVPSYSTEM<R, Args...>& S, const R& max_time, DEBUG_INFORMATION& debug)
   {
+    single_valued code;
     std::vector<REAL> Y(S.y);
     int iter=0;
-    int order=30;
-    while(!taylor_step(order, S.F, max_time, Y)){
+    int order=max(50,-ACTUAL_STACK.actual_prec/3);
+    while(Y[0] < max_time){
+      taylor_step(order, S.F, max_time, Y);
       ++iter;
       std::cout <<iter << " " << Y[0].as_double() <<" " << Y[1].as_double()<< "\n";
       
@@ -650,7 +664,6 @@ namespace iRRAM
     }
     debug.steps = iter;
     debug.order = order;
-    
     return Y;
   }
 

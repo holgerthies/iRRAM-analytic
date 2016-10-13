@@ -72,7 +72,7 @@ void check(REAL x1, REAL y10, int prec)
 template<class T>
 REAL solve(const T& system, int method, DEBUG_INFORMATION& d )
 {
-  REAL x = 1;
+  REAL x = 2;
   
   decltype(solve_taylor(system, x, d)) sols;
   if(method == 1)
@@ -91,6 +91,7 @@ void compute(){
   
   vector<decltype(A2_SYSTEM(1))> systems_1d = {A2_SYSTEM(3), A3_SYSTEM(4), A5_SYSTEM(1.5)};
   vector<decltype(B1_SYSTEM(1))> systems_2d = {B1_SYSTEM(30), SD5_SYSTEM(100) };
+  
   int dimension, system,max_iter,method;
   struct rusage usage;
   struct timeval start, end;
@@ -120,7 +121,7 @@ void compute(){
     error_exp_normalized++;
   }
   
-  check(sol, A2_sol(1), 20);
+  //check(sol, A2_sol(2), 200);
   
   std::cout << " dimension:" << dimension;
   std::cout << " system:" << system;

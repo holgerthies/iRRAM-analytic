@@ -6,62 +6,45 @@
 #include "ANALYTIC.h"
 namespace iRRAM
 {
-  template <size_t d, class T>
-  class SERIES_MULTIPLICATION : public SERIES_BINARY_OPERATOR<d,T>
-  {
-    using SERIES_BINARY_OPERATOR<d,T>::SERIES_BINARY_OPERATOR;
-  public:
-    std::shared_ptr<POWERSERIES<d-1,T>> get_coeff(const unsigned long n) const override 
-    {
-      auto c = std::make_shared<POWERSERIES<d-1,T>>(T());
-      for(int l=0; l<=n;l++){
-        std::shared_ptr<SERIES_OPERATOR<d-1,T>> multiplication = std::make_shared<SERIES_MULTIPLICATION<d-1, T>>((*this->lhs)[l], (*this->rhs)[n-l]);
-        std::shared_ptr<SERIES_OPERATOR<d-1,T>> add = std::make_shared<SERIES_ADDITION<d-1,T>>(c, get_series(multiplication));
-        c = get_series(add);
-      }
-      return c;
-    }
 
-  };
-
-  template<class T>
-  class SERIES_MULTIPLICATION<1,T> : public SERIES_BINARY_OPERATOR<1,T>
+  
+  template<size_t n, class R,class... Args>
+  struct cauchy_product
   {
-    using SERIES_BINARY_OPERATOR<1,T>::SERIES_BINARY_OPERATOR;
-  public:
-    std::shared_ptr<T> get_coeff(const unsigned long n) const override
+    using nodeptr = std::shared_ptr<Node<R, Args...>>;
+    
+    nodeptr lhs,rhs;
+    cauchy_product(const nodeptr& lhs, const nodeptr& rhs) :
+      lhs(lhs), rhs(rhs) 
     {
-      auto c = T();
-      for(int l=0; l<=n;l++){
-        auto coeff = this->lhs->get(l)*this->rhs->get(n-l);
-        c = c+coeff;
+    };
+    
+    R get(const tutil::n_tuple<n,size_t>& idx, const tutil::n_tuple<sizeof...(Args)-n,size_t>& idxl, const tutil::n_tuple<sizeof...(Args)-n,size_t>& idxr)
+    {
+      R ans=0;
+      auto p = cauchy_product<n-1, R, Args...>(lhs,rhs);
+      
+      for(int i=0; i<=std::get<0>(idx); i++){
+        ans += p.get(tutil::tail(idx), std::tuple_cat(idxl,std::make_tuple(i)), std::tuple_cat(idxr, std::make_tuple(std::get<0>(idx)-i)));
       }
-      return std::make_shared<T>(c);
+      return ans;
     }
   };
   
-
-  template <size_t d, class T>
-  class SERIES_SCALAR_MULTIPLICATION : public SERIES_SCALAR_OPERATOR<d,T>
+  template<class R,class... Args>
+  struct cauchy_product<0,R, Args...>
   {
-    using SERIES_SCALAR_OPERATOR<d,T>::SERIES_SCALAR_OPERATOR;
-  public:
-    std::shared_ptr<POWERSERIES<d-1,T>> get_coeff(const unsigned long n) const override 
+    using nodeptr = std::shared_ptr<Node<R, Args...>>;
+    
+    nodeptr lhs,rhs;
+    cauchy_product(const nodeptr& lhs, const nodeptr& rhs) :
+      lhs(lhs), rhs(rhs) 
     {
-      std::shared_ptr<SERIES_OPERATOR<d-1,T>> multiplication = std::make_shared<SERIES_SCALAR_MULTIPLICATION<d-1, T>>((*this->series)[n], this->scalar);
-      return get_series(multiplication);
-    }
-
-  };
-
-  template<class T>
-  class SERIES_SCALAR_MULTIPLICATION<1,T> : public SERIES_SCALAR_OPERATOR<1,T>
-  {
-    using SERIES_SCALAR_OPERATOR<1,T>::SERIES_SCALAR_OPERATOR;
-  public:
-    std::shared_ptr<T> get_coeff(const unsigned long n) const override
+    };
+    
+    R get(const std::tuple<>& idx, const tutil::n_tuple<sizeof...(Args),size_t>& idxl, const tutil::n_tuple<sizeof...(Args),size_t>& idxr)
     {
-      return std::make_shared<T>(this->series->get(n)*this->scalar);
+      return lhs->get_coefficient(idxl)*rhs->get_coefficient(idxr);
     }
   };
 
@@ -69,20 +52,33 @@ namespace iRRAM
   class MULTIPLICATION : public BinaryNode<R, Args...>{
     using BinaryNode<R,Args...>::BinaryNode;
   public:
-    R evaluate(const Args&... args) const override;
-    std::shared_ptr<ANALYTIC<R,Args...>> to_analytic() const override;
+    R evaluate(const Args&... args) const override{
+      return this->lhs->evaluate(args...)*this->rhs->evaluate(args...);
+    };
 
     REAL get_r() const override {
       return minimum(this->lhs->get_r(), this->rhs->get_r());
     };
-    REAL get_M(const REAL& r, const Args&... args) const override {
-      return this->lhs->get_M(r, args...)*this->rhs->get_M(r, args...);
+
+    REAL get_M(const REAL& r) const override {
+      return this->lhs->get_M(r)*this->rhs->get_M(r);
     };
 
+    R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override
+    {
+      return cauchy_product<sizeof...(Args), R, Args...>(this->lhs, this->rhs).get(idx, std::tuple<>(), std::tuple<>());
+    }
+
+    
     std::shared_ptr<Node<R,Args...>> simplify() const override
     {
       
-      return std::make_shared<MULTIPLICATION>(this->lhs->simplify(), this->rhs->simplify());
+      if(this->lhs->get_type() == ANALYTIC_OPERATION::POLYNOMIAL && this->rhs->get_type() == ANALYTIC_OPERATION::POLYNOMIAL){
+        auto lchild = std::dynamic_pointer_cast<poly_impl::POLY<R, Args...>>(this->lhs);
+        auto rchild = std::dynamic_pointer_cast<poly_impl::POLY<R, Args...>>(this->rhs);
+        return std::make_shared<poly_impl::POLY<R, Args...>>(*lchild * *rchild);
+      }
+      return std::make_shared<MULTIPLICATION>(this->lhs->simplify(), this->rhs->simplify())->simplify();
     };
 
     virtual std::string to_string() const override
@@ -100,8 +96,10 @@ namespace iRRAM
   class SCALAR_MULTIPLICATION : public ScalarNode<R, Args...>{
     using ScalarNode<R,Args...>::ScalarNode;
   public:
-    R evaluate(const Args&... args) const override; 
-    std::shared_ptr<ANALYTIC<R,Args...>> to_analytic() const override;
+    R evaluate(const Args&... args) const override
+    {
+      return this->scalar*this->node->evaluate(args...);
+    }
     
     virtual std::string to_string() const override
     {
@@ -111,9 +109,14 @@ namespace iRRAM
     REAL get_r() const override {
       return this->node->get_r();
     };
-    REAL get_M(const REAL& r, const Args&... args) const override {
-      return this->node->get_M(r, args...)*this->scalar;
+    REAL get_M(const REAL& r) const override {
+      return this->node->get_M(r)*this->scalar;
     };
+
+    R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override
+    {
+      return this->scalar * this->node->get_coefficient(idx);
+    }
 
     std::shared_ptr<Node<R,Args...>> simplify() const override
     {
@@ -123,8 +126,14 @@ namespace iRRAM
         {
 
           auto child = std::dynamic_pointer_cast<SCALAR_MULTIPLICATION>(this->node);
-          auto new_node = std::make_shared<SCALAR_MULTIPLICATION>(child->node->simplify(), this->scalar*child->scalar);
+          auto new_node = std::make_shared<SCALAR_MULTIPLICATION>(child->node->simplify(), this->scalar*child->scalar)->simplify();
          return new_node->simplify();
+        }
+      case ANALYTIC_OPERATION::POLYNOMIAL:
+        {
+          auto child = std::dynamic_pointer_cast<poly_impl::POLY<R, Args...>>(this->node);
+          auto new_node = std::make_shared<poly_impl::POLY<R,Args...>>(this->scalar*(*child));
+          return new_node->simplify();
         }
       default:
         return std::make_shared<SCALAR_MULTIPLICATION>(this->node->simplify(), this->scalar);
@@ -137,41 +146,6 @@ namespace iRRAM
     }
   };
 
-  // member definitions 
-  template <class R, class... Args>
-  R MULTIPLICATION<R, Args...>::evaluate(const Args&... args) const
-  {
-    return this->lhs->evaluate(args...)*this->rhs->evaluate(args...);
-  }
-
-  template <class R, class... Args>
-  R SCALAR_MULTIPLICATION<R, Args...>::evaluate(const Args&... args) const
-  {
-    return this->node->evaluate(args...)*this->scalar;
-  }
-
-  template <class R, class... Args>
-  std::shared_ptr<ANALYTIC<R,Args...>> MULTIPLICATION<R,Args...>::to_analytic() const
-    {
-      auto l = this->lhs->to_analytic();
-      auto r = this->rhs->to_analytic();
-      std::shared_ptr<SERIES_OPERATOR<sizeof...(Args), R>> multiplication= std::make_shared<SERIES_MULTIPLICATION<sizeof...(Args), R>>(l->get_series(), r->get_series());
-      auto new_pwr = get_series(multiplication);
-      auto new_M = l->get_M()*r->get_M();
-      auto new_r = minimum(l->get_r(), r->get_r());
-      return std::make_shared<ANALYTIC<R, Args...>> (new_pwr, new_M, new_r);
-    }
-
-  template <class R, class... Args>
-  std::shared_ptr<ANALYTIC<R,Args...>> SCALAR_MULTIPLICATION<R,Args...>::to_analytic() const
-    {
-      auto f = this->node->to_analytic();
-      std::shared_ptr<SERIES_OPERATOR<sizeof...(Args), R>> multiplication= std::make_shared<SERIES_SCALAR_MULTIPLICATION<sizeof...(Args), R>>(f->get_series(), this->scalar);
-      auto new_pwr = get_series(multiplication);
-      auto new_M = f->get_M()*this->scalar;
-      auto new_r = f->get_r();
-      return std::make_shared<ANALYTIC<R, Args...>> (new_pwr, new_M, new_r);
-    }
 
   // multiplication operators
   template <class R, class... Args>

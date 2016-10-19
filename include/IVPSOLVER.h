@@ -3,7 +3,6 @@
  ------------------------------------------------*/
 #ifndef IVP_SOLVER_H
 #define IVP_SOLVER_H
-#include "ANALYTIC.h"
 #include <vector>
 namespace iRRAM
 {
@@ -139,23 +138,22 @@ namespace iRRAM
     IVP_SOLVER(std::vector<std::shared_ptr<Node<R, Args...>>> funs)
     {
       
-      M = (*funs.begin())->to_analytic()->get_M();
-      r = (*funs.begin())->to_analytic()->get_r();
-      std::vector<std::shared_ptr<POWERSERIES<sizeof...(Args),R>>> pwrs;
-      for(auto p : funs){
+      // r = (*funs.begin())->to_analytic()->get_r();
+      // M = (*funs.begin())->get_M(r);
+      // std::vector<std::shared_ptr<POWERSERIES<sizeof...(Args),R>>> pwrs;
+      // for(auto p : funs){
         
-        auto f = p->to_analytic();
-        M = maximum(M, f->get_M());
-        r = minimum(r, f->get_r());
-        pwrs.push_back(f->get_series());
-      }
-      auto sol_M = r;
-      auto sol_r = minimum(r, r/M);
+      //   r = minimum(r, f->get_r());
+      //   M = maximum(M, f->get_M(r));
+      //   pwrs.push_back(f->get_series());
+      // }
+      // auto sol_M = r;
+      // auto sol_r = minimum(r, r/M);
       
-      series = std::make_shared<SERIES_IVP_SOLVER<sizeof...(Args), R>>(pwrs);
-      for(int i=0; i<sizeof...(Args)-1; i++){
-        solutions.push_back(std::make_shared<ANALYTIC<R, R>>(get_series(i, series), sol_M, sol_r));
-      }
+      // series = std::make_shared<SERIES_IVP_SOLVER<sizeof...(Args), R>>(pwrs);
+      // for(int i=0; i<sizeof...(Args)-1; i++){
+      //   solutions.push_back(std::make_shared<ANALYTIC<R, R>>(get_series(i, series), sol_M, sol_r));
+      // }
     }
     R evaluate(const int v, const R& arg) const
     {
@@ -187,18 +185,12 @@ namespace iRRAM
       return solver->to_analytic(v)->get_r();
     };
     REAL get_M(const REAL& r) const override {
-      return solver->to_analytic(v)->get_M();
+      //return solver->to_analytic(v)->get_M();
     };
 
     R get_coefficient(const tutil::n_tuple<1,size_t>& idx) const override
     {
       return 0;
-    }
-
-
-    std::shared_ptr<Node<R,R>> simplify() const override
-    {
-      return std::make_shared<IVP>(*this);
     }
 
     std::string to_string() const override
@@ -208,7 +200,7 @@ namespace iRRAM
     }
     
       
-    std::shared_ptr<ANALYTIC<R,R>> to_analytic() const override{
+    std::shared_ptr<ANALYTIC<R,R>> to_analytic() const {
       return solver->to_analytic(v);
     };
 
@@ -259,8 +251,8 @@ namespace iRRAM
     std::vector<R> Y(S.y);
     // transposed functions
     std::vector<std::shared_ptr<Node<R, Args...>>> Fc(S.F);
-    REAL M = S.F[0]->to_analytic()->get_M();
-    REAL r0 = S.F[0]->to_analytic()->get_r();
+    REAL r0 = S.F[0]->get_r();
+    REAL M = S.F[0]->get_M(r0);
     REAL r = r0;
     int iter=0;
     while(Y[0] < max_time){
@@ -272,7 +264,7 @@ namespace iRRAM
       }
       
       auto F = ivp_solve(Fc);
-      REAL h=F[0]->to_analytic()->get_r()/8;
+      REAL h=F[0]->get_r()/8;
       //iRRAM::cout << Y[0] << std::endl;
       REAL max_y = Y[0];
       for(int i=0; i<Fc.size(); i++){
@@ -287,7 +279,7 @@ namespace iRRAM
       //iRRAM::cout << Y[0]<<"  "<<Y[2]<<std::endl;
     }
     debug.steps = iter;
-    debug.order = S.F[0]->to_analytic()->get_series()->known_coeffs();
+    //debug.order = S.F[0]->get_series()->known_coeffs();
     
     return  Y;
   }
@@ -295,11 +287,11 @@ namespace iRRAM
   template<class R, class... Args>
   bool heun_step(const std::vector<std::shared_ptr<Node<R, Args...>>>& F, const REAL& max_time, std::vector<R>& Y)
   {
-    REAL M = F[0]->to_analytic()->get_M();
-    REAL r = F[0]->to_analytic()->get_r();
+    REAL r = F[0]->get_r();
+    REAL M = F[0]->get_M(r);
     for(const auto& f : F){
-      M = maximum(M, f->to_analytic()->get_M());
-      r = minimum(r, f->to_analytic()->get_r());
+      r = minimum(r, f->get_r());
+      M = maximum(M, f->get_M(r));
     }
   
     sizetype eval_error, trunc_error;
@@ -435,11 +427,11 @@ namespace iRRAM
   template<class R, class... Args>
   bool euler_step(const std::vector<std::shared_ptr<Node<R, Args...>>>& F, const REAL& max_time, std::vector<R>& Y)
   {
-    REAL M = F[0]->to_analytic()->get_M();
-    REAL r = F[0]->to_analytic()->get_r();
+    REAL r = F[0]->get_r();
+    REAL M = F[0]->get_M(r);
     for(const auto& f : F){
-      M = maximum(M, f->to_analytic()->get_M());
-      r = minimum(r, f->to_analytic()->get_r());
+      r = minimum(r, f->get_r());
+      M = maximum(M, f->get_M(r));
     }
   
     sizetype eval_error, trunc_error;
@@ -565,9 +557,7 @@ namespace iRRAM
             ans = ans+pderive(f, i+1, 1)*Fs[i];
     }
     ans = (REAL(1)/REAL(index))*ans;
-    ans = ans->simplify();
-    ans = ans->simplify();
-    
+    simplify(ans);
     return ans;
     
   }
@@ -578,7 +568,8 @@ namespace iRRAM
     std::vector<std::shared_ptr<Node<R, Args...>>> Fc(F);
     std::vector<std::shared_ptr<Node<R, Args...>>> Fco(F);
 
-    std::vector<REAL> Z(Y.size());
+    // zero tuple
+    tutil::n_tuple<sizeof...(Args), size_t> Z;
     REAL r = F[0]->get_r();
     REAL M = F[0]->get_M(r);
     for(const auto& f : F){
@@ -589,10 +580,11 @@ namespace iRRAM
 
     for(int i=0; i<Fc.size(); i++){
       // transpose function such that y(0)=0
-      Fc[i] = continuation(F[i], M,r, Y );
-      Fc[i] = Fc[i]->simplify();
-      Fco[i] = continuation(F[i], M,r, Y );
-      Fco[i] = Fco[i]->simplify();
+      Fc[i] = transpose(F[i], Y );
+      simplify(Fc[i]);
+      Fco[i] = transpose(F[i], Y );
+      simplify(Fco[i]);
+      std::cout << Fco[i]->to_string() << std::endl;
     }
     REAL error;
     sizetype trunc_error;
@@ -603,18 +595,18 @@ namespace iRRAM
     auto coefficients = std::vector<std::vector<R>>(F.size(), std::vector<R>(order+1));
     for(int i=1; i<=order; i++){
       for(int j=0; j<F.size(); j++){
-        REAL m=Fc[j]->evaluate(Z);
+        REAL m=Fc[j]->get_coefficient(Z);
         Fc[j] = get_next_f(i+1, Fc[j], Fco);
+        std::cout << i << std::endl;
         coefficients[j][i] = m;
       }
     }
-
     REAL h = minimum(0.99*r/M, 0.99*max_time);
     do{
       error = 0;
       h /=2;
       for(int j=0; j<F.size(); j++){
-        error = maximum(error, upper_bound(*std::dynamic_pointer_cast<POLYNOMIAL<3,REAL>>(Fc[j]), h)*power(h,order+1));
+        error = maximum(error, Fc[j]->get_M(h)*power(h,order+1));
       }
       trunc_error = real_to_error(error);
     } while ( 

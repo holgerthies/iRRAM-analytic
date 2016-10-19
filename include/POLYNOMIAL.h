@@ -35,8 +35,6 @@ namespace iRRAM
   template<class T>
   T upper_bound(const T&);
 
-  template<size_t n, class T>
-  int get_total_degree(const POLYNOMIAL<n,T>& P);
 
   // define coeff type for multivariate polynomial
   template <size_t n, class T>
@@ -81,6 +79,17 @@ namespace iRRAM
         ans += " + "+poly_to_string(P.get_coeff(i),degs..., i);
       }
       return ans;
+    }
+
+    REAL get_coefficient_tuple(const REAL& p, const std::tuple<>& t)
+    {
+      return p;
+    }
+      
+    template<class T, class... Ts>
+    T get_coefficient_tuple(const POLY<T, Ts...>& p, const tutil::n_tuple<sizeof...(Ts),size_t>& t)
+    {
+      return get_coefficient_tuple(p.get_coeff(std::get<0>(t)), tutil::tail(t));
     }
 
     template<class T, class... Ts>
@@ -154,11 +163,6 @@ namespace iRRAM
         return ANALYTIC_OPERATION::POLYNOMIAL;
       }
 
-      std::shared_ptr<Node<T, Ts...>> simplify() const override
-      {
-        return std::make_shared<POLY>(*this);
-      }
-
       std::shared_ptr<POLY> continuation(const std::vector<T>& center)
       {
         std::vector<coeff_type> coeffs(get_degree());
@@ -178,7 +182,7 @@ namespace iRRAM
 
       T get_coefficient(const tutil::n_tuple<sizeof...(Ts),size_t>& idx) const override
       {
-        return 0;
+        return get_coefficient_tuple(*this, idx);
       }
  
 
@@ -191,15 +195,6 @@ namespace iRRAM
     };
   }
   
-  template<class T>
-  int get_total_degree(const T& x){
-    return 0;
-  }
-  template<size_t n, class T>
-  int get_total_degree(const POLYNOMIAL<n,T>& P){
-    return 0;
-  }
-
   int get_max_degree(const REAL& x){
     return 0;
   }
@@ -305,7 +300,7 @@ namespace iRRAM
   template<class T,class... Ts, class... IDX>
   poly_impl::POLY<T,Ts...> derive(const poly_impl::POLY<T,Ts...>& P, const int order, const IDX... orders)
   {
-    if(P.get_degree() == 0) return poly_impl::POLY<T,Ts...>();
+    if(order >= P.get_degree()) return poly_impl::POLY<T,Ts...>();
     using coeff_type = typename poly_impl::POLY<T,Ts...>::coeff_type;
     std::vector<coeff_type> coeffs(P.get_degree()-order);
     T fact=factorial(order);
@@ -463,6 +458,37 @@ namespace iRRAM
   std::shared_ptr<REAL> make_polynomial<0>(const REAL& coeff)
   {
     return std::make_shared<REAL>(coeff);
+  }
+
+  template<size_t n, size_t m>
+  struct variable_symbol_helper
+  {
+    static POLYNOMIAL<n, REAL> get()
+    {
+      using coeff_type = typename COEFF_TYPE<n,REAL>::type;
+      std::vector<coeff_type> coeffs(1);
+      coeffs[0] = variable_symbol_helper<n-1, m-1>::get();
+      return POLYNOMIAL<n,REAL>(coeffs);
+    }
+  };
+  
+  template<size_t n>
+  struct variable_symbol_helper<n,0>
+  {
+    static POLYNOMIAL<n,REAL> get()
+    {
+      using coeff_type = typename COEFF_TYPE<n,REAL>::type;
+      std::vector<coeff_type> coeffs(2, coeff_type());
+      coeffs[1] = 1+coeffs[1];
+      return POLYNOMIAL<n,REAL>(coeffs);
+    }
+  };
+
+  template<size_t n, size_t m>
+  std::shared_ptr<typename node_type<n>::type> variable_symbol()
+  {
+    static_assert(m < n, "variable symbol exceeds number of variables.");
+    return std::make_shared<POLYNOMIAL<n,REAL>>(variable_symbol_helper<n,m>::get());
   }
 }
 

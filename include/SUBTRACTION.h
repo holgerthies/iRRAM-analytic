@@ -27,11 +27,6 @@ namespace iRRAM
     }
  
     
-    std::shared_ptr<Node<R,Args...>> simplify() const override
-    {
-      return std::make_shared<SUBTRACTION>(this->lhs->simplify(), this->rhs->simplify());
-    };
-
     ANALYTIC_OPERATION get_type() const override
     {
       return ANALYTIC_OPERATION::SUBTRACTION;

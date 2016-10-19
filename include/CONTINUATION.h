@@ -43,18 +43,18 @@ namespace iRRAM
     {
     }
 
-    REAL get_error_constant(const REAL& q){
+    REAL get_error_constant(const REAL& q) const{
       return (1-abs(x)/q)*rec_evaluator.get_error_constant(q);
     }
     
-    template<class... Orders>
-    T evaluate(const std::shared_ptr<POWERSERIES<sizeof...(Args)+1, T>>& pwr, const REAL& B, const REAL& q, const int k, const Orders... ks)
+    T evaluate(const std::shared_ptr<POWERSERIES<sizeof...(Args)+1, T>>& pwr, const REAL& B, const REAL& q, const tutil::n_tuple<sizeof...(Args)+1, int>& ks) const
     {
+      auto k = std::get<0>(ks);
       int J=0;
       REAL error_factor = abs(x)/q;
       REAL error = B*get_error_constant(q);
       REAL next_B = B;
-      REAL sum(rec_evaluator.evaluate((*pwr)[k], next_B, q, ks...));
+      REAL sum(rec_evaluator.evaluate((*pwr)[k], next_B, q, tutil::tail(ks)));
       REAL best=sum;
       sizetype best_error, trunc_error, local_error,sum_error;
       sum.geterror(sum_error);
@@ -72,7 +72,7 @@ namespace iRRAM
         J++;
         next_B *= next_B_factor;
         x0 *= x*REAL(J+k)/J;
-        sum += rec_evaluator.evaluate((*pwr)[J+k], next_B, q, ks...)*x0;
+        sum += rec_evaluator.evaluate((*pwr)[J+k], next_B, q, tutil::tail(ks))*x0;
         error *= error_factor;
         error.geterror(error_error);
         error.getsize(error_vsize);
@@ -112,7 +112,7 @@ namespace iRRAM
       return (r+x)/2;
     }
 
-    REAL get_error_constant(const REAL& q)
+    REAL get_error_constant(const REAL& q) const
     {
       return (1-abs(x)/q);
     }
@@ -128,8 +128,9 @@ namespace iRRAM
       return M;
     }
 
-    T evaluate(const std::shared_ptr<POWERSERIES<1, T>>& pwr, const REAL& B, const REAL& q, const int k)
+    T evaluate(const std::shared_ptr<POWERSERIES<1, T>>& pwr, const REAL& B, const REAL& q, const std::tuple<int> ks) const
     {
+      auto k = std::get<0>(ks);
       int J=0;
       REAL error_factor = abs(x)/q;
       REAL error = B*get_error_constant(q);
@@ -172,89 +173,23 @@ namespace iRRAM
   };
   
 
-  template<size_t d, class T, class... Args>
-  class CONTINUATION_SERIES
-  {
-  private:
-    std::shared_ptr<POWERSERIES<d,T>> pwr;
-  public:
-    template<class... Orders>
-    CONTINUATION_SERIES(const std::shared_ptr<ANALYTIC<T, Args...>>& node, const Args&... args, const Orders... orders)
-    {
-      pwr = std::make_shared<POWERSERIES<d,T>>([node, orders..., args...] (unsigned long n) {
-          auto continuation = std::make_shared<CONTINUATION_SERIES<d-1, T, Args...>>(node, args..., orders..., n);
-          return continuation->get_series();
-        });
-    };
-
-    template<class... Orders>
-    CONTINUATION_SERIES(const std::shared_ptr<ANALYTIC<T, Args...>>& node, const std::vector<T>& xs, const Orders... orders)
-    {
-      pwr = std::make_shared<POWERSERIES<d,T>>([node, orders..., &xs] (unsigned long n) {
-          auto continuation = std::make_shared<CONTINUATION_SERIES<d-1, T, Args...>>(node, xs, orders..., n);
-          return continuation->get_series();
-        });
-    };
-    auto get_series() -> decltype(pwr)
-    {
-      return pwr;
-    }
-
-  };
-  template<class T, class... Args>
-  class CONTINUATION_SERIES<1,T, Args...>
-  {
-  private:
-    std::shared_ptr<POWERSERIES<1,T>> pwr;
-  public:
-    template<class... Orders>
-    CONTINUATION_SERIES(const std::shared_ptr<ANALYTIC<T, Args...>>& node, const Args&... args, const Orders... orders)
-    {
-      auto series = node->get_series();
-      auto evaluator = std::make_shared<DERIVATIVE_EVALUATOR<Args...>>(args...);
-      auto r = node->get_r();
-      auto M = node->get_M();
-      auto q = evaluator->get_q(r);
-      pwr = std::make_shared<POWERSERIES<1,T>>([q,r,M, series, orders..., evaluator] (unsigned long n) {
-          auto B = evaluator->get_B(r, M, q, orders...);
-          return std::make_shared<T>(evaluator->evaluate(series, B, q, orders..., n));
-        });
-    };
-
-    template<class... Orders>
-    CONTINUATION_SERIES(const std::shared_ptr<ANALYTIC<T, Args...>>& node, const std::vector<T>& xs, const Orders... orders)
-    {
-      auto series = node->get_series();
-      auto evaluator = std::make_shared<DERIVATIVE_EVALUATOR<Args...>>(xs);
-      auto r = node->get_r();
-      auto M = node->get_M();
-      auto q = evaluator->get_q(r);
-      pwr = std::make_shared<POWERSERIES<1,T>>([q,r,M, series, orders..., evaluator] (unsigned long n) {
-          auto B = evaluator->get_B(r, M, q, orders...);
-          return std::make_shared<T>(evaluator->evaluate(series, B, q, orders..., n));
-        });
-    };
-    auto get_series() -> decltype(pwr)
-    {
-      return pwr;
-    }
-
-  };
 
   template <class R, class... Args>
   class CONTINUATION : public Node<R, Args...>{
   using node_ptr = std::shared_ptr<Node<R, Args...>>;
-  private:
+  public:
     node_ptr node;
-    REAL M, r;
     std::vector<R> center;
-    std::shared_ptr<ANALYTIC<R,Args...>> analytic;
-    
+  private:
+    REAL r,M, max_x;
+    DERIVATIVE_EVALUATOR<Args...> evaluator;
   public:
 
     CONTINUATION(const node_ptr& node, const REAL& new_M, const REAL& new_r, const std::vector<R>& xs):
-      node(node), center(xs), r(new_r), M(new_M)
+      node(node), center(xs), r(new_r), M(new_M), evaluator(xs)
     {
+      max_x=0;
+      for(auto x : xs) max_x = maximum(max_x, abs(x));
     }
 
     CONTINUATION(const node_ptr& node, const REAL& new_M, const REAL& new_r, Args... args):
@@ -262,12 +197,6 @@ namespace iRRAM
     {
     }
 
-    std::shared_ptr<Node<R,Args...>> simplify() const override
-    {
-       if(node->get_type() == ANALYTIC_OPERATION::POLYNOMIAL)
-         return std::dynamic_pointer_cast<poly_impl::POLY<R,Args...>>(node)->continuation(center);
-      return std::make_shared<CONTINUATION>(*this);
-    };
 
     std::string to_string() const override
     {
@@ -286,13 +215,8 @@ namespace iRRAM
 
     R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override
     {
-      
+      return evaluator.evaluate(this->node->pwr, 2*max_x, this->node->get_M(2*max_x), idx );
     }
-
-    
-    R evaluate(const Args&... args) const override{
-      //return analytic->evaluate(args...);
-    };
 
     ANALYTIC_OPERATION get_type() const override
     {
@@ -300,6 +224,67 @@ namespace iRRAM
     }
   };
 
+  template <class R, class... Args>
+  class TRANSPOSITION : public Node<R, Args...>{
+  using node_ptr = std::shared_ptr<Node<R, Args...>>;
+  public:
+    node_ptr node;
+    std::vector<R> center;
+  private:
+    REAL max_x;
+    DERIVATIVE_EVALUATOR<Args...> evaluator;
+  public:
+
+    TRANSPOSITION(const node_ptr& node, const std::vector<R>& xs):
+      node(node), center(xs),  evaluator(xs)
+    {
+      max_x=0;
+      for(auto x : xs) max_x = maximum(max_x, abs(x));
+    }
+
+    TRANSPOSITION(const node_ptr& node, Args... args):
+      TRANSPOSITION(node, std::vector<R>{args...})
+    {
+    }
+
+    std::string to_string() const override
+    {
+      std::string ans = "TRANSPOSE("+node->to_string()+";";
+      for(int i=0; i<center.size(); i++){
+        ans += std::to_string(center[i].as_double());
+        if(i != center.size()-1) ans += ", ";
+      }
+      ans += ")";
+      return ans;
+    }
+
+
+    REAL get_r() const override {
+      return node->get_r()-max_x;
+    };
+
+    REAL get_M(const REAL& r) const override {
+      return node->get_M(r+max_x);
+    };
+
+    R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override
+    {
+      return evaluator.evaluate(this->node->pwr, 2*max_x, this->node->get_M(2*max_x), idx );
+    }
+
+    R evaluate(const Args&... args) const override{
+      std::vector<R> x(sizeof...(args));
+      for(int i=0; i<x.size(); i++){
+        x[i] = center[i]+tutil::get(i, args...);
+      }
+      return this->node->evaluate(x);
+    };
+
+    ANALYTIC_OPERATION get_type() const override
+    {
+      return ANALYTIC_OPERATION::TRANSPOSITION;
+    }
+  };
   template <class R, class... Args>
   std::shared_ptr<Node<R, Args...>> continuation(const std::shared_ptr<Node<R,Args...>>& node, const REAL& new_M, const REAL& new_r, Args... args)
   {
@@ -310,6 +295,12 @@ namespace iRRAM
   std::shared_ptr<Node<R, Args...>> continuation(const std::shared_ptr<Node<R,Args...>>& node, const REAL& new_M, const REAL& new_r, const std::vector<R>& xs)
   {
     return std::make_shared<CONTINUATION<R, Args...>>(node, new_M, new_r, xs);
+  }
+
+  template <class R, class... Args>
+  std::shared_ptr<Node<R, Args...>> transpose(const std::shared_ptr<Node<R,Args...>>& node,  const std::vector<R>& xs)
+  {
+    return std::make_shared<TRANSPOSITION<R, Args...>>(node,  xs);
   }
 
 } // namespace iRRAM

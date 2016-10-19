@@ -1,17 +1,5 @@
 #include "iRRAM.h"
-#include "ANALYTIC.h"
-#include "ADDITION.h"
-#include "SUBTRACTION.h"
-#include "MULTIPLICATION.h"
-// #include "DIVISION.h"
-#include "DERIVATIVE.h"
-#include "COMPOSITION.h"
-// #include "IVPSOLVER.h"
-// #include "CONTINUATION.h"
-// #include "SINE.h"
-// #include "EXPONENTIATION.h"
-// #include "coefficient_computation.h"
-#include "combinatorics.h"
+#include "irram_analytic.h"
 using namespace iRRAM;
 using std::endl;
 
@@ -70,9 +58,8 @@ REAL sinseriesmod(unsigned long n, unsigned long m, unsigned long q){
 struct sine : REAL_ANALYTIC<1>
 {
 
-  REAL get_coefficient(const std::tuple<size_t>& t1) const override
+  REAL get_coeff(const size_t n) const override
   {
-    auto n = std::get<0>(t1);
     if(n % 2 == 0) return 0;
     if((n-1) % 4 == 0) return inv_factorial(n);
     return -inv_factorial(n);
@@ -85,17 +72,15 @@ struct sine : REAL_ANALYTIC<1>
 
   REAL get_M(const REAL& r) const override
   {
-    return 2;
+    return 6;
   }
       
 };
 
 struct sine3d : REAL_ANALYTIC<3>
 {
-  REAL get_coefficient(const std::tuple<size_t,size_t, size_t>& t1) const override
+  REAL get_coeff(const size_t n, const size_t m, const size_t q) const override
   {
-    size_t n,m,q;
-    std::tie(n,m,q) = t1;
     if(n != m || n != q) return 0;
     if(n%2 == 0)
       return 0;
@@ -114,7 +99,7 @@ struct sine3d : REAL_ANALYTIC<3>
 
   REAL get_M(const REAL& r) const override
   {
-    return 2;
+    return 6;
   }
       
 };
@@ -160,10 +145,22 @@ void compute(){
   iRRAM::cout << "checking sin(x)" << endl;
   checkResult(y, sol, prec);
   
- //  // y = h(x1);
- //  // sol=sin(x1);
- //  // iRRAM::cout << "checking sin(x) from function" << endl;
- //  // checkResult(y, sol, prec);
+  auto x = variable_symbol<1,0>();
+  auto h = sin(x);
+  y = h->evaluate(x1);
+  sol=sin(x1);
+  iRRAM::cout << "checking predefined sin(x)" << endl;
+  iRRAM::cout << h->to_string() << std::endl;
+  checkResult(y, sol, prec);
+
+  auto hd = pderive(h, 0, 102);
+  iRRAM::cout << hd->to_string() << std::endl;
+  simplify(hd);
+  y = hd->evaluate(x1);
+  sol=-sin(x1);
+  iRRAM::cout << "checking predefined sin(x) derivative" << endl;
+  iRRAM::cout << hd->to_string() << std::endl;
+  checkResult(y, sol, prec);
 
   y = f->evaluate(x1,x2,x3);
   sol=sin(x1*x2*x3);
@@ -188,12 +185,12 @@ void compute(){
   sol=6*(2*sin(x1*x2*x3)-1)*sin(x1*x2*x3);
   checkResult(y, sol, prec);
 
- //  // iRRAM::cout << "checking analytic continuation (1d)" << endl;
- //  // // sin(x)/(sin(x)+1
- //  // auto cont = continuation(g, 2,2, REAL(x1));
- //  // y = cont->evaluate(x1);
- //  // sol=sin(x1+x1);
- //  // checkResult(y, sol, prec);
+  iRRAM::cout << "checking analytic continuation (1d)" << endl;
+  // sin(x)/(sin(x)+1
+  auto cont = transpose(g, {REAL(x1)});
+  y = cont->evaluate(x1);
+  sol=sin(x1+x1);
+  checkResult(y, sol, prec);
 
   iRRAM::cout << "checking derivative (1d)" << endl;
   // sin(x)
@@ -233,12 +230,26 @@ void compute(){
   sol=sin(sin(x1));
   checkResult(y, sol, prec);
 
-  // auto comp3 = compose(g,f);
-  // iRRAM::cout << "checking composition (3d)" << endl;
-  // y = comp3->evaluate(x1,x2,x3);
-  // sol=sin(sin(x1*x2*x3));
-  // checkResult(y, sol, prec);
+  auto comp_deriv = pderive(comp, 0, 4);
+  simplify(comp_deriv);
+  //std::cout << comp_deriv->to_string() << std::endl;
+  iRRAM::cout << "checking composition derivative (1d)" << endl;
+  y = comp_deriv->evaluate(x1);
+  sol=(1+6*cos(x1)*cos(x1))*cos(sin(x1))*sin(x1)+(-3+7*cos(x1)*cos(x1)+cos(x1)*cos(x1)*cos(x1)*cos(x1))*sin(sin(x1));
+  checkResult(y, sol, prec);
 
+  auto comp3 = compose(g,f);
+  iRRAM::cout << "checking composition (3d)" << endl;
+  y = comp3->evaluate(x1,x2,x3);
+  sol=sin(sin(x1*x2*x3));
+  checkResult(y, sol, prec);
+
+  auto comp_deriv3 = pderive(pderive(comp3, 0, 1), 2,1);
+  simplify(comp_deriv3);
+  iRRAM::cout << "checking composition derivative (3d)" << endl;
+  y = comp_deriv3->evaluate(x1,x2,x3);
+  sol= x2*(cos(sin(x1*x2*x3))*(cos(x1*x2*x3)-x1*x2*x3*sin(x1*x2*x3))-x1*x2*x3*cos(x1*x2*x3)*cos(x1*x2*x3)*sin(sin(x1*x2*x3)));
+  checkResult(y, sol, prec);
  //  auto comp4 = compose(g,h2)->to_analytic();
  //  iRRAM::cout << "checking composition (2d) by power series" << endl;
  //  y = comp4->evaluate(x1,x2);

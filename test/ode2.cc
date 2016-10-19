@@ -1,6 +1,5 @@
 #include "iRRAM.h"
-#include "IVPSOLVER.h"
-#include "combinatorics.h"
+#include "irram_analytic.h"
 #include "odes.h"
 #include <chrono>
 #include <ctime>
@@ -89,8 +88,8 @@ REAL solve(const T& system, int method, DEBUG_INFORMATION& d )
 void compute(){
   DEBUG_INFORMATION d;
   
-  vector<decltype(A2_SYSTEM(1))> systems_1d = {A2_SYSTEM(3), A3_SYSTEM(4), A5_SYSTEM(1.5)};
-  vector<decltype(B1_SYSTEM(1))> systems_2d = {B1_SYSTEM(30), SD5_SYSTEM(100) };
+  vector<decltype(A2_SYSTEM())> systems_1d = {A2_SYSTEM(), A3_SYSTEM()};//, A5_SYSTEM(1.5)};
+  vector<decltype(B1_SYSTEM())> systems_2d = {B1_SYSTEM()};
   
   int dimension, system,max_iter,method;
   struct rusage usage;
@@ -104,8 +103,9 @@ void compute(){
   getrusage(RUSAGE_SELF, &usage);
   start = usage.ru_utime;
   REAL sol;
-  if(dimension == 1)
+  if(dimension == 1){
     sol = solve(systems_1d[system], method, d);
+  }
   if(dimension == 2)
     sol = solve(systems_2d[system], method, d);
   sizetype error;
@@ -121,7 +121,7 @@ void compute(){
     error_exp_normalized++;
   }
   
-  //check(sol, A2_sol(2), 200);
+  check(sol, A2_sol(2), 200);
   
   std::cout << " dimension:" << dimension;
   std::cout << " system:" << system;

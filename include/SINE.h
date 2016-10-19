@@ -4,107 +4,99 @@
 #ifndef SINE_H
 #define SINE_H
 #include "ANALYTIC.h"
+#include "COMPOSITION.h"
 namespace iRRAM
 {
 
 
-  template <class R, class... Args>
-  class SINE : public Node<R, Args...>{
-    using node_ptr = std::shared_ptr<Node<R, Args...>>;
-  private:
-    node_ptr node;
+  struct SINE : REAL_ANALYTIC<1>{
   public:
-    SINE(node_ptr node):
-      node(node)
+    REAL evaluate(const REAL& x) const override
     {
+      return sin(x);
     }
 
-    R evaluate(const Args&... args) const override;
-    std::shared_ptr<ANALYTIC<R,Args...>> to_analytic() const override;
+    REAL get_r() const override
+    {
+      return 100;
+    }
+
+    REAL get_M(const REAL& r) const override
+    {
+      return exp(r);
+    }
+
+    std::string to_string() const override
+    {
+      return "sin";
+    }
+
     
+    REAL get_coeff(const size_t n) const override
+    {
+      if(n % 2 == 0) return 0;
+      if((n-1) % 4 == 0) return inv_factorial(n);
+      return -inv_factorial(n);
+    }
+
     ANALYTIC_OPERATION get_type() const override
     {
       return ANALYTIC_OPERATION::SINE;
     }
+
   };
 
-  template <class R, class... Args>
-  class COSINE : public Node<R, Args...>{
-    using node_ptr = std::shared_ptr<Node<R, Args...>>;
-  private:
-    node_ptr node;
+  struct COSINE : REAL_ANALYTIC<1>{
   public:
-    COSINE(node_ptr node):
-      node(node)
+    REAL evaluate(const REAL& x) const override
     {
+      return cos(x);
     }
 
-    R evaluate(const Args&... args) const override;
-    std::shared_ptr<ANALYTIC<R,Args...>> to_analytic() const override;
+    REAL get_r() const override
+    {
+      return 100;
+    }
+
+    REAL get_M(const REAL& r) const override
+    {
+      return exp(r);
+    }
+
+    std::string to_string() const override
+    {
+      return "cos";
+    }
+
+    
+    REAL get_coeff(const size_t n) const override
+    {
+      if(n % 2 == 1) return 0;
+      if(n % 4 == 0) return inv_factorial(n);
+      return -inv_factorial(n);
+    }
 
     ANALYTIC_OPERATION get_type() const override
     {
       return ANALYTIC_OPERATION::COSINE;
     }
+
   };
-  // member definitions 
 
-  template <class R, class... Args>
-  R SINE<R, Args...>::evaluate(const Args&... args) const
-  {
-    return sin(node->evaluate(args...));
-  }
-
-  template <class R, class... Args>
-  R COSINE<R, Args...>::evaluate(const Args&... args) const
-  {
-    return cos(node->evaluate(args...));
-  }
-
-  template <class R, class... Args>
-  std::shared_ptr<ANALYTIC<R,Args...>> SINE<R,Args...>::to_analytic() const
-    {
-      std::function<R(unsigned long)> sin_series = [] (unsigned long n) -> R{
-        if(n % 2 == 0) return 0;
-        if((n-1) % 4 == 0) return inv_factorial(n);
-        return -inv_factorial(n);
-      };
-      auto sinpwr = std::make_shared<POWERSERIES<1,R>>(sin_series);
-      auto f = node->to_analytic();
-      std::shared_ptr<SERIES_OPERATOR<sizeof...(Args), R>> sine= std::make_shared<SERIES_COMPOSITION<sizeof...(Args), R>>(sinpwr, f->get_series());
-      REAL r = f->get_r();
-      REAL M = power(euler(), f->get_M());
-      return std::make_shared<ANALYTIC<R, Args...>>(get_series(sine), M, r);
-    }
-
-  template <class R, class... Args>
-  std::shared_ptr<ANALYTIC<R,Args...>> COSINE<R,Args...>::to_analytic() const
-    {
-      std::function<R(unsigned long)> cos_series = [] (unsigned long n) -> R{
-        if(n % 2 == 1) return 0;
-        if(n % 4 == 0) return inv_factorial(n);
-        return -inv_factorial(n);
-      };
-      auto cospwr = std::make_shared<POWERSERIES<1,R>>(cos_series);
-      auto f = node->to_analytic();
-      std::shared_ptr<SERIES_OPERATOR<sizeof...(Args), R>> cosine= std::make_shared<SERIES_COMPOSITION<sizeof...(Args), R>>(cospwr, f->get_series());
-      REAL r = f->get_r();
-      REAL M = power(euler(), f->get_M());
-      return std::make_shared<ANALYTIC<R, Args...>>(get_series(cosine), M, r);
-    }
+  auto sine_function =make_analytic<1,SINE>(); 
+  auto cosine_function =make_analytic<1,COSINE>(); 
   // sine operators
   template <class R, class... Args>
   std::shared_ptr<Node<R, Args...>> sin(const std::shared_ptr<Node<R,Args...>>& node)
   {
-    
-    return std::make_shared<SINE<R, Args...>>(node);
+    return compose(sine_function, node);
   }
 
   template <class R, class... Args>
   std::shared_ptr<Node<R, Args...>> cos(const std::shared_ptr<Node<R,Args...>>& node)
   {
-    
-    return std::make_shared<COSINE<R, Args...>>(node);
+    auto cosine = make_analytic<1,COSINE>();
+    return compose(cosine_function, node);
   }
 
 } // namespace iRRAM

@@ -11,38 +11,62 @@
 namespace iRRAM
 {
 
+  template <class... Params>
+  struct coefficient_function
+  {
+    virtual REAL get_coeff(const Params... params) const = 0;
+  };
+
+  template<size_t n, class R, class... Args>
+  struct coefficient_getter
+  {
+    template<class... Params>
+    static R get(const ANALYTIC<R,Args...>& f, const tutil::n_tuple<n, size_t>& idx, const Params&... params)
+    {
+      return coefficient_getter<n-1, R, Args...>::get(f, tutil::tail(idx), params..., std::get<0>(idx));
+    }
+  };
+  
+
+  template<class R, class... Args>
+  struct coefficient_getter<1, R, Args...>
+  {
+    template<class... Params>
+    static R get(const ANALYTIC<R,Args...>& f, const std::tuple<size_t>& idx, const Params&... params)
+    {
+      return f.get_coeff(params..., std::get<0>(idx));
+    }
+  };
+  
+
   template <class R, class... Args>
-  class ANALYTIC : public Node<R,Args...> {
+  class ANALYTIC : public Node<R,Args...>, public tutil::repeat<sizeof...(Args), coefficient_function, size_t> {
     using pwr_series = POWERSERIES<sizeof...(Args),R>;
     using pwr_series_ptr = std::shared_ptr<pwr_series>;
   public:
     virtual ~ANALYTIC() = default;
 
-    // get cached coefficient
-    template<class... Indices>
-    R get_coeff(const Indices&... ind)
+
+    virtual R get_coefficient(const tutil::n_tuple<sizeof...(Args), size_t>& t) const override
     {
-      return pwr->get_coeff(ind...);
+      return coefficient_getter<sizeof...(Args), R, Args...>::get(*this, t);
     }
-    
-    virtual std::shared_ptr<Node<R,Args...>> simplify() const override
-    {
-    };
 
     virtual std::string to_string() const override
     {
-      auto addr = reinterpret_cast<std::uintptr_t>(pwr.get()) % 100;
+      auto addr = reinterpret_cast<std::uintptr_t>(this->pwr.get()) % 100;
       return "f"+std::to_string(addr);
     };
 
-    ANALYTIC_OPERATION get_type() const override 
+
+    virtual ANALYTIC_OPERATION get_type() const override 
     {
       return ANALYTIC_OPERATION::ANALYTIC;
     }
 
     pwr_series_ptr get_series()
     {
-      return pwr;
+      return this->pwr;
     }
 
   };

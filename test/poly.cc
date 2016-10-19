@@ -1,6 +1,5 @@
 #include "irram.h"
-#include "ANALYTIC.h"
-#include "polynomial.h"
+#include "irram_analytic.h"
 #include <iostream>
 #include <stdlib.h> 
 #include <time.h>
@@ -53,13 +52,18 @@ POLYNOMIAL<1,REAL> rand_poly<1>(){
 }
 
 void compute(){
-  auto test0 = make_polynomial<3>({{{},{2,-2}}});
-  auto test0p = std::dynamic_pointer_cast<POLYNOMIAL<3,REAL>>(test0);
-  std::cout << get_max_degree(*test0p) << std::endl;
+  auto x0 = variable_symbol<3,0>();
+  auto x1 = variable_symbol<3,1>();
+  auto x2 = variable_symbol<3,2>();
+  
+  auto test0 = x0*x0*x2*x1+REAL(5)+x0;
+  // auto test0p = std::dynamic_pointer_cast<POLYNOMIAL<3,REAL>>(test0);
+  // std::cout << get_max_degree(*test0p) << std::endl;
+  test0 = test0->simplify();
   std::cout << test0->to_string() << std::endl;
-  std::cout << continuation_derivative(*test0p, 0,0,1).to_string() << std::endl;
-  auto test1 = test0p->continuation({0,1,3});
-  std::cout << test1->to_string() << std::endl;
+  // std::cout << continuation_derivative(*test0p, 0,0,1).to_string() << std::endl;
+  // auto test1 = test0p->continuation({0,1,3});
+  // std::cout << test1->to_string() << std::endl;
   //std::cout << (test0*test0)->simplify()->to_string() << std::endl;
   // iRRAM::cout << test0->evaluate(1,0) << std::endl;
   

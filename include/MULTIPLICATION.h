@@ -69,21 +69,10 @@ namespace iRRAM
       return cauchy_product<sizeof...(Args), R, Args...>(this->lhs, this->rhs).get(idx, std::tuple<>(), std::tuple<>());
     }
 
-    
-    std::shared_ptr<Node<R,Args...>> simplify() const override
-    {
-      
-      if(this->lhs->get_type() == ANALYTIC_OPERATION::POLYNOMIAL && this->rhs->get_type() == ANALYTIC_OPERATION::POLYNOMIAL){
-        auto lchild = std::dynamic_pointer_cast<poly_impl::POLY<R, Args...>>(this->lhs);
-        auto rchild = std::dynamic_pointer_cast<poly_impl::POLY<R, Args...>>(this->rhs);
-        return std::make_shared<poly_impl::POLY<R, Args...>>(*lchild * *rchild);
-      }
-      return std::make_shared<MULTIPLICATION>(this->lhs->simplify(), this->rhs->simplify())->simplify();
-    };
 
-    virtual std::string to_string() const override
+    std::string to_string() const override
     {
-      return "x("+this->lhs->to_string()+","+this->rhs->to_string()+")";
+      return "("+this->lhs->to_string()+"x"+this->rhs->to_string()+")";
     }
 
     ANALYTIC_OPERATION get_type() const override
@@ -103,14 +92,14 @@ namespace iRRAM
     
     virtual std::string to_string() const override
     {
-      return "x("+this->node->to_string()+","+std::to_string(this->scalar.as_double())+")";
+      return "("+this->node->to_string()+"_*_"+std::to_string(this->scalar.as_double())+")";
       
     }
     REAL get_r() const override {
       return this->node->get_r();
     };
     REAL get_M(const REAL& r) const override {
-      return this->node->get_M(r)*this->scalar;
+      return this->node->get_M(r)*abs(this->scalar);
     };
 
     R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override
@@ -118,28 +107,6 @@ namespace iRRAM
       return this->scalar * this->node->get_coefficient(idx);
     }
 
-    std::shared_ptr<Node<R,Args...>> simplify() const override
-    {
-      
-      switch(this->node->get_type()){
-      case ANALYTIC_OPERATION::SCALAR_MULTIPLICATION:
-        {
-
-          auto child = std::dynamic_pointer_cast<SCALAR_MULTIPLICATION>(this->node);
-          auto new_node = std::make_shared<SCALAR_MULTIPLICATION>(child->node->simplify(), this->scalar*child->scalar)->simplify();
-         return new_node->simplify();
-        }
-      case ANALYTIC_OPERATION::POLYNOMIAL:
-        {
-          auto child = std::dynamic_pointer_cast<poly_impl::POLY<R, Args...>>(this->node);
-          auto new_node = std::make_shared<poly_impl::POLY<R,Args...>>(this->scalar*(*child));
-          return new_node->simplify();
-        }
-      default:
-        return std::make_shared<SCALAR_MULTIPLICATION>(this->node->simplify(), this->scalar);
-      }
-      
-    }
     ANALYTIC_OPERATION get_type() const override
     {
       return ANALYTIC_OPERATION::SCALAR_MULTIPLICATION;

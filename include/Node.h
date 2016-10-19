@@ -8,7 +8,7 @@
 #include "tutil.h"
 namespace iRRAM
 {
-  enum class ANALYTIC_OPERATION {ANALYTIC, ADDITION,SCALAR_ADDITION, SUBTRACTION, MULTIPLICATION,SCALAR_MULTIPLICATION, INVERSION, DERIVATIVE, COMPOSITION, IVP, SINE, COSINE, EXPONENTIATION,CONTINUATION, POLYNOMIAL, CONSTANT};
+  enum class ANALYTIC_OPERATION {ANALYTIC, ADDITION,SCALAR_ADDITION, SUBTRACTION, MULTIPLICATION,SCALAR_MULTIPLICATION, INVERSION, DERIVATIVE, COMPOSITION, IVP, SINE, COSINE, EXPONENTIATION,CONTINUATION,TRANSPOSITION, POLYNOMIAL};
 
   // forward declaration 
   template<class R, class... Args>
@@ -20,8 +20,8 @@ namespace iRRAM
   private:
     using pwr_series = POWERSERIES<sizeof...(Args),R>;
     using pwr_series_ptr = std::shared_ptr<pwr_series>;
-    pwr_series_ptr pwr;
   public:
+    pwr_series_ptr pwr;
     Node()
     {
       auto coeff_lambda = [this] (const auto... params) {return this->get_coefficient(std::make_tuple(params...));};
@@ -40,19 +40,8 @@ namespace iRRAM
     virtual std::string to_string() const  = 0;
     virtual REAL get_M(const REAL& r) const = 0;
     virtual REAL get_r() const = 0;
-    virtual std::shared_ptr<Node<R,Args...>> simplify() const = 0;
     virtual R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>&) const = 0;
-    template<class... IDX>
-    R get_coefficient(size_t i, IDX... idx)
-    {
-      return get_coefficient(std::make_tuple(i,idx...));
-    }
-    // template<class... IDX>
-    // virtual std::shared_ptr<Node<R,Args...>> derive const
-    // {
-    //   return DERIVATIVE(std::make_shared(*this));
-      
-    // }
+
     template<class... IArgs>
     R evaluate_vector(const std::vector<R>& X, int pos, IArgs... iargs) const
     {

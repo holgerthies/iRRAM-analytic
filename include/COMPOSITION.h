@@ -11,8 +11,8 @@ namespace iRRAM
   struct coefficient_getter_cache
   {
     using node_ptr = std::shared_ptr<Node<R, Args...>>;
-    std::shared_ptr<coefficient_getter_cache<d-1, R, Args...>> next;
     node_ptr rhs;
+    std::shared_ptr<coefficient_getter_cache<d-1, R, Args...>> next;
     coefficient_getter_cache(const node_ptr& rhs): rhs(rhs), next(std::make_shared<coefficient_getter_cache<d-1,R,Args...>>(rhs)) {}
 
     R get(const size_t k, const tutil::n_tuple<d,size_t>& idx, const tutil::n_tuple<sizeof...(Args)-d,size_t>& r_ind, const tutil::n_tuple<sizeof...(Args)-d,size_t>& B_ind)
@@ -46,19 +46,19 @@ namespace iRRAM
     using node_ptr = std::shared_ptr<Node<R, Args...>>;
     using node_ptr1d = std::shared_ptr<Node<R,R>>;
   private:
-    node_ptr1d lhs;
-    node_ptr rhs;
     std::shared_ptr<coefficient_getter_cache<sizeof...(Args), R, Args...>> cache;
     mutable std::vector<std::vector<R>> B; // cache
   public:
+    node_ptr1d lhs;
+    node_ptr rhs;
     COMPOSITION(const node_ptr1d& lhs, const node_ptr& rhs):
-      lhs(lhs), rhs(rhs), cache(std::make_shared<coefficient_getter_cache<sizeof...(Args), R, Args...>>(rhs))
+      cache(std::make_shared<coefficient_getter_cache<sizeof...(Args), R, Args...>>(rhs)),lhs(lhs), rhs(rhs) 
     {
     }
 
-    // R evaluate(const Args&... args) const override{
-    //   return lhs->evaluate(rhs->evaluate(args...));
-    // }
+    R evaluate(const Args&... args) const override{
+      return lhs->evaluate(rhs->evaluate(args...));
+    }
 
     REAL get_r() const override {
       return rhs->get_r();
@@ -68,14 +68,9 @@ namespace iRRAM
       return lhs->get_M(r);
     }
 
-    std::shared_ptr<Node<R,Args...>> simplify() const override
-    {
-      return std::make_shared<COMPOSITION>(this->lhs->simplify(), this->rhs->simplify());
-    }
-
     std::string to_string() const override
     {
-      return "COMPOSITION("+this->lhs->to_string()+","+this->rhs->to_string()+")";
+      return this->lhs->to_string()+"("+this->rhs->to_string()+")";
       
     }
 

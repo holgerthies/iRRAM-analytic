@@ -8,11 +8,22 @@
 #include "tutil.h"
 namespace iRRAM
 {
-  enum class ANALYTIC_OPERATION {ANALYTIC, ADDITION,SCALAR_ADDITION, SUBTRACTION, MULTIPLICATION,SCALAR_MULTIPLICATION, INVERSION, DERIVATIVE, COMPOSITION, IVP, SINE, COSINE, EXPONENTIATION,CONTINUATION,TRANSPOSITION, POLYNOMIAL};
+  enum class ANALYTIC_OPERATION {ANALYTIC, ADDITION,SCALAR_ADDITION, SUBTRACTION, MULTIPLICATION,SCALAR_MULTIPLICATION, INVERSION, DERIVATIVE, COMPOSITION, IVP, SINE, COSINE, EXPONENTIATION,CONTINUATION,TRANSPOSITION, POLYNOMIAL, PRUNE};
 
   // forward declaration 
   template<class R, class... Args>
   class ANALYTIC;
+  template<class... Args>
+  REAL real_max(const REAL& x, const Args&... args)
+  {
+    return maximum(x, real_max(args...));
+  }
+
+  template<>
+  REAL real_max(const REAL& x)
+  {
+    return x;
+  }
 
   template<class R, class... Args>
   class Node
@@ -21,17 +32,16 @@ namespace iRRAM
     using pwr_series = POWERSERIES<sizeof...(Args),R>;
     using pwr_series_ptr = std::shared_ptr<pwr_series>;
   public:
-    pwr_series_ptr pwr;
+    mutable pwr_series_ptr pwr;
     Node()
     {
-      auto coeff_lambda = [this] (const auto... params) {return this->get_coefficient(std::make_tuple(params...));};
-      auto coeff_fun= tutil::repeat_fun<sizeof...(Args), R, const size_t>(coeff_lambda);
-      auto series = std::make_shared<POWERSERIES<sizeof...(Args),REAL>>(coeff_fun);
-      this->pwr = series;
     }
 
     virtual R evaluate(const Args&... args) const {
-      return PWRSERIES_IMPL::evaluate(pwr, this->get_r(), this->get_M(this->get_r()/2), args...);
+      REAL r=real_max(args...);
+      r = minimum(0.9*this->get_r(), maximum(r+1, 2*r));
+      REAL M =this->get_M(r);
+      return PWRSERIES_IMPL::evaluate(get_pwr(), r, M, args...);
     };
     virtual ~Node() = default;
     //virtual R evaluate(const Args&... args) const = 0;
@@ -59,6 +69,23 @@ namespace iRRAM
       
     }
     
+    virtual R get_coefficient_v(const tutil::n_tuple<sizeof...(Args),size_t>& t) const 
+    {
+      return get_coefficient(t);
+    }
+
+    pwr_series_ptr get_pwr() const
+    {
+      if(!pwr){
+        auto coeff_lambda = [this] (const auto... params) {  return this->get_coefficient_v(std::make_tuple(params...));};
+        auto coeff_fun= tutil::repeat_fun<sizeof...(Args), R, const size_t>(coeff_lambda);
+        pwr = std::make_shared<POWERSERIES<sizeof...(Args),REAL>>(coeff_fun);
+      }
+      return pwr;
+    }
+    R get_coefficient_cached(const tutil::n_tuple<sizeof...(Args),size_t>& t) const{
+      return PWRSERIES_IMPL::get_coeff<sizeof...(Args), R>(*get_pwr(), t);
+    }
   };
 
   template<class R, class... Args>

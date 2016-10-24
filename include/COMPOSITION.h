@@ -7,52 +7,66 @@
 namespace iRRAM
 {
 
-  template <size_t d, class R, class... Args>
-  struct coefficient_getter_cache
+  template<int v, class R, class... Args>
+  class deriv_cache
   {
+  private:
     using node_ptr = std::shared_ptr<Node<R, Args...>>;
-    node_ptr rhs;
-    std::shared_ptr<coefficient_getter_cache<d-1, R, Args...>> next;
-    coefficient_getter_cache(const node_ptr& rhs): rhs(rhs), next(std::make_shared<coefficient_getter_cache<d-1,R,Args...>>(rhs)) {}
+    mutable std::vector<deriv_cache<v+1, R, Args...>> cache;
+    node_ptr f;
+  public:
+    deriv_cache(const node_ptr f) : f(f) {}
 
-    R get(const size_t k, const tutil::n_tuple<d,size_t>& idx, const tutil::n_tuple<sizeof...(Args)-d,size_t>& r_ind, const tutil::n_tuple<sizeof...(Args)-d,size_t>& B_ind)
-    {
-      R ans=0;
-      if(k == 0 && std::get<0>(idx) == 0) return 1;
-      if(k == 0) return 0;
-      for(int i=0; i<=std::get<0>(idx); i++){
-        ans += next->get(k, tutil::tail(idx), std::tuple_cat(r_ind,std::make_tuple(i)), std::tuple_cat(B_ind, std::make_tuple(std::get<0>(idx)-i)));
+    node_ptr get_f() const{
+      return f;
+    }
+
+    node_ptr get_derivative(const tutil::n_tuple<sizeof...(Args)-v,size_t>& idx) const{
+      int n = std::get<0>(idx);
+      if(cache.size() == 0){
+        cache.push_back(deriv_cache<v+1, R, Args...>(f));
       }
-      return ans;
+      int sz=cache.size();
+      for(int i=sz; i<=n; i++)
+      {
+        auto fs=REAL(1)/REAL(i)*pderive(cache[i-1].get_f(), v, 1);
+        simplify(fs);
+        auto deriv = deriv_cache<v+1, R, Args...>(fs);
+        cache.push_back(deriv);
+      }
+      return cache[n].get_derivative(tutil::tail(idx));
     }
   };
 
-  template <class R, class... Args>
-  struct coefficient_getter_cache<0, R, Args...>
+  template<class R, class... Args>
+  class deriv_cache<sizeof...(Args),R,Args...> 
   {
+  private:
     using node_ptr = std::shared_ptr<Node<R, Args...>>;
-    node_ptr rhs;
-    coefficient_getter_cache(const node_ptr& rhs): rhs(rhs) {}
+    node_ptr f;
+  public:
+    deriv_cache(const node_ptr& f) : f(f) {}
+    
+    node_ptr get_f() const{
+      return f;
+    }
 
-    R get(const size_t k, const std::tuple<>& idx, const tutil::n_tuple<sizeof...(Args),size_t>& r_ind, const tutil::n_tuple<sizeof...(Args),size_t>& B_ind)
-    {
-      auto root = std::make_shared<coefficient_getter_cache<sizeof...(Args), R, Args...>>(rhs);
-      return rhs->get_coefficient(r_ind)*root->get(k-1, B_ind, std::tuple<>(), std::tuple<>());
+    node_ptr get_derivative(const std::tuple<>& idx) const{
+      return f;
     }
   };
 
   template <class R, class... Args>
   class COMPOSITION : public Node<R, Args...>{
+  private:
     using node_ptr = std::shared_ptr<Node<R, Args...>>;
     using node_ptr1d = std::shared_ptr<Node<R,R>>;
-  private:
-    std::shared_ptr<coefficient_getter_cache<sizeof...(Args), R, Args...>> cache;
-    mutable std::vector<std::vector<R>> B; // cache
+    mutable std::unique_ptr<deriv_cache<0, R, Args...>> cache;
   public:
     node_ptr1d lhs;
     node_ptr rhs;
     COMPOSITION(const node_ptr1d& lhs, const node_ptr& rhs):
-      cache(std::make_shared<coefficient_getter_cache<sizeof...(Args), R, Args...>>(rhs)),lhs(lhs), rhs(rhs) 
+      lhs(lhs), rhs(rhs)
     {
     }
 
@@ -65,7 +79,7 @@ namespace iRRAM
     }
     
     REAL get_M(const REAL& r) const override {
-      return lhs->get_M(r);
+      return lhs->get_M(rhs->get_M(r));
     }
 
     std::string to_string() const override
@@ -76,12 +90,11 @@ namespace iRRAM
 
     R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override
     {
-      R ans=0;
-      for(int i=0;i<=std::get<0>(idx); i++)
-      {
-        ans += lhs->get_coefficient(i)*cache->get(i, idx, std::tuple<>(), std::tuple<>());
-      }
-      return ans;
+      if(!cache)
+        cache.reset(new deriv_cache<0,R,Args...>(compose(lhs, rhs)));
+      auto d= cache->get_derivative(idx);
+      std::vector<R> Z(sizeof...(Args));
+      return d->evaluate(Z);
     }
 
     ANALYTIC_OPERATION get_type() const override
@@ -94,7 +107,6 @@ namespace iRRAM
   template <class R, class... Args>
   std::shared_ptr<Node<R, Args...>> compose(const std::shared_ptr<Node<R,R>>& lhs,const std::shared_ptr<Node<R,Args...>>& rhs)
   {
-    
     return std::make_shared<COMPOSITION<R, Args...>>(lhs, rhs);
   }
 

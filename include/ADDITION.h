@@ -25,12 +25,12 @@ namespace iRRAM
     
     R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override
     {
-      return this->lhs->get_coefficient(idx)+this->rhs->get_coefficient(idx);
+      return this->lhs->get_coefficient_cached(idx)+this->rhs->get_coefficient_cached(idx);
     }
 
     std::string to_string() const override
     {
-      return "("+this->lhs->to_string()+"+"+this->rhs->to_string()+")";
+      return "("+this->lhs->to_string()+" + "+this->rhs->to_string()+")";
     }
 
     ANALYTIC_OPERATION get_type() const override
@@ -55,7 +55,7 @@ namespace iRRAM
 
     R get_coefficient(const tutil::n_tuple<sizeof...(Args), size_t>& idx ) const override
     {
-      auto ans = this->node->get_coefficient(idx);
+      auto ans = this->node->get_coefficient_cached(idx);
       if(tutil::all_zero(idx))
         ans += this->scalar;
       return ans;
@@ -63,7 +63,7 @@ namespace iRRAM
 
     std::string to_string() const override
     {
-      return "("+this->node->to_string()+"_+_"+std::to_string(this->scalar.as_double())+")";
+      return "("+this->node->to_string()+" _+_ "+std::to_string(this->scalar.as_double())+")";
       
     }
 

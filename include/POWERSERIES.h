@@ -7,6 +7,7 @@
 #include <functional>
 #include <cstdarg>
 #include "combinatorics.h"
+#include "tutil.h"
 #include "AAREAL.h"
 
 namespace iRRAM{
@@ -175,6 +176,17 @@ namespace iRRAM{
     template<class T>
     T get_coeff(const T& x){
       return x;
+    }
+
+    template <unsigned int n, class T>
+    T get_coeff(const typename COEFF_TYPE<n+1,T>::type& pwr, const tutil::n_tuple<n, size_t>& t){
+      return get_coeff<n-1,T>(*(pwr[std::get<0>(t)]), tutil::tail(t));
+    }
+
+    template<>
+    REAL get_coeff<0,REAL>(const REAL& pwr, const std::tuple<>& t)
+    {
+      return pwr;
     }
 
     template<unsigned int n, class T>
@@ -452,6 +464,7 @@ namespace iRRAM{
       //double stepsize_factor=(log2/log(error_factor)).as_double();
       //int stepsize=stepsize_factor*ACTUAL_STACK.actual_prec+1;
       best.geterror(sum_error);
+      
       AAREAL trunc_error_term;
       trunc_error_term.add_error(error);
       trunc_error = real_to_error(error);
@@ -468,12 +481,15 @@ namespace iRRAM{
       while (sizetype_less(sum_error, trunc_error) &&
              (trunc_error.exponent >= ACTUAL_STACK.actual_prec) ){
         J++;
-        //std::cout << J <<","<<trunc_error.exponent<< " " <<std::endl;
         
         next_B *= next_B_factor;
         REAL b = evaluate<n-1,T>((*pwr)[J], next_B, q, rest...);
+        sizetype b_error;
+        b.geterror(b_error);
         x0 = x0*xorig;
         sum += b*x0;
+        sum.to_real().geterror(sum_error);
+        
         if(J % 4 == 0)
         {
           x0.clean();
@@ -489,6 +505,7 @@ namespace iRRAM{
         if (sizetype_less(local_error, best_error)) { 
           best = local;
           best_error = local_error;
+
         }
    
       }

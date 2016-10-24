@@ -153,14 +153,14 @@ void compute(){
   iRRAM::cout << h->to_string() << std::endl;
   checkResult(y, sol, prec);
 
-  auto hd = pderive(h, 0, 102);
-  iRRAM::cout << hd->to_string() << std::endl;
-  simplify(hd);
-  y = hd->evaluate(x1);
-  sol=-sin(x1);
-  iRRAM::cout << "checking predefined sin(x) derivative" << endl;
-  iRRAM::cout << hd->to_string() << std::endl;
-  checkResult(y, sol, prec);
+  // auto hd = pderive(h, 0, 102);
+  // iRRAM::cout << hd->to_string() << std::endl;
+  // simplify(hd);
+  // y = hd->evaluate(x1);
+  // sol=-sin(x1);
+  // iRRAM::cout << "checking predefined sin(x) derivative" << endl;
+  // iRRAM::cout << hd->to_string() << std::endl;
+  // checkResult(y, sol, prec);
 
   y = f->evaluate(x1,x2,x3);
   sol=sin(x1*x2*x3);
@@ -194,7 +194,7 @@ void compute(){
 
   iRRAM::cout << "checking derivative (1d)" << endl;
   // sin(x)
-  auto d1 = pderive(g*g,0,2);
+  auto d1 = prune(pderive(g*g,0,2));
   std::cout << d1->to_string() << std::endl;
   //d1 = d1->simplify();
   
@@ -224,7 +224,7 @@ void compute(){
  //  // sol=sin((x1+x3)*(x2+x3)*(x3+x3));
  //  // checkResult(y, sol, prec);
 
-  auto comp = compose(g,g);
+  auto comp = prune(compose(g,g));
   iRRAM::cout << "checking composition (1d)" << endl;
   y = comp->evaluate(x1);
   sol=sin(sin(x1));
@@ -232,18 +232,29 @@ void compute(){
 
   auto comp_deriv = pderive(comp, 0, 4);
   simplify(comp_deriv);
-  //std::cout << comp_deriv->to_string() << std::endl;
+  std::cout << comp_deriv->to_string() << std::endl;
   iRRAM::cout << "checking composition derivative (1d)" << endl;
   y = comp_deriv->evaluate(x1);
   sol=(1+6*cos(x1)*cos(x1))*cos(sin(x1))*sin(x1)+(-3+7*cos(x1)*cos(x1)+cos(x1)*cos(x1)*cos(x1)*cos(x1))*sin(sin(x1));
   checkResult(y, sol, prec);
 
-  auto comp3 = compose(g,f);
+  auto x2d = variable_symbol<2,0>();
+  auto y2d = variable_symbol<2,1>();
+  auto cf = (REAL(1)+y2d)*cos(x2d);
+  cf = transpose(cf, {0.1, 0.4});
+  simplify(cf);
+  std::cout << cf->to_string() << "\n";
+  iRRAM::cout << "checking composition (2d)" << endl;
+  std::tuple<size_t, size_t> Z;
+  y = cf->evaluate(x1,x2);
+  sol=(REAL(1)+REAL(x2)+REAL(0.4))*cos(REAL(x1)+REAL(0.1));
+  checkResult(y, sol, prec);
+  auto comp3 = prune(compose(g,f));
   iRRAM::cout << "checking composition (3d)" << endl;
   y = comp3->evaluate(x1,x2,x3);
   sol=sin(sin(x1*x2*x3));
   checkResult(y, sol, prec);
-
+  
   auto comp_deriv3 = pderive(pderive(comp3, 0, 1), 2,1);
   simplify(comp_deriv3);
   iRRAM::cout << "checking composition derivative (3d)" << endl;

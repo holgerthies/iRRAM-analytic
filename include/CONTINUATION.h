@@ -159,15 +159,16 @@ namespace iRRAM
         error.getsize(error_vsize);
         sizetype_add(trunc_error,error_vsize,error_error);
         sum.geterror(sum_error); // get error of partial sum
+        
         sizetype_add(local_error, sum_error, trunc_error);
         if (sizetype_less(local_error, best_error)) { 
           best = sum;
           best.seterror(local_error);
           best_error = local_error;
+          
         }
               
       }
-      
       return best;
     }
   };
@@ -269,7 +270,11 @@ namespace iRRAM
 
     R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override
     {
-      return evaluator.evaluate(this->node->pwr, 2*max_x, this->node->get_M(2*max_x), idx );
+      std::cout << "getting " << tutil::to_string(idx) << "\n";
+      REAL r = minimum(0.9*this->node->get_r(), maximum(max_x+1, 2*max_x));
+      REAL M =node->get_M(r);
+      
+      return evaluator.evaluate(this->node->get_pwr(), r, M, idx );
     }
 
     R evaluate(const Args&... args) const override{

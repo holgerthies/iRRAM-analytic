@@ -81,6 +81,17 @@ namespace iRRAM
       return ans;
     }
 
+    size_t get_degree(const REAL& P)
+    {
+      return 1;
+    }
+      
+    template<class T, class...Ts>
+    size_t get_degree(const POLY<T,Ts...>& P)
+    {
+      return P.get_degree();
+    }
+
     REAL get_coefficient_tuple(const REAL& p, const std::tuple<>& t)
     {
       return p;
@@ -104,10 +115,9 @@ namespace iRRAM
       std::vector<coeff_type> coefficients;
       REAL M, r;
     public:
-      POLY() = default;
-      POLY(const std::vector<coeff_type>& coeffs) : coefficients(coeffs) {
-        r=1;
-        M=upper_bound(*this, r);
+      POLY() : Node<T,Ts...>() {};// = default;
+      POLY(const std::vector<coeff_type>& coeffs) : Node<T,Ts...>(), coefficients(coeffs) {
+        r=100;
        max_degree = get_degree();
     for(int i=0; i<get_degree(); i++){
       max_degree = std::max(max_degree, get_max_degree(get_coeff(i)));
@@ -149,12 +159,12 @@ namespace iRRAM
 
       REAL get_r() const override
       {
-        return r;
+        return 1000;
       }
 
       REAL get_M(const REAL& r) const override
       {
-        return M;
+        return upper_bound(*this, r);
       }
 
 
@@ -182,6 +192,7 @@ namespace iRRAM
 
       T get_coefficient(const tutil::n_tuple<sizeof...(Ts),size_t>& idx) const override
       {
+        
         return get_coefficient_tuple(*this, idx);
       }
  
@@ -304,13 +315,19 @@ namespace iRRAM
     using coeff_type = typename poly_impl::POLY<T,Ts...>::coeff_type;
     std::vector<coeff_type> coeffs(P.get_degree()-order);
     T fact=factorial(order);
+    int deg=0;
     for(int n=0; n<coeffs.size(); n++){
       if(n > 0){
         fact *= T(order+n);
         fact /= T(n);
       }
-      coeffs[n] = fact*derive(P.get_coeff(n+order), orders...);
+      auto restd = derive(P.get_coeff(n+order), orders...);
+      if(poly_impl::get_degree(restd) > 0){
+        deg = n+1;
+        coeffs[n] = fact*restd;
+      }
     }
+    coeffs.resize(deg);
     return poly_impl::POLY<T,Ts...>(coeffs);
   }
 

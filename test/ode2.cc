@@ -71,13 +71,9 @@ void check(REAL x1, REAL y10, int prec)
 template<class T>
 REAL solve(const T& system, int method, DEBUG_INFORMATION& d )
 {
-  REAL x = 2;
+  REAL x = 0.05;
   
   decltype(solve_taylor(system, x, d)) sols;
-  if(method == 1)
-    sols = solve_euler(system,x,d);
-  if(method == 2)
-    sols = solve_heun(system,x,d);
   if(method == 3)
     sols = solve_taylor(system,x,d);
   if(method == 4)
@@ -121,7 +117,9 @@ void compute(){
     error_exp_normalized++;
   }
   
-  check(sol, A2_sol(2), 200);
+  check(sol, A3_sol(0.05), 100);
+  return;
+  
   
   std::cout << " dimension:" << dimension;
   std::cout << " system:" << system;

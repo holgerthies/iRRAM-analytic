@@ -2,6 +2,46 @@
 #define SIMPLIFICATION_H
 namespace iRRAM{
 
+
+  // Prune node says the everything below should not be further
+  // simplified
+  template <class R, class... Args>
+  class PRUNE : public Node<R, Args...>{
+    using node_ptr = std::shared_ptr<Node<R, Args...>>;
+  public:
+    node_ptr node;
+    PRUNE(const node_ptr& node):
+      node(node)
+    {
+    }
+
+    REAL get_r() const override
+    {
+      return node->get_r();
+    }
+
+    REAL get_M(const REAL& r) const override
+    {
+      return node->get_M(r);
+    }
+
+    R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override
+    {
+      return node->get_coefficient_cached(idx);
+    }
+
+    std::string to_string() const override
+    {
+      std::string ans="PRUNED_NODE";
+      return ans;
+    }
+
+    ANALYTIC_OPERATION get_type() const override
+    {
+      return ANALYTIC_OPERATION::PRUNE;
+    }
+  };
+
   template<class R, class... Args>
   bool simplify_step(std::shared_ptr<Node<R, Args...>>&);
   
@@ -412,6 +452,13 @@ namespace iRRAM{
   {
     while(simplify_step(f)) ;
   }
-}
 
+  template<class R, class... Args>
+  std::shared_ptr<Node<R, Args...>> prune(const std::shared_ptr<Node<R,Args...>>& node)
+  {
+    return std::make_shared<PRUNE<R,Args...>>(node);
+  }
+  
+}
 #endif
+

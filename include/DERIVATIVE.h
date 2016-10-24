@@ -65,16 +65,15 @@ namespace iRRAM
 
     REAL get_M(const REAL& r) const override
     {
-      REAL ans=get_M_factor(node->get_r(), r, orders_t);
-      int d =sizeof...(Args);
-      ans *= power(node->get_r()*node->get_M(node->get_r()), d);
-      return ans;
+      auto s = tutil::accumulate_tuple(orders_t);
+      REAL r1 = minimum(2*r, (r+node->get_r())/2);
+      return node->get_M(r1)/power(r1-r, s);
     }
 
     R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override
     {
       auto t = tutil::sum_tuples(idx, orders_t);
-      return get_coefficient_factor(orders_t, idx)*node->get_coefficient(t);
+      return get_coefficient_factor(orders_t, idx)*node->get_coefficient_cached(t);
     }
 
 

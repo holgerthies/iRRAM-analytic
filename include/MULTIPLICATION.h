@@ -44,7 +44,7 @@ namespace iRRAM
     
     R get(const std::tuple<>& idx, const tutil::n_tuple<sizeof...(Args),size_t>& idxl, const tutil::n_tuple<sizeof...(Args),size_t>& idxr)
     {
-      return lhs->get_coefficient(idxl)*rhs->get_coefficient(idxr);
+      return lhs->get_coefficient_cached(idxl)*rhs->get_coefficient_cached(idxr);
     }
   };
 
@@ -72,7 +72,7 @@ namespace iRRAM
 
     std::string to_string() const override
     {
-      return "("+this->lhs->to_string()+"x"+this->rhs->to_string()+")";
+      return "(("+this->lhs->to_string()+") * ("+this->rhs->to_string()+"))";
     }
 
     ANALYTIC_OPERATION get_type() const override
@@ -92,7 +92,7 @@ namespace iRRAM
     
     virtual std::string to_string() const override
     {
-      return "("+this->node->to_string()+"_*_"+std::to_string(this->scalar.as_double())+")";
+      return "("+std::to_string(this->scalar.as_double())+" _*_ ("+this->node->to_string()+"))";
       
     }
     REAL get_r() const override {
@@ -104,7 +104,7 @@ namespace iRRAM
 
     R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override
     {
-      return this->scalar * this->node->get_coefficient(idx);
+      return this->scalar * this->node->get_coefficient_cached(idx);
     }
 
     ANALYTIC_OPERATION get_type() const override

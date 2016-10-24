@@ -156,5 +156,26 @@ namespace tutil{
     return (std::get<0>(t) == 0);
   }
 
+  
+  template<class T, class... Args>
+  struct acc_tuple_helper{
+    static T get(const std::tuple<T, Args...>& t){
+      return std::get<0>(t)+acc_tuple_helper<Args...>::get(tail(t));
+    }
+  };
+
+  template<class T>
+  struct acc_tuple_helper<T>{
+    static T get(const std::tuple<T>& t){
+      return std::get<0>(t);
+    }
+  };
+
+  template<class... Args>
+  auto accumulate_tuple(const std::tuple<Args...>& t){
+    return acc_tuple_helper<Args...>::get(t);
+  }
+  
+
 }
 #endif

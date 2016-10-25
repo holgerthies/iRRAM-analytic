@@ -51,6 +51,9 @@ namespace iRRAM
     virtual REAL get_M(const REAL& r) const = 0;
     virtual REAL get_r() const = 0;
     virtual R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>&) const = 0;
+    virtual size_t get_size() const {
+      return 1;
+    }
 
     template<class... IArgs>
     R evaluate_vector(const std::vector<R>& X, int pos, IArgs... iargs) const
@@ -101,6 +104,10 @@ namespace iRRAM
     {
       return "BIN_OP("+lhs->to_string()+","+rhs->to_string()+")";
     }
+
+    virtual size_t get_size() const override{
+      return 1+lhs->get_size()+rhs->get_size();
+    }
     
     BinaryNode(const node_ptr& lhs, const node_ptr& rhs):
       lhs(lhs), rhs(rhs) 
@@ -127,6 +134,11 @@ namespace iRRAM
       return "SCALAR_OP("+node->to_string()+","+std::to_string(scalar.as_double())+")";
       
     }
+
+    virtual size_t get_size() const override{
+      return 1+node->get_size();
+    }
+
   };
 
   template<size_t d, class T>

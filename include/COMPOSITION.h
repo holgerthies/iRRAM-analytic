@@ -88,6 +88,11 @@ namespace iRRAM
       
     }
 
+    virtual size_t get_size() const override{
+      return 1+lhs->get_size()+rhs->get_size();
+    }
+
+
     R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override
     {
       if(!cache)

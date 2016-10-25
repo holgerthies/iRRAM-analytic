@@ -205,6 +205,9 @@ namespace iRRAM
       
     }
 
+    virtual size_t get_size() const override{
+      return 1+node->get_size();
+    }
 
     REAL get_r() const override {
       return r;
@@ -270,11 +273,14 @@ namespace iRRAM
 
     R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override
     {
-      std::cout << "getting " << tutil::to_string(idx) << "\n";
       REAL r = minimum(0.9*this->node->get_r(), maximum(max_x+1, 2*max_x));
       REAL M =node->get_M(r);
       
       return evaluator.evaluate(this->node->get_pwr(), r, M, idx );
+    }
+
+    virtual size_t get_size() const override{
+      return 1+node->get_size();
     }
 
     R evaluate(const Args&... args) const override{

@@ -3,8 +3,13 @@ Class templates for analytic functions and ODE solving in [iRRAM](https://github
 
 __This is still work in progress.__
 The Interface is changed regularly and some things might not work properly.
+## Requirements
+- A C++14 ready compiler.
+- A recent version of [iRRAM](https://github.com/norbert-mueller/iRRAM).
 ## Installation
-Follows soon.
+The library is header-only, so no building is required.
+## Usage
+
 ## License
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by

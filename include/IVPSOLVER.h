@@ -6,127 +6,13 @@
 #include <vector>
 namespace iRRAM
 {
+  const int MAX_DAG_SIZE = 10;
   // for debugging
   struct DEBUG_INFORMATION
   {
     int steps;
     int order;
   };
-  
-  template <size_t d, class T>
-  class SERIES_IVP_SOLVER
-  {
-  private:
-    std::vector<std::shared_ptr<POWERSERIES<d,T>>> series;
-    // precomputed values for the coefficients in the recursion formula
-    std::vector<std::vector<T>> a;
-    // ai[i,n] contains the coefficient a(i,i+n) since a(i,n)=0 for i>n
-    std::vector<std::vector<std::vector<T>>> ai;
-    T get_a(const int ind,const int n, const int i);
-    T get_coeff_rec(const int ind, const int l, const int k, const int upper,const int size, std::vector<unsigned long>& N);
-    template <size_t n>
-    T get_coeff_rec2(const std::shared_ptr<POWERSERIES<n, T>>& pwr,const int pos, std::vector<unsigned long>& N);
-    template <size_t n>
-    T get_coeff_rec2(const std::shared_ptr<T>& x, const int pos, std::vector<unsigned long>& N);
-  public:
-    SERIES_IVP_SOLVER(const std::vector<std::shared_ptr<POWERSERIES<d,T>>>& series ): series(series) {
-      a.resize(d);
-      ai.resize(d);
-      
-    };
-    T get_coeff(const int ind, const int n);
-  };
-
-  template<size_t d, class T>
-  T SERIES_IVP_SOLVER<d,T>::get_a(const int ind, const int i, const int n){
-    auto& av=ai[ind];
-    if(i > n) return 0;
-    int m=n-i;
-    if(av.size() > i && av[i].size() > m) return av[i][m];
-    if(av.size() <= i){
-      if(i>0)
-        get_a(ind,i-1, n); // make sure av.size() = i
-      // add empty vector at position i
-      av.push_back(std::vector<T>());
-    }
-    if(av[i].size() <= m){
-      if(m > 0)
-        get_a(ind,i, m-1); // make sure av[i].size() = m
-      av[i].push_back(0);
-    }
-    if(i == 0 && n==0) av[i][m] = 1;
-    else if(i > 0){
-      for(unsigned long j=0; j<=n;j++){
-          av[i][m]+=get_a(ind,i-1,n-j)*get_coeff(ind,j);
-      } 
-    }
-    return av[i][m];
-  }
-
-  template<size_t d, class T>
-  template<size_t n>
-  T SERIES_IVP_SOLVER<d,T>::get_coeff_rec2(const std::shared_ptr<POWERSERIES<n, T>>& pwr,const int pos, std::vector<unsigned long>& N){
-    T ans=0;
-    for(int i=0; i<=N[pos]; i++){
-      ans += get_a(pos, i, N[pos])*get_coeff_rec2<n-1>((*pwr)[i], pos+1, N);
-    }
-    return ans;
-  }
-
-
-  template<size_t n, class T>
-  template<size_t d>
-  T SERIES_IVP_SOLVER<n,T>::get_coeff_rec2(const std::shared_ptr<T>& x, const int pos, std::vector<unsigned long>& N){
-    return *x;
-  }
-
-
-  template<size_t d, class T>
-  T SERIES_IVP_SOLVER<d,T>::get_coeff_rec(const int ind, const int l, const int k, const int upper,const int size, std::vector<unsigned long>& N){
-    using std::vector;
-    if(size == d-1){
-      return get_coeff_rec2<d-1>((*(series[ind]))[k], 0, N);
-      
-    }
-    T ans=0;
-    int start = (size == d-2) ? upper : 0;
-    for(int i=start; i<=upper; i++){
-      N[size] = i;
-      ans += get_coeff_rec(ind, l, k, upper-i,size+1, N );
-    }
-    return ans;
-  }
-
-  template<size_t d, class T>
-  T SERIES_IVP_SOLVER<d,T>::get_coeff(const int ind, const int l){
-    using std::vector;
-    auto& av=a[ind];
-    if(av.size() > l) return av[l];
-    // make sure av.size() = l
-    if(l > 0)
-      get_coeff(ind,l-1);
-    av.push_back(0);
-    if(l > 0)
-    {
-      for(int k=0; k<l;k++)
-      {
-        
-        vector<unsigned long> N(d-1, 0);
-        av[l] += get_coeff_rec(ind, l, k, l-k-1, 0, N);
-      }
-      av[l] /= REAL(l);
-    }
-    
-    return av[l];
-  }
-
-  template<size_t d, class T>
-  std::shared_ptr<POWERSERIES<1, T>> get_series(const int ind, std::shared_ptr<SERIES_IVP_SOLVER<d,T>> op) 
-  {
-    auto coeff_fun = std::function<T(const unsigned long)>([ind,op] (const unsigned long n)  {return op->get_coeff(ind, n);});
-    return std::make_shared<POWERSERIES<1,T>>(coeff_fun);
-  }
-
   template<class R, class... Args>
   std::shared_ptr<Node<R, Args...>> get_next_f(const int index, const std::shared_ptr<Node<R,Args...>>& f, const std::vector<std::shared_ptr<Node<R, Args...>>>& Fs)
   {
@@ -135,7 +21,7 @@ namespace iRRAM
       ans = ans+pderive(f, i+1, 1)*Fs[i];
     }
     ans = (REAL(1)/REAL(index))*ans;
-    //simplify(ans);
+    simplify(ans);
     return ans;
     
   }
@@ -165,27 +51,36 @@ namespace iRRAM
 
     REAL get_r() const override {
       return radius;
-    };
+    }
     REAL get_M(const REAL& r) const override {
       return r*F[ind]->get_M(r);
-    };
+    }
+    
+    virtual size_t get_size() const override{
+      size_t ans=1;
+      for(auto& f : F)
+        ans+=f->get_size();
+      return ans;
+    }
 
     R get_coefficient(const tutil::n_tuple<1,size_t>& idx) const override
     {
       int n = std::get<0>(idx);
-      std::cout << n << std::endl;
       tutil::n_tuple<sizeof...(Args),size_t> Zt;
       if(coeffs.size() == 0)
         coeffs.push_back(0);
       while(coeffs.size() <= n){
-        if(n == 1)
-          std::cout << Fc->to_string() << std::endl;
         REAL m=Fc->get_coefficient(Zt);
         Fc = get_next_f(coeffs.size()+1, Fc, F);
+        if(Fc->get_size() > MAX_DAG_SIZE)
+          Fc = prune(Fc);
         coeffs.push_back(m);
       }
-      //std::cout << n << " " << coeffs[n].as_double()  << "\n";
       return coeffs[n];
+    }
+
+    size_t read_coefficients(){
+      return coeffs.size();
     }
 
     std::string to_string() const override
@@ -225,9 +120,10 @@ namespace iRRAM
   template<class R, class... Args>
   std::vector<R> solve_taylor(const IVPSYSTEM<R, Args...>& S, const R& max_time,  DEBUG_INFORMATION& debug)
   {
+    single_valued code;
     std::vector<R> Y(S.y);
     // transposed functions
-    int iter=0;
+    int iter=0, order=0;
     std::vector<std::shared_ptr<Node<R, Args...>>> Fc(S.F.size());
     while(Y[0] < max_time){
       iter++;
@@ -237,25 +133,22 @@ namespace iRRAM
         simplify(Fc[i]);
       }
 
-      bool first = true;
       REAL h;
       for(int i=0; i<Fc.size(); i++){
         auto F = ivp_solve(Fc,i);
-        if(first)
-        {
-          h=F->get_r()/256;
-          first = false;
-        }
+        int d =-ACTUAL_STACK.actual_prec/2;
+        h=F->get_r()/d;
         REAL max_y = Y[0];
         REAL p = minimum(h, max_time-Y[0]);
         Y[i+1] += F->evaluate(p);
+        order = max(order, std::dynamic_pointer_cast<IVP<R,Args...>>(F)->read_coefficients());
       }
       Y[0] += h;
-      std::cout <<iter << " " << Y[0].as_double() <<" " << Y[1].as_double()<< "\n";
+
+      //std::cout <<iter << " " << Y[0].as_double() <<" " << Y[1].as_double()<< "\n";
     }
     debug.steps = iter;
-    //debug.order = S.F[0]->get_series()->known_coeffs();
-    
+    debug.order = order;
     return  Y;
   }
 
@@ -291,7 +184,7 @@ namespace iRRAM
     
     auto coefficients = std::vector<std::vector<R>>(F.size(), std::vector<R>(order+1));
     for(int i=1; i<=order; i++){
-      std::cout << i << std::endl;
+      //std::cout << i << std::endl;
       for(int j=0; j<F.size(); j++){
         REAL m=Fc[j]->get_coefficient(Zt);
         // std::cout << "getting coeff end" << std::endl;
@@ -353,7 +246,7 @@ namespace iRRAM
     while(Y[0] < max_time){
       taylor_step(order, S.F, max_time, Y);
       ++iter;
-      std::cout <<iter << " " << Y[0].as_double() <<" " << Y[1].as_double()<< "\n";
+      //std::cout <<iter << " " << Y[0].as_double() <<" " << Y[1].as_double()<< "\n";
       
       // std::cout << "error:" << Y[1].error.mantissa << "&"<<Y[1].error.exponent << std::endl;
       

@@ -76,6 +76,10 @@ namespace iRRAM
       return get_coefficient_factor(orders_t, idx)*node->get_coefficient_cached(t);
     }
 
+    virtual size_t get_size() const override{
+      return 1+node->get_size();
+    }
+
 
 
 

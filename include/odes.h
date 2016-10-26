@@ -110,16 +110,17 @@ REAL A3_sol(const REAL& t)
 //   return (2*r+4)/(-2*r+4);
 // }
 
-// IVPSYSTEM<REAL, REAL, REAL> A5_SYSTEM(const REAL& r)
-// {
-
-//   auto A5_analytic = make_analytic<REAL,REAL, REAL>(std::function<REAL(unsigned long, unsigned long)>(A5_series),A5_max(r),r);
-//   std::static_pointer_cast<ANALYTIC<REAL, REAL, REAL>>(A5_analytic)->add_algorithm(A5_fun);
-//   IVPSYSTEM<REAL, REAL, REAL> A5_IVP;
-//   A5_IVP.F = {A5_analytic};
-//   A5_IVP.y = {0, 0};
-//   return A5_IVP;
-// }
+IVPSYSTEM<REAL, REAL, REAL> A5_SYSTEM()
+{
+  auto t = variable_symbol<2,0>();
+  auto y = variable_symbol<2,1>();
+  auto A5_analytic = (y-t+REAL(4))/(y+t+REAL(4));
+  simplify(A5_analytic);
+  IVPSYSTEM<REAL, REAL, REAL> A5_IVP;
+  A5_IVP.F = {A5_analytic};
+  A5_IVP.y = {0, 0};
+  return A5_IVP;
+}
 
 // // Problem Class B: Small systems
 
@@ -165,24 +166,14 @@ IVPSYSTEM<REAL, REAL, REAL, REAL> B1_SYSTEM()
   auto y1 = variable_symbol<3,1>();
   auto y2 = variable_symbol<3,2>();
   auto B1_analytic1 = REAL(2)*(y1-y1*y2);
-  //B1_analytic1 = B1_analytic1->simplify()->simplify();
+  simplify(B1_analytic1);
   auto B1_analytic2 = y1*y2-y2;
-  //B1_analytic2 = B1_analytic2->simplify();
+  simplify(B2_analytic2);
   IVPSYSTEM<REAL, REAL, REAL,REAL> B1_IVP;
   B1_IVP.F = {B1_analytic1, B1_analytic2};
   B1_IVP.y = {0, 1, 3};
   return B1_IVP;
 }
-// IVPSYSTEM<REAL, REAL, REAL, REAL> B1_SYSTEM(const REAL& r)
-// {
-
-//   auto B1_analytic1 = make_polynomial<3>({{{},{2,-2}}});
-//   auto B1_analytic2 = make_polynomial<3>({{{0,-1},{0,1}}});
-//   IVPSYSTEM<REAL, REAL, REAL, REAL> B1_IVP;
-//   B1_IVP.F = {B1_analytic1, B1_analytic2};
-//   B1_IVP.y = {0, 1, 3};
-//   return B1_IVP;
-// }
 
 // // Problem B3
 // // a nonlinear chemical reaction

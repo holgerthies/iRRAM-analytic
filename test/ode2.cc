@@ -84,7 +84,7 @@ REAL solve(const T& system, int method, DEBUG_INFORMATION& d )
 void compute(){
   DEBUG_INFORMATION d;
   
-  vector<decltype(A2_SYSTEM())> systems_1d = {A2_SYSTEM(), A3_SYSTEM()};//, A5_SYSTEM(1.5)};
+  vector<decltype(A2_SYSTEM())> systems_1d = {A2_SYSTEM(), A3_SYSTEM(), A5_SYSTEM()};
   vector<decltype(B1_SYSTEM())> systems_2d = {B1_SYSTEM()};
   
   int dimension, system,max_iter,method;
@@ -104,6 +104,8 @@ void compute(){
   }
   if(dimension == 2)
     sol = solve(systems_2d[system], method, d);
+  std::cout << systems_1d[2].F[0]->to_string() << "\n";
+  std::cout << systems_1d[2].F[0]->get_r().as_double() << "\n";
   sizetype error;
   sol.geterror(error);
   getrusage(RUSAGE_SELF, &usage);

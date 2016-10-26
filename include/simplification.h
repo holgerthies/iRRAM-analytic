@@ -98,6 +98,29 @@ namespace iRRAM{
     }
   };
 
+  template<size_t v, class R, class... Args>
+  struct simplify_derivative_inverse_helper
+  {
+    static std::shared_ptr<Node<R,Args...>> get(const std::shared_ptr<DERIVATIVE<R,Args...>>& f)
+    {
+      auto orders_t = f->orders_t;
+      const int order = std::get<v>(orders_t);
+      if(order == 0)
+        return simplify_derivative_inverse_helper<v+1,R,Args...>::get(f);
+      auto child = std::dynamic_pointer_cast<INVERSION<R,Args...>>(f->node);
+      auto ans = (REAL(-1)/(child->node * child->node))*pderive(child->node, v, 1);
+      return tderive(ans, tutil::tuple_replace<v>(orders_t, order-1));
+    }
+  };
+
+  template<class R, class... Args>
+  struct simplify_derivative_inverse_helper<sizeof...(Args),R,Args...>
+  {
+    static std::shared_ptr<Node<R,Args...>> get(const std::shared_ptr<DERIVATIVE<R,Args...>>& f)
+    {
+      return f->node;
+    }
+  };
   template<class R, class... Args>
   bool simplify_addition(std::shared_ptr<Node<R, Args...>>& f)
   {
@@ -308,6 +331,11 @@ namespace iRRAM{
         f = simplify_chain_rule_helper<0, R, Args...>::get(std::make_shared<DERIVATIVE<R,Args...>>(*node));
         return true;
       }
+    case ANALYTIC_OPERATION::INVERSION:
+      {
+        f = simplify_derivative_inverse_helper<0, R, Args...>::get(std::make_shared<DERIVATIVE<R,Args...>>(*node));
+        return true;
+      }
     case ANALYTIC_OPERATION::DERIVATIVE:
     {
       auto child = std::dynamic_pointer_cast<DERIVATIVE<R, Args...>>(node->node);
@@ -372,6 +400,13 @@ namespace iRRAM{
   }
 
   template<class R, class... Args>
+  bool simplify_inversion(std::shared_ptr<Node<R, Args...>>& f)
+  {
+    auto node = std::dynamic_pointer_cast<INVERSION<R,Args...>>(f);
+    return simplify_step(node->node);
+  }
+  
+  template<class R, class... Args>
   bool simplify_transposition(std::shared_ptr<Node<R, Args...>>& f)
   {
     auto node = std::dynamic_pointer_cast<TRANSPOSITION<R,Args...>>(f);
@@ -412,6 +447,12 @@ namespace iRRAM{
         f = compose(child->lhs, transpose(child->rhs, node->center));
         return true;
       }
+    case ANALYTIC_OPERATION::INVERSION:
+      {
+        auto child = std::dynamic_pointer_cast<INVERSION<R, Args...>>(node->node);
+        f = invert(transpose(child->node, node->center));
+        return true;
+      }
     case ANALYTIC_OPERATION::POLYNOMIAL:
       {
         f = std::dynamic_pointer_cast<poly_impl::POLY<R,Args...>>(node->node)->continuation(node->center);
@@ -440,6 +481,8 @@ namespace iRRAM{
       return simplify_composition(f);
     case ANALYTIC_OPERATION::TRANSPOSITION:
       return simplify_transposition(f);
+    case ANALYTIC_OPERATION::INVERSION:
+      return simplify_inversion(f);
     case ANALYTIC_OPERATION::DERIVATIVE:
       return simplify_derivative(f);
     default:

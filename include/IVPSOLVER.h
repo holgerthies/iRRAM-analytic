@@ -43,6 +43,7 @@ namespace iRRAM
       for(const auto& f : F){
         radius = minimum(radius, f->get_r());
       }
+      
       for(const auto& f : F){
         M = maximum(M, f->get_M(radius));
       }
@@ -145,7 +146,7 @@ namespace iRRAM
       }
       Y[0] += h;
 
-      //std::cout <<iter << " " << Y[0].as_double() <<" " << Y[1].as_double()<< "\n";
+      std::cout <<iter << " " << Y[0].as_double() <<" " << Y[1].as_double()<< "\n";
     }
     debug.steps = iter;
     debug.order = order;

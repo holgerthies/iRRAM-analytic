@@ -185,6 +185,44 @@ void compute(){
   sol=6*(2*sin(x1*x2*x3)-1)*sin(x1*x2*x3);
   checkResult(y, sol, prec);
 
+  auto prod2 = fix_first_coefficient(prod, 0);
+  for(int i=1; i<10; i++)
+  {
+    prod2 = prod2 + fix_first_coefficient(prod, i)*power(x1, i);
+  }
+ 
+  y = prod2->evaluate(x2,x3);
+  iRRAM::cout << "checking fixing parameter" << endl;
+  sol=6*(2*sin(x1*x2*x3)-1)*sin(x1*x2*x3);
+  checkResult(y, sol, prec);
+
+  iRRAM::cout << "checking division (1d)" << endl;
+  // sin(x)/(sin(x)+1)
+  auto inv_test = (REAL(1)/(x+REAL(3)))/REAL( 2 );   
+  inv_test = pderive(inv_test, 0, 2);
+  
+  simplify(inv_test);
+  std::cout << inv_test->to_string() << "\n";
+  
+  iRRAM::cout << "checking division (1d) by power series" << endl;
+  // sin(x)/(sin(x)+1)
+  auto inv_test2 = prune( (g/(x+REAL(3)))/REAL(2));
+  std::cout << inv_test2->get_r().as_double() << " " << inv_test2->to_string()  << "\n";
+  y = inv_test2->evaluate(x1);
+  sol=sin(x1)/(3+x1)/2;
+  checkResult(y, sol, prec);
+  iRRAM::cout << "checking division (3d) by power series" << endl;
+
+  auto x3d = variable_symbol<3,0>();
+  auto y3d = variable_symbol<3,1>();
+  auto z3d = variable_symbol<3,2>();
+  auto inv_test3d2 = prune(f/(x3d+y3d+z3d+REAL(100)));
+  y = inv_test3d2->evaluate(x1,x2,x3);
+  sol=sin(x1*x2*x3)/(x1+x2+x3+100);
+  checkResult(y, sol, prec);
+  
+  return;
+  
   iRRAM::cout << "checking analytic continuation (1d)" << endl;
   // sin(x)/(sin(x)+1
   auto cont = transpose(g, {REAL(x1)});
@@ -224,19 +262,19 @@ void compute(){
  //  // sol=sin((x1+x3)*(x2+x3)*(x3+x3));
  //  // checkResult(y, sol, prec);
 
-  auto comp = prune(compose(g,g));
-  iRRAM::cout << "checking composition (1d)" << endl;
-  y = comp->evaluate(x1);
-  sol=sin(sin(x1));
-  checkResult(y, sol, prec);
+  // auto comp = prune(compose(g,g));
+  // iRRAM::cout << "checking composition (1d)" << endl;
+  // y = comp->evaluate(x1);
+  // sol=sin(sin(x1));
+  // checkResult(y, sol, prec);
 
-  auto comp_deriv = pderive(comp, 0, 4);
-  simplify(comp_deriv);
-  std::cout << comp_deriv->to_string() << std::endl;
-  iRRAM::cout << "checking composition derivative (1d)" << endl;
-  y = comp_deriv->evaluate(x1);
-  sol=(1+6*cos(x1)*cos(x1))*cos(sin(x1))*sin(x1)+(-3+7*cos(x1)*cos(x1)+cos(x1)*cos(x1)*cos(x1)*cos(x1))*sin(sin(x1));
-  checkResult(y, sol, prec);
+  // auto comp_deriv = pderive(comp, 0, 4);
+  // simplify(comp_deriv);
+  // std::cout << comp_deriv->to_string() << std::endl;
+  // iRRAM::cout << "checking composition derivative (1d)" << endl;
+  // y = comp_deriv->evaluate(x1);
+  // sol=(1+6*cos(x1)*cos(x1))*cos(sin(x1))*sin(x1)+(-3+7*cos(x1)*cos(x1)+cos(x1)*cos(x1)*cos(x1)*cos(x1))*sin(sin(x1));
+  // checkResult(y, sol, prec);
 
   auto x2d = variable_symbol<2,0>();
   auto y2d = variable_symbol<2,1>();
@@ -255,12 +293,12 @@ void compute(){
   sol=sin(sin(x1*x2*x3));
   checkResult(y, sol, prec);
   
-  auto comp_deriv3 = pderive(pderive(comp3, 0, 1), 2,1);
-  simplify(comp_deriv3);
-  iRRAM::cout << "checking composition derivative (3d)" << endl;
-  y = comp_deriv3->evaluate(x1,x2,x3);
-  sol= x2*(cos(sin(x1*x2*x3))*(cos(x1*x2*x3)-x1*x2*x3*sin(x1*x2*x3))-x1*x2*x3*cos(x1*x2*x3)*cos(x1*x2*x3)*sin(sin(x1*x2*x3)));
-  checkResult(y, sol, prec);
+  // auto comp_deriv3 = pderive(pderive(comp3, 0, 1), 2,1);
+  // simplify(comp_deriv3);
+  // iRRAM::cout << "checking composition derivative (3d)" << endl;
+  // y = comp_deriv3->evaluate(x1,x2,x3);
+  // sol= x2*(cos(sin(x1*x2*x3))*(cos(x1*x2*x3)-x1*x2*x3*sin(x1*x2*x3))-x1*x2*x3*cos(x1*x2*x3)*cos(x1*x2*x3)*sin(sin(x1*x2*x3)));
+  // checkResult(y, sol, prec);
  //  auto comp4 = compose(g,h2)->to_analytic();
  //  iRRAM::cout << "checking composition (2d) by power series" << endl;
  //  y = comp4->evaluate(x1,x2);
@@ -329,20 +367,7 @@ void compute(){
   
 
 
- //  // iRRAM::cout << "checking division (1d)" << endl;
- //  // // sin(x)/(sin(x)+1)
- //  // auto inv_test = (g/gmod)/REAL( 2 );   
- //  // y = inv_test->evaluate(x1);
- //  // sol=sin(x1)/(1+sin(x1))/2;
- //  // checkResult(y, sol, prec);
 
-
- //  // iRRAM::cout << "checking division (1d) by power series" << endl;
- //  // // sin(x)/(sin(x)+1)
- //  // auto inv_test2 = ( (g/gmod)/REAL(2))->to_analytic();   
- //  // y = inv_test2->evaluate(x1);
- //  // sol=sin(x1)/(1+sin(x1))/2;
- //  // checkResult(y, sol, prec);
 
 
  //  // iRRAM::cout << "checking division (3d)" << endl;
@@ -353,12 +378,5 @@ void compute(){
  //  // sol=sin(x1*x2*x3)/(1+sin(x1*x2*x3));
  //  // checkResult(y, sol, prec);
 
- //  // iRRAM::cout << "checking division (3d) by power series" << endl;
-
- //  // // sin(x*y*z)/(sin(x*y*z)+1)
- //  // auto inv_test3d2 = (f/fmod)->to_analytic();   
- //  // y = inv_test3d2->evaluate(x1,x2,x3);
- //  // sol=sin(x1*x2*x3)/(1+sin(x1*x2*x3));
- //  // checkResult(y, sol, prec);
 
 }

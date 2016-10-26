@@ -62,12 +62,17 @@ namespace iRRAM
     using node_ptr = std::shared_ptr<Node<R, Args...>>;
     using node_ptr1d = std::shared_ptr<Node<R,R>>;
     mutable std::unique_ptr<deriv_cache<0, R, Args...>> cache;
+    REAL r;
   public:
     node_ptr1d lhs;
     node_ptr rhs;
     COMPOSITION(const node_ptr1d& lhs, const node_ptr& rhs):
       lhs(lhs), rhs(rhs)
     {
+      r = rhs->get_r();
+      while(!positive(lhs->get_r()-rhs->get_M(r), 10)){
+        r /= 2;
+      }
     }
 
     R evaluate(const Args&... args) const override{
@@ -75,7 +80,7 @@ namespace iRRAM
     }
 
     REAL get_r() const override {
-      return rhs->get_r();
+      return r;
     }
     
     REAL get_M(const REAL& r) const override {

@@ -12,6 +12,17 @@ namespace iRRAM
   template <class R, class... Args>
   class DERIVATIVE;
 
+  template<class... Args>
+  REAL factorial(const std::tuple<Args...>& orders)
+  {
+    return REAL(factorial(std::get<0>(orders)))*factorial(tutil::tail(orders));
+  }
+
+  template<>
+  REAL factorial(const std::tuple<>& orders)
+  {
+    return 1;
+  }
     
   
   template<class... Params>
@@ -65,9 +76,9 @@ namespace iRRAM
 
     REAL get_M(const REAL& r) const override
     {
-      auto s = tutil::accumulate_tuple(orders_t);
+      auto sum = tutil::accumulate_tuple(orders_t);
       REAL r1 = minimum(2*r, (r+node->get_r())/2);
-      return node->get_M(r1)/power(r1-r, s);
+      return factorial(orders_t)*node->get_M(r1)/power(r1-r, sum);
     }
 
     R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override

@@ -30,7 +30,7 @@ namespace iRRAM{
     return ans;
   }
 
-  INTEGER factorial(int n){
+  INTEGER factorial(const unsigned long n){
     static std::vector<INTEGER> ans={1};
     for(int j=ans.size(); j<=n; j++){
       ans.push_back(ans.back()*j);

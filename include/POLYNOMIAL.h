@@ -54,7 +54,7 @@ namespace iRRAM
     }
 
     template<typename... Ds>
-    std::string append_xs(int v0, int d, Ds... rest)
+    std::string append_xs(int v0, const unsigned long d, Ds... rest)
     {
       if(d == 0) return append_xs(v0+1, rest...);
       std::string ans = "x"+std::to_string(v0);
@@ -185,7 +185,7 @@ namespace iRRAM
       }
 
       // get kth coefficient
-      coeff_type get_coeff(int k) const{
+      coeff_type get_coeff(const unsigned long k) const{
         if(k >= get_degree()) return coeff_type();
         return coefficients[k];
       }
@@ -309,7 +309,7 @@ namespace iRRAM
   }
 
   template<class T,class... Ts, class... IDX>
-  poly_impl::POLY<T,Ts...> derive(const poly_impl::POLY<T,Ts...>& P, const int order, const IDX... orders)
+  poly_impl::POLY<T,Ts...> derive(const poly_impl::POLY<T,Ts...>& P, const unsigned long order, const IDX... orders)
   {
     if(order >= P.get_degree()) return poly_impl::POLY<T,Ts...>();
     using coeff_type = typename poly_impl::POLY<T,Ts...>::coeff_type;
@@ -318,7 +318,7 @@ namespace iRRAM
     int deg=0;
     for(int n=0; n<coeffs.size(); n++){
       if(n > 0){
-        fact *= T(order+n);
+        fact *= T(int(order+n));
         fact /= T(n);
       }
       auto restd = derive(P.get_coeff(n+order), orders...);
@@ -337,7 +337,7 @@ namespace iRRAM
   }
 
   template<class T,class... Ts, class... IDX>
-  poly_impl::POLY<T,Ts...> continuation_derivative(const poly_impl::POLY<T,Ts...>& P, const int order, const IDX... orders)
+  poly_impl::POLY<T,Ts...> continuation_derivative(const poly_impl::POLY<T,Ts...>& P, const unsigned long order, const IDX... orders)
   {
     if(P.get_degree() <= order) return poly_impl::POLY<T,Ts...>();
     using coeff_type = typename poly_impl::POLY<T,Ts...>::coeff_type;
@@ -394,7 +394,7 @@ namespace iRRAM
   struct vderive_helper
   {
     template<class T,class... Ts, class... IDX>
-    static poly_impl::POLY<T,Ts...> get(const poly_impl::POLY<T,Ts...>& P, const std::vector<int>& orders, const IDX... idx)
+    static poly_impl::POLY<T,Ts...> get(const poly_impl::POLY<T,Ts...>& P, const std::vector<unsigned long>& orders, const IDX... idx)
     {
       return vderive_helper<n-1>::get(P, orders, orders[n-1], idx...);
     }
@@ -405,7 +405,7 @@ namespace iRRAM
   struct vderive_helper<0>
   {
     template<class T,class... Ts, class... IDX>
-    static poly_impl::POLY<T,Ts...> get(const poly_impl::POLY<T,Ts...>& P, const std::vector<int>& orders, const IDX... idx)
+    static poly_impl::POLY<T,Ts...> get(const poly_impl::POLY<T,Ts...>& P, const std::vector<unsigned long>& orders, const IDX... idx)
     {
       return derive(P, idx...);
     }
@@ -415,7 +415,7 @@ namespace iRRAM
   struct poly_tderive_helper
   {
     template<class... orders>
-    static poly_impl::POLY<T,Ts...> get(const poly_impl::POLY<T,Ts...>& node, const tutil::n_tuple<sizeof...(Ts), int> tuple, const orders... ods)
+    static poly_impl::POLY<T,Ts...> get(const poly_impl::POLY<T,Ts...>& node, const tutil::n_tuple<sizeof...(Ts), unsigned long> tuple, const orders... ods)
     {
       return poly_tderive_helper<n-1, T, Ts...>::get(node,tuple, ods...,std::get<sizeof...(Ts)-n>(tuple));
     }
@@ -425,7 +425,7 @@ namespace iRRAM
   struct poly_tderive_helper<0, T, Ts...>
   {
     template<class... orders>
-    static poly_impl::POLY<T,Ts...> get(const poly_impl::POLY<T,Ts...>& node, const tutil::n_tuple<sizeof...(Ts), int> tuple, const orders... ods)
+    static poly_impl::POLY<T,Ts...> get(const poly_impl::POLY<T,Ts...>& node, const tutil::n_tuple<sizeof...(Ts), unsigned long> tuple, const orders... ods)
     {
       return derive(node, ods...);
     }
@@ -433,7 +433,7 @@ namespace iRRAM
 
   // derivative from std::tuple
   template<class T, class... Ts>
-  poly_impl::POLY<T,Ts...> derive(const poly_impl::POLY<T,Ts...>& node, const tutil::n_tuple<sizeof...(Ts),int>& tuple)
+  poly_impl::POLY<T,Ts...> derive(const poly_impl::POLY<T,Ts...>& node, const tutil::n_tuple<sizeof...(Ts),unsigned long>& tuple)
   {
     return poly_tderive_helper<sizeof...(Ts), T, Ts...>::get(node, tuple);
     
@@ -453,7 +453,7 @@ namespace iRRAM
   };
   
   template<class T,class... Ts>
-  poly_impl::POLY<T,Ts...> derive(const poly_impl::POLY<T,Ts...>& P, const std::vector<int>& orders)
+  poly_impl::POLY<T,Ts...> derive(const poly_impl::POLY<T,Ts...>& P, const std::vector<unsigned long>& orders)
   {
     return vderive_helper<sizeof...(Ts)>::get(P, orders);
   }

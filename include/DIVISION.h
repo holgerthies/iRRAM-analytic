@@ -104,7 +104,7 @@ namespace iRRAM
     {
       size_t n = std::get<0>(idx);
       if(n == 0){
-        auto a0 = fix_first_coefficient(this->node, 0);
+        auto a0 = fix_first(this->node, 0);
         return invert(a0)->get_coefficient_cached(tutil::tail(idx));
       }
       R fact=this->get_coefficient_cached(tutil::tuple_replace<0>(idx, 0));

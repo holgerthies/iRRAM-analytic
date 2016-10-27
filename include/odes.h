@@ -168,7 +168,7 @@ IVPSYSTEM<REAL, REAL, REAL, REAL> B1_SYSTEM()
   auto B1_analytic1 = REAL(2)*(y1-y1*y2);
   simplify(B1_analytic1);
   auto B1_analytic2 = y1*y2-y2;
-  simplify(B2_analytic2);
+  simplify(B1_analytic2);
   IVPSYSTEM<REAL, REAL, REAL,REAL> B1_IVP;
   B1_IVP.F = {B1_analytic1, B1_analytic2};
   B1_IVP.y = {0, 1, 3};

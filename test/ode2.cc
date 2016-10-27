@@ -119,7 +119,7 @@ void compute(){
     error_exp_normalized++;
   }
   
-  // check(sol, A3_sol(5), 20);
+  //check(sol, A3_sol(5), 50);
   // return;
   
   

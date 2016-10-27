@@ -14,7 +14,7 @@ INC := -I include -I/Users/holgerthies/iRRAM/installed/include
 
 $(TESTDIR)/%.o: $(TESTDIR)/%.$(SRCEXT)
 	@mkdir -p $(TESTDIR)
-	$(CC) $(CFLAGS) $(INC) $(LIB) -o $@ $< 
+	$(CC) $(CFLAGS) $(INC) $(LIB) -lboost_unit_test_framework -o $@ $< 
 
 clean:
 	@echo " Cleaning..."; 

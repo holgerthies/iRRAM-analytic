@@ -8,11 +8,16 @@
 #include "tutil.h"
 namespace iRRAM
 {
-  enum class ANALYTIC_OPERATION {ANALYTIC, ADDITION,SCALAR_ADDITION, SUBTRACTION, MULTIPLICATION,SCALAR_MULTIPLICATION, INVERSION, DERIVATIVE, COMPOSITION, IVP, SINE, COSINE, EXPONENTIATION,CONTINUATION,TRANSPOSITION, POLYNOMIAL, PRUNE, FIX};
+  enum class ANALYTIC_OPERATION {ANALYTIC, ADDITION,SCALAR_ADDITION, SUBTRACTION, MULTIPLICATION,SCALAR_MULTIPLICATION, INVERSION, DERIVATIVE, COMPOSITION, IVP, SINE, COSINE, EXPONENTIATION,CONTINUATION,TRANSPOSITION, POLYNOMIAL, PRUNE, FIX,FIXREST, SUBSTITUTION};
 
   // forward declaration 
   template<class R, class... Args>
   class ANALYTIC;
+    template <class R, typename... Args>
+  class Node;
+  template<class R, class... Args>
+  R evaluate_pwr(const std::shared_ptr<const Node<R,Args...>>& f, const Args&... xs);
+
   template<class... Args>
   REAL real_max(const REAL& x, const Args&... args)
   {
@@ -26,23 +31,21 @@ namespace iRRAM
   }
 
   template<class R, class... Args>
-  class Node
+  class Node :public std::enable_shared_from_this< Node<R,Args...> >
   {
   private:
     using pwr_series = POWERSERIES<sizeof...(Args),R>;
     using pwr_series_ptr = std::shared_ptr<pwr_series>;
-  public:
     mutable pwr_series_ptr pwr;
+  public:
     Node()
     {
     }
 
     virtual R evaluate(const Args&... args) const {
-      REAL r=real_max(args...);
-      r = minimum(0.9*this->get_r(), maximum(r+1, 2*r));
-      REAL M =this->get_M(r);
-      return PWRSERIES_IMPL::evaluate(get_pwr(), r, M, args...);
-    };
+      auto sp = this->shared_from_this();
+      return evaluate_pwr(sp, args...);
+    }
     virtual ~Node() = default;
     //virtual R evaluate(const Args&... args) const = 0;
     //virtual std::shared_ptr<ANALYTIC<R, Args...>> to_analytic() const = 0;

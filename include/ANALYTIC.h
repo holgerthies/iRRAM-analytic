@@ -54,7 +54,7 @@ namespace iRRAM
 
     virtual std::string to_string() const override
     {
-      auto addr = reinterpret_cast<std::uintptr_t>(this->pwr.get()) % 100;
+      auto addr = reinterpret_cast<std::uintptr_t>(this->get_pwr().get()) % 100;
       return "f"+std::to_string(addr);
     };
 
@@ -62,11 +62,6 @@ namespace iRRAM
     virtual ANALYTIC_OPERATION get_type() const override 
     {
       return ANALYTIC_OPERATION::ANALYTIC;
-    }
-
-    pwr_series_ptr get_series()
-    {
-      return this->pwr;
     }
 
   };

@@ -500,8 +500,10 @@ namespace iRRAM{
         trunc_error_term = AAREAL();
         trunc_error_term.add_error(error);
         trunc_error = real_to_error(error);
+        
         REAL local = (sum+trunc_error_term).to_real();
         local.geterror(local_error);
+        
         if (sizetype_less(local_error, best_error)) { 
           best = local;
           best_error = local_error;

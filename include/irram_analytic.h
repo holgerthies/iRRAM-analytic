@@ -18,4 +18,5 @@
 // #include "coefficient_computation.h"
 #include "combinatorics.h"
 #include "simplification.h"
+#include "evaluation.h"
 #endif

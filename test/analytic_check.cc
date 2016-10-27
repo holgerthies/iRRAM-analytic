@@ -67,12 +67,12 @@ struct sine : REAL_ANALYTIC<1>
 
   REAL get_r() const override
   {
-    return 2;
+    return 20;
   }
 
   REAL get_M(const REAL& r) const override
   {
-    return 6;
+    return 200000;
   }
       
 };
@@ -185,17 +185,31 @@ void compute(){
   sol=6*(2*sin(x1*x2*x3)-1)*sin(x1*x2*x3);
   checkResult(y, sol, prec);
 
-  auto prod2 = fix_first_coefficient(prod, 0);
+  auto prod2 = fix_first(prod, 0);
   for(int i=1; i<10; i++)
   {
-    prod2 = prod2 + fix_first_coefficient(prod, i)*power(x1, i);
+    prod2 = prod2 + fix_first(prod, i)*power(x1, i);
   }
- 
+
   y = prod2->evaluate(x2,x3);
   iRRAM::cout << "checking fixing parameter" << endl;
   sol=6*(2*sin(x1*x2*x3)-1)*sin(x1*x2*x3);
   checkResult(y, sol, prec);
 
+  // auto prod3 = fix_rest(prod, std::make_tuple(0,0));
+  // for(int i=0; i<10; i++)
+  // {
+  //   for(int j=0; j<10; j++)
+  //   {
+  //     if(i==0 && j == 0) continue;
+  //     prod3 = prod3 + fix_rest(prod, std::make_tuple(i,j))*power(x2, i)*power(x3,j);
+  //   }
+  // }
+
+  // y = prod3->evaluate(x1);
+  // iRRAM::cout << "checking fixing rest parameters" << endl;
+  // sol=6*(2*sin(x1*x2*x3)-1)*sin(x1*x2*x3);
+  // checkResult(y, sol, prec);
   iRRAM::cout << "checking division (1d)" << endl;
   // sin(x)/(sin(x)+1)
   auto inv_test = (REAL(1)/(x+REAL(3)))/REAL( 2 );   

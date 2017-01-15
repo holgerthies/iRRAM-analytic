@@ -53,11 +53,11 @@ namespace iRRAM
     using BinaryNode<R,Args...>::BinaryNode;
   public:
     R evaluate(const Args&... args) const override{
-      return this->lhs->evaluate(args...)*this->rhs->evaluate(args...);
+      return this->lhs->evaluate_cached(args...)*this->rhs->evaluate_cached(args...);
     };
 
     REAL get_r() const override {
-      return minimum(this->lhs->get_r(), this->rhs->get_r());
+      return minimum(this->lhs->get_r_cached(), this->rhs->get_r_cached());
     };
 
     REAL get_M(const REAL& r) const override {
@@ -96,7 +96,7 @@ namespace iRRAM
       
     }
     REAL get_r() const override {
-      return this->node->get_r();
+      return this->node->get_r_cached();
     };
     REAL get_M(const REAL& r) const override {
       return this->node->get_M(r)*abs(this->scalar);

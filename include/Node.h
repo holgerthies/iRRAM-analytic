@@ -16,7 +16,7 @@ namespace iRRAM
     template <class R, typename... Args>
   class Node;
   template<class R, class... Args>
-  R evaluate_pwr(const std::shared_ptr<const Node<R,Args...>>& f, const Args&... xs);
+  R evaluate_pwr(const std::shared_ptr<const Node<R,Args...>>& f,const unsigned int max_coeffs, const Args&... xs);
 
   template<class... Args>
   REAL real_max(const REAL& x, const Args&... args)
@@ -37,15 +37,27 @@ namespace iRRAM
     using pwr_series = POWERSERIES<sizeof...(Args),R>;
     using pwr_series_ptr = std::shared_ptr<pwr_series>;
     mutable pwr_series_ptr pwr;
+    mutable R r;
+    mutable bool r_set;
+  protected:
+    mutable bool visited; // helper for recursive evaluation
+    mutable R evaluation_cache;
   public:
-    Node()
+    Node() : r_set(false), visited(false)
     {
     }
 
     virtual R evaluate(const Args&... args) const {
       auto sp = this->shared_from_this();
-      return evaluate_pwr(sp, args...);
+      return evaluate_pwr(sp,0, args...);
     }
+
+    R approximate(const unsigned int max_coeffs,const Args&... args) const
+    {
+      auto sp = this->shared_from_this();
+      return evaluate_pwr(sp,max_coeffs, args...);
+    }
+
     virtual ~Node() = default;
     //virtual R evaluate(const Args&... args) const = 0;
     //virtual std::shared_ptr<ANALYTIC<R, Args...>> to_analytic() const = 0;
@@ -66,13 +78,28 @@ namespace iRRAM
     }
     R evaluate_vector(const std::vector<R>& X, int pos, Args... iargs) const
     {
-      return evaluate(iargs...);
+      return evaluate_root(iargs...);
       
     }
     R evaluate(const std::vector<R>& X) const
     {
       return evaluate_vector(X,0);
       
+    }
+
+    R evaluate_cached(const Args&... args) const
+    {
+      if(!visited){
+        visited = true;
+        evaluation_cache = evaluate(args...);
+      }
+      return evaluation_cache;
+    }
+    R evaluate_root(const Args&... args) const
+    {
+      auto ans = evaluate_cached(args...);
+      reset_visited();
+      return ans;
     }
     
     virtual R get_coefficient_v(const tutil::n_tuple<sizeof...(Args),size_t>& t) const 
@@ -91,6 +118,26 @@ namespace iRRAM
     }
     R get_coefficient_cached(const tutil::n_tuple<sizeof...(Args),size_t>& t) const{
       return PWRSERIES_IMPL::get_coeff<sizeof...(Args), R>(*get_pwr(), t);
+    }
+
+    REAL get_r_cached() const 
+    {
+      if(!r_set)
+      {
+        this->r = this->get_r();
+        r_set = true;
+     }
+      return r;
+    }
+
+    virtual void reset_visited() const = 0;
+    virtual int count_nodes() const = 0;
+
+    int node_number() 
+    {
+      int n = count_nodes();
+      reset_visited();
+      return n;
     }
   };
 
@@ -111,6 +158,26 @@ namespace iRRAM
     virtual size_t get_size() const override{
       return 1+lhs->get_size()+rhs->get_size();
     }
+
+    void reset_visited() const override
+    {
+      if(this->visited){
+        this->visited = false;
+        lhs->reset_visited();
+        rhs->reset_visited();
+      }
+    }
+
+    int count_nodes() const override
+    {
+      if(!this->visited){
+        this->visited = true;
+        int n=1+lhs->count_nodes()+rhs->count_nodes();
+        return n;
+      }
+      return 0;
+    }
+
     
     BinaryNode(const node_ptr& lhs, const node_ptr& rhs):
       lhs(lhs), rhs(rhs) 
@@ -142,6 +209,24 @@ namespace iRRAM
       return 1+node->get_size();
     }
 
+    void reset_visited() const override
+    {
+      if(this->visited){
+        this->visited = false;
+        node->reset_visited();
+      }
+    }
+
+    int count_nodes() const override
+    {
+      if(!this->visited){
+        this->visited = true;
+        int n=1+node->count_nodes();
+        return n;
+      }
+      return 0;
+    }
+    
   };
 
   template<size_t d, class T>

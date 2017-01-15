@@ -62,24 +62,24 @@ namespace iRRAM
     using node_ptr = std::shared_ptr<Node<R, Args...>>;
     using node_ptr1d = std::shared_ptr<Node<R,R>>;
     mutable std::unique_ptr<deriv_cache<0, R, Args...>> cache;
-    REAL r;
   public:
     node_ptr1d lhs;
     node_ptr rhs;
     COMPOSITION(const node_ptr1d& lhs, const node_ptr& rhs):
       lhs(lhs), rhs(rhs)
     {
-      r = rhs->get_r();
-      while(!positive(lhs->get_r()-rhs->get_M(r), 10)){
-        r /= 2;
-      }
     }
 
     R evaluate(const Args&... args) const override{
-      return lhs->evaluate(rhs->evaluate(args...));
+      return lhs->evaluate_cached(rhs->evaluate_cached(args...));
     }
 
     REAL get_r() const override {
+      REAL r = rhs->get_r_cached();
+      while(!positive(lhs->get_r_cached()-rhs->get_M(r), 10)){
+        r /= 2;
+      }
+      
       return r;
     }
     
@@ -97,6 +97,25 @@ namespace iRRAM
       return 1+lhs->get_size()+rhs->get_size();
     }
 
+
+    void reset_visited() const override
+    {
+      if(this->visited){
+        this->visited = false;
+        lhs->reset_visited();
+        rhs->reset_visited();
+      }
+    }
+
+    int count_nodes() const override
+    {
+      if(!this->visited){
+        this->visited = true;
+        int n=1+lhs->count_nodes()+rhs->count_nodes();
+        return n;
+      }
+      return 0;
+    }
 
     R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override
     {

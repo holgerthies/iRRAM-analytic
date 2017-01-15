@@ -9,50 +9,6 @@ using namespace iRRAM;
 using std::endl;
 using std::vector;
 
-// F(t, y1, y2) = y2+1
-REAL series1(const unsigned long v0, const unsigned long v1, const unsigned long v2){
-  if(v0 == 0 && v1 == 0 && v2 == 0) return 1;
-  if(v0 == 0 && v1 == 0 && v2 == 1) return 1;
-  return 0;
-}
-
-// F(t, y1, y2) = y2
-REAL series1p(const unsigned long v0, const unsigned long v1, const unsigned long v2){
-  if(v0 == 0 && v1 == 0 && v2 == 1) return 1;
-  return 0;
-}
-
-// F(t, y1, y2) = -y1
-REAL series2(const unsigned long v0, const unsigned long v1, const unsigned long v2){
-  if(v0 == 0 && v1 == 1 && v2 == 0) return -1;
-  return 0;
-}
-
-// F(t, y1) = -y1
-REAL series3(const unsigned long v0, const unsigned long v1){
-  if(v0 == 0 && v1 == 1) return -1;
-  return 0;
-}
-
-
-REAL fun1(const REAL& t, const REAL& y1, const REAL& y2){
-  return y2+1;
-}
-
-REAL fun2(const REAL& t, const REAL& y1, const REAL& y2){
-  return -y1;
-}
-
-REAL FUN1(const REAL& t){
-  return sin(t);
-}
-
-REAL FUN2(const REAL& t){
-  return cos(t)-1;
-}
-REAL FUN2p(const REAL& t){
-  return cos(t);
-}
 void check(REAL x1, REAL y10, int prec)
 {
     iRRAM::cout << "result: " << endl;
@@ -69,43 +25,69 @@ void check(REAL x1, REAL y10, int prec)
 }
 
 template<class T>
-REAL solve(const T& system, int method, DEBUG_INFORMATION& d )
+REAL solve(const T& system, const REAL& x, const bool out, DEBUG_INFORMATION& d )
 {
-  REAL x = 1;
   
-  decltype(solve_taylor(system, x, d)) sols;
-  if(method == 3)
-    sols = solve_taylor(system,x,d);
-  if(method == 4)
-    sols = solve_taylor_deriv(system,x,d);
+  decltype(solve_taylor(system, x,out, d)) sols;
+  sols = solve_taylor(system,x,out, d);
   return sols[1];
 }
 
+
 void compute(){
   DEBUG_INFORMATION d;
+  static int iteration_counter = 0;
+
+  vector<decltype(A2_SYSTEM())> systems_1d = {A2_SYSTEM(), A3_SYSTEM(), A5_SYSTEM(), SINCOS_SYSTEM()};
+  vector<decltype(B1_SYSTEM())> systems_2d = {B1_SYSTEM(), E2_SYSTEM()};
+  vector<decltype(SINCOS_POLY_SYSTEM())> systems_6d = {SINCOS_POLY_SYSTEM()};
   
-  vector<decltype(A2_SYSTEM())> systems_1d = {A2_SYSTEM(), A3_SYSTEM(), A5_SYSTEM()};
-  vector<decltype(B1_SYSTEM())> systems_2d = {B1_SYSTEM()};
-  
-  int dimension, system,max_iter,method;
+  int dimension=0, system,max_iter,prec;
   struct rusage usage;
   struct timeval start, end;
-  iRRAM::cin >> dimension >> system >> method >> max_iter;
-  static int iteration_counter = 0;
+  
+  while(dimension == 0){
+    iRRAM::cout << "choose system dimension" << std::endl;
+    iRRAM::cin >> dimension;
+    if(dimension != 1 && dimension != 2 && dimension != 6){
+      iRRAM::cout << "invalid dimension" << std::endl;
+      dimension = 0;
+    }
+  }
+  iRRAM::cout << "choose system" << std::endl;
+  iRRAM::cin >>  system;
+  
+  REAL x;
+  iRRAM::cout << "choose x" << std::endl;
+  iRRAM::cin >>  x;
+
+  iRRAM::cout << "choose precision (or 0 for iteration number)" << std::endl;
+  iRRAM::cin >>  prec;
+  bool out = true;
+  if(prec > 0){
+    iRRAM::cout << setRwidth(prec) << std::endl;
+  }
+  else{
+    iRRAM::cout << "choose number of iterations" << std::endl;
+    iRRAM::cin >>  max_iter;
+    out=false;
+  }
+
   iteration_counter++; 
-  if(iteration_counter == max_iter) return;
+  if(prec <= 0 && iteration_counter == max_iter) return;
   
   
   getrusage(RUSAGE_SELF, &usage);
   start = usage.ru_utime;
   REAL sol;
+  
   if(dimension == 1){
-    sol = solve(systems_1d[system], method, d);
+    sol = solve(systems_1d[system],x,out,  d);
   }
   if(dimension == 2)
-    sol = solve(systems_2d[system], method, d);
-  std::cout << systems_1d[2].F[0]->to_string() << "\n";
-  std::cout << systems_1d[2].F[0]->get_r().as_double() << "\n";
+    sol = solve(systems_2d[system],x,out,  d);
+  if(dimension == 6)
+    sol = solve(systems_6d[system],x,out,  d);
   sizetype error;
   sol.geterror(error);
   getrusage(RUSAGE_SELF, &usage);
@@ -125,7 +107,6 @@ void compute(){
   
   std::cout << " dimension:" << dimension;
   std::cout << " system:" << system;
-  std::cout << " method:" << method;
   std::cout << " time:" << iteration_time;
   std::cout << " steps:" << d.steps;
   std::cout << " order:" << d.order;
@@ -138,8 +119,8 @@ void compute(){
   
   std::cout << std::endl;
   
-  
-  iRRAM::cout << (REAL(0) == REAL(0)) << endl;
+  if(prec <= 0)
+    iRRAM::cout << (REAL(0) == REAL(0)) << endl;
   
   
   

@@ -63,6 +63,22 @@ namespace iRRAM
     {
       return ANALYTIC_OPERATION::ANALYTIC;
     }
+   
+    void reset_visited() const override
+    {
+      this->visited = false;
+    }
+
+    int count_nodes() const override
+    {
+      if(!this->visited){
+        this->visited = true;
+        return 1;
+      }
+      return 0;
+    }
+    
+ 
 
   };
   template<size_t n>

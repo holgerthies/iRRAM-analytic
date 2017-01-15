@@ -11,13 +11,13 @@ namespace iRRAM{
   public:
     node_ptr node;
     PRUNE(const node_ptr& node):
-      node(node)
+     node(node)
     {
     }
 
     REAL get_r() const override
     {
-      return node->get_r();
+      return node->get_r_cached();
     }
 
     REAL get_M(const REAL& r) const override
@@ -32,10 +32,27 @@ namespace iRRAM{
 
     std::string to_string() const override
     {
-      std::string ans="PRUNED_NODE";
+      std::string ans="PRUNED_NODE("+node->to_string()+")";
       return ans;
     }
 
+    void reset_visited() const override
+    {
+      if(this->visited){
+        this->visited = false;
+        node->reset_visited();
+      }
+    }
+
+    int count_nodes() const override
+    {
+      if(!this->visited){
+        this->visited = true;
+        int n=1+node->count_nodes();
+        return n;
+      }
+      return 0;
+    }
     ANALYTIC_OPERATION get_type() const override
     {
       return ANALYTIC_OPERATION::PRUNE;
@@ -143,7 +160,7 @@ namespace iRRAM{
       if(get_max_degree(*lchild) == 1)
       {
         tutil::n_tuple<sizeof...(Args), size_t> Z;
-        f = node->rhs+lchild->get_coefficient(Z);
+        f = node->rhs+lchild->get_coefficient_cached(Z);
         return true;
       }
     }
@@ -159,7 +176,7 @@ namespace iRRAM{
       if(get_max_degree(*rchild) == 1)
       {
         tutil::n_tuple<sizeof...(Args), size_t> Z;
-        f = node->lhs+rchild->get_coefficient(Z);
+        f = node->lhs+rchild->get_coefficient_cached(Z);
         return true;
       }
     }
@@ -228,7 +245,7 @@ namespace iRRAM{
       if(get_max_degree(*lchild) == 1)
       {
         tutil::n_tuple<sizeof...(Args), size_t> Z;
-        f = node->rhs*lchild->get_coefficient(Z);
+        f = node->rhs*lchild->get_coefficient_cached(Z);
         return true;
       }
     }
@@ -244,7 +261,7 @@ namespace iRRAM{
       if(get_max_degree(*rchild) == 1)
       {
         tutil::n_tuple<sizeof...(Args), size_t> Z;
-        f = node->lhs*rchild->get_coefficient(Z);
+        f = node->lhs*rchild->get_coefficient_cached(Z);
         return true;
       }
     }
@@ -500,6 +517,11 @@ namespace iRRAM{
   std::shared_ptr<Node<R, Args...>> prune(const std::shared_ptr<Node<R,Args...>>& node)
   {
     return std::make_shared<PRUNE<R,Args...>>(node);
+  }
+
+  template<class R, class... Args>
+  int get_node_number(const std::shared_ptr<Node<R, Args...>>& node)
+  {
   }
   
 }

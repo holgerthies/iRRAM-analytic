@@ -217,6 +217,24 @@ namespace iRRAM
       return M;
     };
 
+    void reset_visited() const override
+    {
+      if(this->visited){
+        this->visited = false;
+        node->reset_visited();
+      }
+    }
+
+    int count_nodes() const override
+    {
+      if(!this->visited){
+        this->visited = true;
+        int n=1+node->count_nodes();
+        return n;
+      }
+      return 0;
+    }
+
     R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override
     {
       return evaluator.evaluate(this->node->pwr, 2*max_x, this->node->get_M(2*max_x), idx );
@@ -251,6 +269,23 @@ namespace iRRAM
     {
     }
 
+    void reset_visited() const override
+    {
+      if(this->visited){
+        this->visited = false;
+        node->reset_visited();
+      }
+    }
+
+    int count_nodes() const override
+    {
+      if(!this->visited){
+        this->visited = true;
+        int n=1+node->count_nodes();
+        return n;
+      }
+      return 0;
+    }
     std::string to_string() const override
     {
       std::string ans = "TRANSPOSE("+node->to_string()+";";
@@ -264,7 +299,7 @@ namespace iRRAM
 
 
     REAL get_r() const override {
-      return node->get_r()-max_x;
+      return node->get_r_cached()-max_x;
     };
 
     REAL get_M(const REAL& r) const override {
@@ -273,7 +308,8 @@ namespace iRRAM
 
     R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override
     {
-      REAL r = minimum(0.9*this->node->get_r(), maximum(max_x+1, 2*max_x));
+      
+      REAL r = minimum(0.9*this->node->get_r_cached(), maximum(max_x+1, 2*max_x));
       REAL M =node->get_M(r);
       
       return evaluator.evaluate(this->node->get_pwr(), r, M, idx );

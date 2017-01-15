@@ -16,7 +16,7 @@ namespace iRRAM
     R evaluate(const Args&... args) const override;
 
     REAL get_r() const override {
-      return minimum(this->lhs->get_r(), this->rhs->get_r());
+      return minimum(this->lhs->get_r_cached(), this->rhs->get_r_cached());
     };
 
     REAL get_M(const REAL& r) const override {
@@ -47,7 +47,7 @@ namespace iRRAM
     R evaluate(const Args&... args) const override;
 
     REAL get_r() const override {
-      return this->node->get_r();
+      return this->node->get_r_cached();
     };
     REAL get_M(const REAL& r) const override {
       return this->node->get_M(r)+abs(this->scalar);
@@ -77,13 +77,13 @@ namespace iRRAM
   template <class R, class... Args>
   R ADDITION<R, Args...>::evaluate(const Args&... args) const
   {
-    return this->rhs->evaluate(args...)+this->lhs->evaluate(args...);
+    return this->rhs->evaluate_cached(args...)+this->lhs->evaluate_cached(args...);
   }
 
   template <class R, class... Args>
   R SCALAR_ADDITION<R, Args...>::evaluate(const Args&... args) const
   {
-    return this->node->evaluate(args...)+this->scalar;
+    return this->node->evaluate_cached(args...)+this->scalar;
   }
 
   // addition operators

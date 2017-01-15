@@ -97,7 +97,7 @@ namespace iRRAM
     }
 
     R evaluate(const Args&... args) const override{
-      return 1/node->evaluate(args...);
+      return 1/node->evaluate_cached(args...);
     }
 
     R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override
@@ -123,7 +123,7 @@ namespace iRRAM
         for(int i=1; i<sizeof...(Args);i++)
           grad = grad+pderive(node, i, 1);
         simplify(grad);
-        r=node->get_r();
+        r=node->get_r_cached();
         std::vector<R> Z(sizeof...(Args));
         f0 = node->evaluate(Z);
         REAL lowerbound=-1;// lower bound for the function
@@ -133,6 +133,24 @@ namespace iRRAM
         }
       } 
       return r;
+    }
+
+    void reset_visited() const override
+    {
+      if(this->visited){
+        this->visited = false;
+        node->reset_visited();
+      }
+    }
+
+    int count_nodes() const override
+    {
+      if(!this->visited){
+        this->visited = true;
+        int n=1+node->count_nodes();
+        return n;
+      }
+      return 0;
     }
 
     std::string to_string() const override
@@ -170,7 +188,7 @@ namespace iRRAM
     }
 
     R evaluate(const R& x) const override{
-      return 1/node->evaluate(x);
+      return 1/node->evaluate_cached(x);
     }
 
     R get_coefficient(const std::tuple<size_t>& idx) const override
@@ -194,7 +212,7 @@ namespace iRRAM
        // z \in B_r'
         df = pderive(node, 0, 1);
         simplify(df);
-        r=node->get_r();
+        r=node->get_r_cached();
         f0 = node->evaluate(0);
         REAL lowerbound=-1;// lower bound for the function
         while(!positive(lowerbound, -10)){
@@ -203,6 +221,24 @@ namespace iRRAM
         }
       } 
       return r;
+    }
+
+    void reset_visited() const override
+    {
+      if(this->visited){
+        this->visited = false;
+        node->reset_visited();
+      }
+    }
+
+    int count_nodes() const override
+    {
+      if(!this->visited){
+        this->visited = true;
+        int n=1+node->count_nodes();
+        return n;
+      }
+      return 0;
     }
 
     std::string to_string() const override

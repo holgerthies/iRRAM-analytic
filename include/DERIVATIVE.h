@@ -71,13 +71,14 @@ namespace iRRAM
 
     REAL get_r() const override
     {
-      return node->get_r();
+      
+      return node->get_r_cached();
     }
 
     REAL get_M(const REAL& r) const override
     {
       auto sum = tutil::accumulate_tuple(orders_t);
-      REAL r1 = minimum(2*r, (r+node->get_r())/2);
+      REAL r1 = minimum(2*r, (r+node->get_r_cached())/2);
       return factorial(orders_t)*node->get_M(r1)/power(r1-r, sum);
     }
 
@@ -91,6 +92,23 @@ namespace iRRAM
       return 1+node->get_size();
     }
 
+    void reset_visited() const override
+    {
+      if(this->visited){
+        this->visited = false;
+        node->reset_visited();
+      }
+    }
+
+    int count_nodes() const override
+    {
+      if(!this->visited){
+        this->visited = true;
+        int n=1+node->count_nodes();
+        return n;
+      }
+      return 0;
+    }
 
 
 

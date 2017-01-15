@@ -159,7 +159,7 @@ namespace iRRAM
 
       REAL get_r() const override
       {
-        return 1000;
+        return 10000000;
       }
 
       REAL get_M(const REAL& r) const override
@@ -167,6 +167,19 @@ namespace iRRAM
         return upper_bound(*this, r);
       }
 
+      void reset_visited() const override
+      {
+        this->visited = false;
+      }
+
+      int count_nodes() const override
+      {
+        if(!this->visited){
+          this->visited = true;
+          return 1;
+        }
+        return 0;
+      }
 
       ANALYTIC_OPERATION get_type() const override
       {

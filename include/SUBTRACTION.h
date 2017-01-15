@@ -14,7 +14,7 @@ namespace iRRAM
     R evaluate(const Args&... args) const override;
 
     REAL get_r() const override {
-      return minimum(this->lhs->get_r(), this->rhs->get_r());
+      return minimum(this->lhs->get_r_cached(), this->rhs->get_r_cached());
     };
 
     REAL get_M(const REAL& r) const override {
@@ -23,7 +23,7 @@ namespace iRRAM
 
     R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override
     {
-      return this->lhs->get_coefficient(idx)-this->rhs->get_coefficient(idx);
+      return this->lhs->get_coefficient_cached(idx)-this->rhs->get_coefficient_cached(idx);
     }
  
     
@@ -37,7 +37,7 @@ namespace iRRAM
   template <class R, class... Args>
   R SUBTRACTION<R, Args...>::evaluate(const Args&... args) const
   {
-    return this->lhs->evaluate(args...)-this->rhs->evaluate(args...);
+    return this->lhs->evaluate_cached(args...)-this->rhs->evaluate_cached(args...);
   }
 
   // subtraction operators
@@ -59,14 +59,14 @@ namespace iRRAM
   template <class R, class... Args>
   std::shared_ptr<Node<R, Args...>> operator-(const R& lhs, const std::shared_ptr<Node<R,Args...>>& rhs)
   {
-    return -1*rhs+lhs;
+    return REAL(-1)*rhs+lhs;
   }
 
   // unary minus
   template <class R, class... Args>
   std::shared_ptr<Node<R, Args...>> operator-(const std::shared_ptr<Node<R,Args...>>& node)
   {
-    return -1*node;
+    return REAL(-1)*node;
   }
 
   

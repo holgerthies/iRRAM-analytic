@@ -4,9 +4,10 @@
 #ifndef IVP_SOLVER_H
 #define IVP_SOLVER_H
 #include <vector>
+#include "CONTINUATION.h"
 namespace iRRAM
 {
-  const int MAX_DAG_SIZE = 10;
+  const int MAX_DAG_SIZE = 1;
   // for debugging
   struct DEBUG_INFORMATION
   {
@@ -27,64 +28,81 @@ namespace iRRAM
   }
 
   template <class R, class... Args>
-  class IVP : public Node<R, R>{
-  private:
+  class BASIC_IVPSOLVER {
+  protected:
     std::vector<std::shared_ptr<Node<R, Args...>>> F;
-    mutable std::shared_ptr<Node<R, Args...>> Fc;
-    mutable std::vector<R> coeffs;
+    std::vector<R> Y;
+    mutable std::vector<std::vector<std::shared_ptr<Node<R, Args...>>>> Fc;
+    mutable std::vector<std::vector<R>> coeffs;
     int ind;
-    REAL radius;
+    REAL first_radius, radius;
   public:
-    IVP(const std::vector<std::shared_ptr<Node<R,Args...>>>& F, const int ind):
-      F(F),Fc(F[ind]), ind(ind)
+
+    void set_radius()
     {
-      radius = 1;
-      REAL M =0;
+      REAL min_r = 1;
+      // get minimum r for all functions
       for(const auto& f : F){
-        radius = minimum(radius, f->get_r());
+        min_r = minimum(min_r, f->get_r_cached());
       }
-      
-      for(const auto& f : F){
-        M = maximum(M, f->get_M(radius));
+
+      REAL new_r = 0;
+      radius = -1;
+      while(positive(new_r-radius,-5)){
+        REAL M =0;
+        int i=0;
+        for(const auto& f : F){
+          i++;
+          M = maximum(M, f->get_M(min_r+abs(Y[0])));
+        }
+        radius = new_r;
+        new_r = min_r/M;
+        //std::cout << new_r.as_double() << "> " << min_r.as_double() << " < " << M.as_double() << std::endl;
+        min_r /= 2;
       }
-      radius = radius/M;
     }
 
-    REAL get_r() const override {
+    auto get_F(const int index) -> decltype(F[0])
+    {
+      return F[index];
+    }
+
+    REAL get_r() const{
       return radius;
     }
-    REAL get_M(const REAL& r) const override {
-      return r*F[ind]->get_M(r);
+    REAL get_M(const int ind, const REAL& r) const {
+      return r*F[ind]->get_M(r+abs(Y[0]))+abs(Y[ind+1]);
     }
     
-    virtual size_t get_size() const override{
+    virtual R get_coefficient(const int ind, const tutil::n_tuple<1,size_t>& idx) const = 0;
+
+    size_t read_coefficients(const int ind){
+      return coeffs[ind].size();
+    }
+
+    virtual size_t get_size() const {
       size_t ans=1;
       for(auto& f : F)
         ans+=f->get_size();
       return ans;
     }
-
-    R get_coefficient(const tutil::n_tuple<1,size_t>& idx) const override
+    void reset_visited() const 
     {
-      int n = std::get<0>(idx);
-      tutil::n_tuple<sizeof...(Args),size_t> Zt;
-      if(coeffs.size() == 0)
-        coeffs.push_back(0);
-      while(coeffs.size() <= n){
-        REAL m=Fc->get_coefficient(Zt);
-        Fc = get_next_f(coeffs.size()+1, Fc, F);
-        if(Fc->get_size() > MAX_DAG_SIZE)
-          Fc = prune(Fc);
-        coeffs.push_back(m);
+      for(auto& f : F){
+        f->reset_visited();
       }
-      return coeffs[n];
     }
 
-    size_t read_coefficients(){
-      return coeffs.size();
+    int count_nodes() const 
+    {
+      int n=0;
+      for(auto& f : F){
+        n += f->count_nodes();
+      }
+      return n;
     }
 
-    std::string to_string() const override
+    std::string to_string(const int ind) const 
     {
       std::string ans= "IVP(";
       for(const auto& f : F){
@@ -92,6 +110,176 @@ namespace iRRAM
       }
       ans += "i = "+std::to_string(ind)+")";
       return ans;
+    }
+  };
+
+  template <class R, class... Args>
+  class IVPSOLVER_REC : public BASIC_IVPSOLVER<R,Args...>  {
+  private:
+    std::vector<std::shared_ptr<Node<R, Args...>>> F_original;
+  public:
+    IVPSOLVER_REC(const std::vector<std::shared_ptr<Node<R,Args...>>>& F, const std::vector<R>& Y)
+    {
+      this->F_original = F;
+      // Y0 is zero
+      this->Y = std::vector<R>(Y.size(), R());
+      this->coeffs = std::vector<std::vector<R>>(F.size(), std::vector<R>());
+      transpose(Y);
+    }
+    R get_coefficient(const int ind, const tutil::n_tuple<1,size_t>& idx) const override
+    {
+      int n = std::get<0>(idx);
+      if(this->coeffs[ind].size() == 0)
+        this->coeffs[ind].push_back(this->Y[ind+1]);
+
+      while(this->Fc[ind].size() <= n){
+        int i = this->Fc[ind].size();
+        this->Fc[ind].push_back(get_next_f(i+1, this->Fc[ind][i-1], this->F));
+        if(this->Fc[ind][i]->get_size() > MAX_DAG_SIZE)
+          this->Fc[ind][i] = prune(this->Fc[ind][i]);
+      }
+      while(this->coeffs[ind].size() <= n){
+        
+        REAL m=this->Fc[ind][this->coeffs[ind].size()-1]->evaluate(this->Y);
+        this->coeffs[ind].push_back(m);
+        
+      }
+      return this->coeffs[ind][n];
+    }
+
+    void transpose(const std::vector<R>& Z)
+    {
+      this->Y = Z;
+      for(auto& v : this->coeffs){
+        v.clear();
+      }
+      this->Fc.clear();
+      this->F.clear();
+      for(const auto& f : F_original){
+        auto ft = iRRAM::transpose(f, Z);
+        this->F.push_back(ft);
+        this->Fc.push_back(std::vector<std::shared_ptr<Node<R,Args...>>>{ft});
+      }
+      this->set_radius();
+    }
+  };
+
+  template <class R, class... Args>
+  class IVPSOLVER : public BASIC_IVPSOLVER<R,Args...>  {
+  public:
+    IVPSOLVER(const std::vector<std::shared_ptr<Node<R,Args...>>>& F, const std::vector<R>& Y)
+    {
+      this->F = F;
+      this->Y = Y;
+      this->coeffs = std::vector<std::vector<R>>(F.size(), std::vector<R>());
+      this->set_radius();
+      for(const auto& f : F){
+        this->Fc.push_back(std::vector<std::shared_ptr<Node<R,Args...>>>{f});
+      }
+    }
+    R get_coefficient(const int ind, const tutil::n_tuple<1,size_t>& idx) const override
+    {
+      int n = std::get<0>(idx);
+      if(this->coeffs[ind].size() == 0)
+        this->coeffs[ind].push_back(this->Y[ind+1]);
+
+      while(this->Fc[ind].size() <= n){
+        int i = this->Fc[ind].size();
+        this->Fc[ind].push_back(get_next_f(i+1, this->Fc[ind][i-1], this->F));
+        if(this->Fc[ind][i]->get_size() > MAX_DAG_SIZE)
+          this->Fc[ind][i] = prune(this->Fc[ind][i]);
+        std::cout << "("<<ind << ", " << i<<") " << std::endl;
+      }
+      while(this->coeffs[ind].size() <= n){
+        
+        REAL m=this->Fc[ind][this->coeffs[ind].size()-1]->evaluate(this->Y);
+        this->coeffs[ind].push_back(m);
+        
+      }
+      return this->coeffs[ind][n];
+    }
+
+    void transpose(const std::vector<R>& Z)
+    {
+      this->Y = Z;
+      for(auto& v : this->coeffs){
+        v.clear();
+      }
+      
+      this->set_radius();
+    }
+  };
+
+  template <class R, class... Args>
+  class IVP : public Node<R, R>{
+  private:
+    REAL r_improved, r_orig;
+    std::shared_ptr<BASIC_IVPSOLVER<R,Args...>> solver;
+    int ind;
+  public:
+    IVP(const std::shared_ptr<BASIC_IVPSOLVER<R,Args...>>& solver, const int ind):
+      solver(solver), ind(ind)
+    {
+      r_improved = solver->get_r();
+      r_orig = r_improved;
+    }
+
+    REAL get_r() const override {
+      return r_improved;
+    }
+    REAL get_M(const REAL& r) const override {
+      REAL rp = minimum(r, r_orig);
+      return solver->get_M(ind, rp);
+    }
+    
+    void improve_radius()
+    {
+      REAL q = 0.55*r_improved;
+      REAL M = get_M(r_orig);
+      // upper bound for F(q)
+      REAL ub = (abs(this->approximate(20,q)))+1;
+      //std::cout << M.as_double() << " " << ub.as_double() << std::endl;
+      REAL rp = q;
+      auto F = solver->get_F(ind);
+      while(positive(M- (ub+rp*F->get_M(rp+q)) ,-5)){
+        r_improved = q+rp;
+        rp *= 2;
+        
+      }
+    }
+
+    virtual size_t get_size() const override{
+      return solver->get_size();
+    }
+    void reset_visited() const override
+    {
+      if(this->visited){
+        solver->reset_visited();
+        this->visited = false;
+      }
+    }
+
+    int count_nodes() const override
+    {
+      if(!this->visited){
+        this->visited = true;
+        return 1+solver->count_nodes();
+      }
+      return 0;
+    }
+
+    R get_coefficient(const tutil::n_tuple<1,size_t>& idx) const override
+    {
+      return solver->get_coefficient(ind, idx);
+    }
+
+    size_t read_coefficients(){
+      return solver->read_coefficients(ind);
+    }
+
+    std::string to_string() const override
+    {
+      return solver->to_string(ind);
     }
     
     ANALYTIC_OPERATION get_type() const override
@@ -112,149 +300,51 @@ namespace iRRAM
   
 
   template <class R, class... Args>
-  std::shared_ptr<Node<R,R>> ivp_solve(const std::vector<std::shared_ptr<Node<R,Args...>>>& F, const int i)
+  std::shared_ptr<Node<R,R>> ivp_solve(const std::vector<std::shared_ptr<Node<R,Args...>>>& F,const std::vector<R>& Y, const int i)
   {
-    return std::make_shared<IVP<R, Args...>>(F, i);
+    auto solver = std::make_shared<IVPSOLVER<R,Args...>>(F, Y);
+    return std::make_shared<IVP<R, Args...>>(solver, i);
   }
 
   // solve ODE system by taylor method and evaluate at some point x
   template<class R, class... Args>
-  std::vector<R> solve_taylor(const IVPSYSTEM<R, Args...>& S, const R& max_time,  DEBUG_INFORMATION& debug)
+  std::vector<R> solve_taylor(const IVPSYSTEM<R, Args...>& S, const R& max_time, bool output,  DEBUG_INFORMATION& debug)
   {
-    single_valued code;
+    if(!output)
+      single_valued code;
     std::vector<R> Y(S.y);
-    // transposed functions
     int iter=0, order=0;
-    std::vector<std::shared_ptr<Node<R, Args...>>> Fc(S.F.size());
+
+    auto solver = std::make_shared<IVPSOLVER<R,Args...>>(S.F, Y);
     while(Y[0] < max_time){
       iter++;
-      for(int i=0; i<Fc.size(); i++){
-        // transpose function such that y(0)=0
-        Fc[i] = transpose(S.F[i], Y );
-        simplify(Fc[i]);
-      }
-
+      solver->transpose(Y);
       REAL h;
-      for(int i=0; i<Fc.size(); i++){
-        auto F = ivp_solve(Fc,i);
-        int d =-ACTUAL_STACK.actual_prec/2;
-        h=F->get_r()/d;
-        REAL max_y = Y[0];
-        REAL p = minimum(h, max_time-Y[0]);
-        Y[i+1] += F->evaluate(p);
+      for(int i=0; i<S.F.size(); i++){
+        auto F = std::make_shared<IVP<R, Args...>>(solver, i);
+        // std::cout << "r: " << F->get_r().as_double() <<std::endl;
+        // F->improve_radius();
+        // std::cout << "r improved: " << F->get_r().as_double() <<std::endl;
+        // F->improve_radius();
+        // std::cout << "r improved: " << F->get_r().as_double() <<std::endl;
+        int d =-ACTUAL_STACK.actual_prec*S.F.size()/10;
+        h=F->get_r_cached()/d;
+        //REAL p = minimum(h, max_time-Y[0]);
+        Y[i+1] = F->evaluate_root(h);
         order = max(order, std::dynamic_pointer_cast<IVP<R,Args...>>(F)->read_coefficients());
       }
       Y[0] += h;
-
-      std::cout <<iter << " " << Y[0].as_double() <<" " << Y[1].as_double()<< "\n";
+      if(output){
+        iRRAM::cout <<iter;
+        for(auto y : Y)
+          iRRAM::cout << " " << y;
+        iRRAM::cout << std::endl;
+        
+      }
     }
     debug.steps = iter;
     debug.order = order;
     return  Y;
-  }
-
-
-  template<class R, class... Args>
-  bool taylor_step(const int order, const std::vector<std::shared_ptr<Node<R, Args...>>>& F, const REAL& max_time, std::vector<R>& Y)
-  {
-    std::vector<std::shared_ptr<Node<R, Args...>>> Fc(F);
-    std::vector<std::shared_ptr<Node<R, Args...>>> Fco(F);
-
-    // zero vector
-    std::vector<R> Z(sizeof...(Args));
-    tutil::n_tuple<sizeof...(Args),size_t> Zt;
-    REAL radius = 1;
-    REAL M = F[0]->get_M(1);
-    for(const auto& f : F){
-      M = maximum(M, f->get_M(1));
-    }
-  
-
-    for(int i=0; i<Fc.size(); i++){
-      // transpose function such that y(0)=0
-      Fc[i] = transpose(F[i], Y );
-      simplify(Fc[i]);
-      Fco[i] = transpose(F[i], Y );
-      simplify(Fco[i]);
-    }
-    REAL error;
-    sizetype trunc_error;
-    bool stop=false;
-    
-    std::vector<REAL> ny(Y);
-    
-    auto coefficients = std::vector<std::vector<R>>(F.size(), std::vector<R>(order+1));
-    for(int i=1; i<=order; i++){
-      //std::cout << i << std::endl;
-      for(int j=0; j<F.size(); j++){
-        REAL m=Fc[j]->get_coefficient(Zt);
-        // std::cout << "getting coeff end" << std::endl;
-        //if(i % 5 == 0) Fc[j] = prune(Fc[j]);
-         // std::cout << Fc[j]->to_string() << std::endl;
-         //  std::cout << std::endl;
-         //  std::cout << std::endl;
-        Fc[j] = get_next_f(i+1, Fc[j], Fco);
-        // std::cout << std::endl;
-        coefficients[j][i] = m;
-      }
-    }
-    REAL h = minimum(0.99*radius/M, 0.99*max_time);
-    do{
-      error = 0;
-      h /=2;
-      for(int j=0; j<F.size(); j++){
-        //std::cout << Fc[j]->get_r().as_double() << "::" << Fc[j]->get_M(h).as_double()<< "\n";
-        error = maximum(error, Fc[j]->get_M(h)*power(h,order+1));
-      }
-      trunc_error = real_to_error(error);
-    } while ( 
-      (trunc_error.exponent >= ACTUAL_STACK.actual_prec ) );
-    ny[0] = Y[0]+h;
-    h = minimum(max_time-Y[0],h);
-
-    REAL hpow = 1;
-
-    for(int i=1; i<=order; i++){
-      error = 0;
-      hpow *= h;
-      for(int j=0; j<F.size(); j++){
-        ny[j+1] += coefficients[j][i]*hpow;
-      }
-    }
-
-    Y[0] = ny[0];
-    
-    for(int i=1; i<Y.size(); i++){
-      sizetype local_error, total_error;
-      Y[i] = ny[i];
-      Y[i].geterror(local_error);
-      sizetype_add(total_error, local_error, trunc_error);
-      Y[i].seterror(total_error);
-    }
-    
-    //if(Y[0] > max_time) return true;
-    
-    return stop;
-  }
-
-  template<class R, class... Args>
-  std::vector<R> solve_taylor_deriv(const IVPSYSTEM<R, Args...>& S, const R& max_time, DEBUG_INFORMATION& debug)
-  {
-    single_valued code;
-    std::vector<REAL> Y(S.y);
-    int iter=0;
-    int order=max(60,-ACTUAL_STACK.actual_prec/3);
-    while(Y[0] < max_time){
-      taylor_step(order, S.F, max_time, Y);
-      ++iter;
-      //std::cout <<iter << " " << Y[0].as_double() <<" " << Y[1].as_double()<< "\n";
-      
-      // std::cout << "error:" << Y[1].error.mantissa << "&"<<Y[1].error.exponent << std::endl;
-      
-    }
-    debug.steps = iter;
-    debug.order = order;
-    return Y;
   }
 
 

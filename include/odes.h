@@ -29,18 +29,12 @@ REAL A2_max(const REAL& r)
 
 IVPSYSTEM<REAL, REAL, REAL> A2_SYSTEM()
 {
-
   auto y = variable_symbol<2,1>();
   auto A2_analytic = -REAL(1)/REAL(2)*y*y*y;
-  //A2_analytic = A2_analytic->simplify();
-  //std::dynamic_pointer_cast<POLYNOMIAL<2,REAL>>(A2_analytic)->set_rM(10);
-  //auto A2_analytic = real_analytic<2>::make(std::function<REAL(unsigned long, unsigned long)>(A2_series),A2_max(r),r);
-  //std::static_pointer_cast<ANALYTIC<REAL, REAL, REAL>>(A2_analytic)->add_algorithm(A2_fun);
   IVPSYSTEM<REAL, REAL, REAL> A2_IVP;
   A2_IVP.F = {A2_analytic};
   A2_IVP.y = {0, 1};
   return A2_IVP;
-
 
 }
 
@@ -509,6 +503,53 @@ IVPSYSTEM<REAL, REAL, REAL, REAL> B1_SYSTEM()
 // return 5*(1-y1*y1)*y2-y1;
 // }
 
+IVPSYSTEM<REAL,REAL, REAL, REAL> E2_SYSTEM()
+{
+  auto t = variable_symbol<3,0>();
+  auto y1 = variable_symbol<3,1>();
+  auto y2 = variable_symbol<3,2>();
+  auto f1 = y2;
+  auto f2 = REAL(1000)*((REAL(1)-y1*y1)*y2-y1);
+  
+  IVPSYSTEM<REAL, REAL, REAL, REAL> IVP;
+  IVP.F = {f1,f2};
+  IVP.y = {0, 1.2, -0.6};
+  return IVP;
+}
+// some other test systems
+
+
+IVPSYSTEM<REAL, REAL, REAL> SINCOS_SYSTEM()
+{
+  auto t = variable_symbol<2,0>();
+  auto y = variable_symbol<2,1>();
+  auto analytic = prune(sin(t)*cos(y));
+  IVPSYSTEM<REAL, REAL, REAL> IVP;
+  IVP.F = {analytic};
+  IVP.y = {0, 0};
+  return IVP;
+
+}
+
+IVPSYSTEM<REAL, REAL, REAL, REAL, REAL, REAL, REAL> SINCOS_POLY_SYSTEM()
+{
+  auto t = variable_symbol<6,0>();
+  auto y = variable_symbol<6,1>();
+  auto u = variable_symbol<6,2>(); //sin(t)
+  auto v = variable_symbol<6,3>(); //cos(y)
+  auto w = variable_symbol<6,4>(); // cos(t)
+  auto z = variable_symbol<6,5>(); // sin(y)
+  auto yp = u*v;
+  auto up = w;
+  auto wp = REAL(-1)*u;
+  auto vp = REAL(-1)*u*v*z;
+  auto zp = u*v*v;
+  IVPSYSTEM<REAL, REAL, REAL,REAL, REAL, REAL, REAL> IVP;
+  IVP.F = {yp, up,vp,wp,zp};
+  IVP.y = {0,0,0,1,1,0};
+  return IVP;
+
+}
 
 #endif /* ODES_H */
 

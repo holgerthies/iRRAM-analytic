@@ -509,7 +509,7 @@ IVPSYSTEM<REAL,REAL, REAL, REAL> E2_SYSTEM()
   auto y1 = variable_symbol<3,1>();
   auto y2 = variable_symbol<3,2>();
   auto f1 = y2;
-  auto f2 = REAL(1000)*((REAL(1)-y1*y1)*y2-y1);
+  auto f2 = REAL(100)*((REAL(1)-y1*y1)*y2-y1);
   
   IVPSYSTEM<REAL, REAL, REAL, REAL> IVP;
   IVP.F = {f1,f2};

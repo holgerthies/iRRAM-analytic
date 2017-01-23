@@ -29,37 +29,118 @@ namespace iRRAM
 
   template <class R, class... Args>
   class BASIC_IVPSOLVER {
+  private:
+    REAL partial_sum(const int i, const REAL& x, const int m)
+    {
+      REAL ans = 0;
+      REAL x_pow = 1;
+      for(int k=0; k<m; k++){
+        ans += this->get_coefficient(i, std::make_tuple<size_t>(k))*x_pow;
+        x_pow *= x;
+      }
+      return ans;
+    }
+
+    REAL enclose(const int i, const REAL& r, const REAL& enc) const
+    {
+      const int order = 40;
+      REAL r_pow = r;
+      REAL M = this->get_coefficient(i, 0);
+      for(int k=1; k<order; k++){
+        M += this->get_coefficient(i, std::make_tuple<size_t>(k))*r_pow;
+        r_pow *= r;
+      }
+      M = abs(M) + r_pow*this->get_f(i,order)->get_M(enc);
+      return M;
+    }
+
   protected:
     std::vector<std::shared_ptr<Node<R, Args...>>> F;
     std::vector<R> Y;
     mutable std::vector<std::vector<std::shared_ptr<Node<R, Args...>>>> Fc;
     mutable std::vector<std::vector<R>> coeffs;
     int ind;
-    REAL first_radius, radius;
+    REAL q, radius;
   public:
 
     void set_radius()
     {
-      REAL min_r = 1;
+      REAL min_r = 1000000;
       // get minimum r for all functions
+      int index = 0;
+      REAL M=0;
+      REAL new_r = 1;
       for(const auto& f : F){
-        min_r = minimum(min_r, f->get_r_cached());
-      }
-
-      REAL new_r = 0;
-      radius = -1;
-      while(positive(new_r-radius,-5)){
-        REAL M =0;
-        int i=0;
-        for(const auto& f : F){
-          i++;
-          M = maximum(M, f->get_M(min_r+abs(Y[0])));
+        index++;
+        if(positive(abs(Y[index])+1-f->get_r_cached(), 1)){
+          std::cout << "Warning: radius of F might be too small to continue" << std::endl;
         }
-        radius = new_r;
-        new_r = min_r/M;
-        //std::cout << new_r.as_double() << "> " << min_r.as_double() << " < " << M.as_double() << std::endl;
-        min_r /= 2;
+        min_r = minimum(min_r, f->get_r_cached());
+        q = maximum(q, abs(Y[index])+1);
       }
+      radius = q;
+      for(int i=0; i<F.size(); i++)
+      {
+        REAL ri = q;
+        REAL enc = enclose(i, ri, q);
+        while(positive(enc-q, -1)){
+          ri /= 2;
+          enc = enclose(i, ri, q);
+        }
+        radius = minimum(radius, ri);
+      }
+      // REAL enc = 0;
+      //   int i= 0;
+      //   for(const auto& f : F){
+      //     REAL currM = 0;
+      //     currM = this->get_coefficient(i, 0);
+      //     REAL new_r_pow = new_r;
+      //     for(int k=1; k<order; k++){
+      //       currM += this->get_coefficient(i, std::make_tuple<size_t>(k))*new_r_pow;
+      //       new_r_pow *= new_r;
+      //     }
+      //     std::cout << M.as_double()<<  " M_enc: " << this->get_f(i,order)->get_M(M).as_double()  << std::endl;
+          
+      //     currM = abs(currM) + new_r_pow*this->get_f(i,order)->get_M(M);
+      //     enc = maximum(enc, currM);
+      //     i++;
+      //   }
+      // while(positive(enc-M, -5)){
+      //   std::cout << new_r.as_double() << "> " << enc.as_double() << " < " << M.as_double() <<  std::endl;
+      //   new_r *= new_r;
+      //   M = enc;
+      //   REAL new_enc = 0;
+      //   int i= 0;
+      //   for(const auto& f : F){
+      //     REAL currM = 0;
+      //     currM = this->get_coefficient(i, 0);
+      //     REAL new_r_pow = new_r;
+      //     for(int k=1; k<order; k++){
+      //       currM += this->get_coefficient(i, std::make_tuple<size_t>(k))*new_r_pow;
+      //       new_r_pow *= new_r;
+      //     }
+      //     currM = abs(currM) + new_r_pow*this->get_f(i,order)->get_M(enc);
+      //     new_enc = maximum(new_enc, currM);
+      //     i++;
+      //   }
+      //   enc = new_enc;
+      // }
+
+      
+      //std::cout << new_r.as_double() << "> " << min_r.as_double() << " < " << M.as_double() << std::endl;
+      // radius = -1;
+      // while(positive(new_r-radius,-5)){
+      //   REAL M =0;
+      //   int i=0;
+      //   for(const auto& f : F){
+      //     i++;
+      //     M = maximum(M, f->get_M(min_r+abs(Y[0])));
+      //   }
+      //   radius = new_r;
+      //   new_r = minimum(min_r, min_r/M);
+      //   //std::cout << new_r.as_double() << "> " << min_r.as_double() << " < " << M.as_double() << std::endl;
+      //   min_r /= 2;
+      // }
     }
 
     auto get_F(const int index) -> decltype(F[0])
@@ -71,10 +152,11 @@ namespace iRRAM
       return radius;
     }
     REAL get_M(const int ind, const REAL& r) const {
-      return r*F[ind]->get_M(r+abs(Y[0]))+abs(Y[ind+1]);
+      return enclose(ind, r,q );
     }
     
     virtual R get_coefficient(const int ind, const tutil::n_tuple<1,size_t>& idx) const = 0;
+    virtual std::shared_ptr<Node<R, Args...>> get_f(const int ind, const int n) const = 0;
 
     size_t read_coefficients(const int ind){
       return coeffs[ind].size();
@@ -113,56 +195,6 @@ namespace iRRAM
     }
   };
 
-  template <class R, class... Args>
-  class IVPSOLVER_REC : public BASIC_IVPSOLVER<R,Args...>  {
-  private:
-    std::vector<std::shared_ptr<Node<R, Args...>>> F_original;
-  public:
-    IVPSOLVER_REC(const std::vector<std::shared_ptr<Node<R,Args...>>>& F, const std::vector<R>& Y)
-    {
-      this->F_original = F;
-      // Y0 is zero
-      this->Y = std::vector<R>(Y.size(), R());
-      this->coeffs = std::vector<std::vector<R>>(F.size(), std::vector<R>());
-      transpose(Y);
-    }
-    R get_coefficient(const int ind, const tutil::n_tuple<1,size_t>& idx) const override
-    {
-      int n = std::get<0>(idx);
-      if(this->coeffs[ind].size() == 0)
-        this->coeffs[ind].push_back(this->Y[ind+1]);
-
-      while(this->Fc[ind].size() <= n){
-        int i = this->Fc[ind].size();
-        this->Fc[ind].push_back(get_next_f(i+1, this->Fc[ind][i-1], this->F));
-        if(this->Fc[ind][i]->get_size() > MAX_DAG_SIZE)
-          this->Fc[ind][i] = prune(this->Fc[ind][i]);
-      }
-      while(this->coeffs[ind].size() <= n){
-        
-        REAL m=this->Fc[ind][this->coeffs[ind].size()-1]->evaluate(this->Y);
-        this->coeffs[ind].push_back(m);
-        
-      }
-      return this->coeffs[ind][n];
-    }
-
-    void transpose(const std::vector<R>& Z)
-    {
-      this->Y = Z;
-      for(auto& v : this->coeffs){
-        v.clear();
-      }
-      this->Fc.clear();
-      this->F.clear();
-      for(const auto& f : F_original){
-        auto ft = iRRAM::transpose(f, Z);
-        this->F.push_back(ft);
-        this->Fc.push_back(std::vector<std::shared_ptr<Node<R,Args...>>>{ft});
-      }
-      this->set_radius();
-    }
-  };
 
   template <class R, class... Args>
   class IVPSOLVER : public BASIC_IVPSOLVER<R,Args...>  {
@@ -172,17 +204,14 @@ namespace iRRAM
       this->F = F;
       this->Y = Y;
       this->coeffs = std::vector<std::vector<R>>(F.size(), std::vector<R>());
-      this->set_radius();
       for(const auto& f : F){
         this->Fc.push_back(std::vector<std::shared_ptr<Node<R,Args...>>>{f});
       }
+      this->set_radius();
     }
-    R get_coefficient(const int ind, const tutil::n_tuple<1,size_t>& idx) const override
-    {
-      int n = std::get<0>(idx);
-      if(this->coeffs[ind].size() == 0)
-        this->coeffs[ind].push_back(this->Y[ind+1]);
 
+    std::shared_ptr<Node<R, Args...>> get_f(const int ind, const int n) const override
+    {
       while(this->Fc[ind].size() <= n){
         int i = this->Fc[ind].size();
         this->Fc[ind].push_back(get_next_f(i+1, this->Fc[ind][i-1], this->F));
@@ -190,9 +219,17 @@ namespace iRRAM
           this->Fc[ind][i] = prune(this->Fc[ind][i]);
         std::cout << "("<<ind << ", " << i<<") " << std::endl;
       }
+      return this->Fc[ind][n];
+    }
+
+    R get_coefficient(const int ind, const tutil::n_tuple<1,size_t>& idx) const override
+    {
+      int n = std::get<0>(idx);
+      if(this->coeffs[ind].size() == 0)
+        this->coeffs[ind].push_back(this->Y[ind+1]);
+
       while(this->coeffs[ind].size() <= n){
-        
-        REAL m=this->Fc[ind][this->coeffs[ind].size()-1]->evaluate(this->Y);
+        REAL m=this->get_f(ind, this->coeffs[ind].size()-1)->evaluate(this->Y);
         this->coeffs[ind].push_back(m);
         
       }

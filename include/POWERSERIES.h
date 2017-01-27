@@ -124,6 +124,7 @@ namespace iRRAM{
       // copy constructor
       POWERSERIES(const POWERSERIES& pwr) {
 	// do not copy cache
+        this->cache = pwr.cache;
 	this->f = pwr.f;
       }
       // constructor from function N^n -> T
@@ -165,6 +166,7 @@ namespace iRRAM{
 	return make_recursive<n,T>(pwr_fun);
       };
       this->f = sq_ptr(new seq(sq_fun));
+      
     }
 
 

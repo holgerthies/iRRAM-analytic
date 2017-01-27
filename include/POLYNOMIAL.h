@@ -115,7 +115,7 @@ namespace iRRAM
       std::vector<coeff_type> coefficients;
       REAL M, r;
     public:
-      POLY() : Node<T,Ts...>() {};// = default;
+      POLY() : Node<T,Ts...>() {max_degree=0;};// = default;
       POLY(const std::vector<coeff_type>& coeffs) : Node<T,Ts...>(), coefficients(coeffs) {
         r=100;
        max_degree = get_degree();
@@ -520,6 +520,13 @@ namespace iRRAM
     static_assert(m < n, "variable symbol exceeds number of variables.");
     return std::make_shared<POLYNOMIAL<n,REAL>>(variable_symbol_helper<n,m>::get());
   }
+
+  template<size_t n>
+  std::shared_ptr<typename node_type<n>::type> constant_one()
+  {
+    return std::make_shared<POLYNOMIAL<n,REAL>>(REAL(1) +  POLYNOMIAL<n,REAL>());
+  }
+  
 }
 
 #endif

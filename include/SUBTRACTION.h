@@ -18,7 +18,7 @@ namespace iRRAM
     };
 
     REAL get_M(const REAL& r) const override {
-      return this->lhs->get_M(r)+this->rhs->get_M(r);
+      return this->lhs->get_M_cached(r)+this->rhs->get_M_cached(r);
     };
 
     R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override

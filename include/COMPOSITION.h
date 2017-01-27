@@ -76,7 +76,7 @@ namespace iRRAM
 
     REAL get_r() const override {
       REAL r = rhs->get_r_cached();
-      while(!positive(lhs->get_r_cached()-rhs->get_M(r), 10)){
+      while(!positive(lhs->get_r_cached()-rhs->get_M_root(r), -10)){
         r /= 2;
       }
       
@@ -84,7 +84,7 @@ namespace iRRAM
     }
     
     REAL get_M(const REAL& r) const override {
-      return lhs->get_M(rhs->get_M(r));
+      return lhs->get_M_root(rhs->get_M_cached(r));
     }
 
     std::string to_string() const override

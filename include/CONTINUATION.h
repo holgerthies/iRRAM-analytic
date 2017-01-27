@@ -237,7 +237,7 @@ namespace iRRAM
 
     R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override
     {
-      return evaluator.evaluate(this->node->pwr, 2*max_x, this->node->get_M(2*max_x), idx );
+      return evaluator.evaluate(this->node->pwr, 2*max_x, this->node->get_M_root(2*max_x), idx );
     }
 
     ANALYTIC_OPERATION get_type() const override
@@ -303,14 +303,14 @@ namespace iRRAM
     };
 
     REAL get_M(const REAL& r) const override {
-      return node->get_M(r+max_x);
+      return node->get_M_root(r+max_x);
     };
 
     R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override
     {
       
       REAL r = minimum(0.9*this->node->get_r_cached(), maximum(max_x+1, 2*max_x));
-      REAL M =node->get_M(r);
+      REAL M =node->get_M_root(r);
       
       return evaluator.evaluate(this->node->get_pwr(), r, M, idx );
     }

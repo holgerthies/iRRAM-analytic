@@ -25,12 +25,19 @@ void check(REAL x1, REAL y10, int prec)
 }
 
 template<class T>
-REAL solve(const T& system, const REAL& x, const bool out, DEBUG_INFORMATION& d )
+REAL solve(const T& system, const REAL& x, const int method, const int solver, const bool out, DEBUG_INFORMATION& d )
 {
   
-  decltype(solve_taylor(system, x,out, d)) sols;
-  sols = solve_taylor(system,x,out, d);
-  return sols[1];
+  decltype(ivp_solve_cs(system, x,out,0, d)) sols;
+  if(method == 1)
+    sols = ivp_solve_cs(system,x,out,solver, d);
+  if(method == 2)
+    sols = ivp_solve_co(system,x,25, out, d);
+  if(method == 3)
+    sols = ivp_solve_co(system,x,50, out, d);
+  if(method == 4)
+    sols = ivp_solve_mixed(system,x, out, d);
+  return sols[0];
 }
 
 
@@ -38,11 +45,11 @@ void compute(){
   DEBUG_INFORMATION d;
   static int iteration_counter = 0;
 
-  vector<decltype(A2_SYSTEM())> systems_1d = {A2_SYSTEM(), A3_SYSTEM(), A5_SYSTEM(), SINCOS_SYSTEM()};
-  vector<decltype(B1_SYSTEM())> systems_2d = {B1_SYSTEM(), E2_SYSTEM()};
+  vector<decltype(A2_SYSTEM())> systems_1d = {A2_SYSTEM()};//, A3_SYSTEM(), A5_SYSTEM(), SINCOS_SYSTEM()};
+  vector<decltype(A3_SYSTEM())> systems_2d = {A3_SYSTEM(), E2_SYSTEM()};
   vector<decltype(SINCOS_POLY_SYSTEM())> systems_6d = {SINCOS_POLY_SYSTEM()};
   
-  int dimension=0, system,max_iter,prec;
+  int dimension=0, system,max_iter,prec,method,solver_type;
   struct rusage usage;
   struct timeval start, end;
   
@@ -57,6 +64,12 @@ void compute(){
   iRRAM::cout << "choose system" << std::endl;
   iRRAM::cin >>  system;
   
+  iRRAM::cout << "choose solver method" << std::endl;
+  iRRAM::cin >>  solver_type;
+
+  iRRAM::cout << "choose step size method" << std::endl;
+  iRRAM::cin >>  method;
+
   REAL x;
   iRRAM::cout << "choose x" << std::endl;
   iRRAM::cin >>  x;
@@ -82,12 +95,12 @@ void compute(){
   REAL sol;
   
   if(dimension == 1){
-    sol = solve(systems_1d[system],x,out,  d);
+    sol = solve(systems_1d[system],x, method,solver_type, out,  d);
   }
   if(dimension == 2)
-    sol = solve(systems_2d[system],x,out,  d);
+    sol = solve(systems_2d[system],x, method,solver_type, out,  d);
   if(dimension == 6)
-    sol = solve(systems_6d[system],x,out,  d);
+    sol = solve(systems_6d[system],x, method,solver_type, out,  d);
   sizetype error;
   sol.geterror(error);
   getrusage(RUSAGE_SELF, &usage);

@@ -27,13 +27,14 @@ REAL A2_max(const REAL& r)
   return power(r,3)/2;
 }
 
-IVPSYSTEM<REAL, REAL, REAL> A2_SYSTEM()
+IVPSYSTEM<REAL, REAL> A2_SYSTEM()
 {
-  auto y = variable_symbol<2,1>();
+  auto y = variable_symbol<1,0>();
   auto A2_analytic = -REAL(1)/REAL(2)*y*y*y;
-  IVPSYSTEM<REAL, REAL, REAL> A2_IVP;
+  IVPSYSTEM<REAL, REAL> A2_IVP;
   A2_IVP.F = {A2_analytic};
-  A2_IVP.y = {0, 1};
+  A2_IVP.t0 = 0;
+  A2_IVP.y = {1};
   return A2_IVP;
 
 }
@@ -69,12 +70,15 @@ REAL A2_sol(const REAL& t)
 
 IVPSYSTEM<REAL, REAL, REAL> A3_SYSTEM()
 {
-  auto t = variable_symbol<2,0>();
-  auto y = variable_symbol<2,1>();
-  auto A3_analytic = y*cos(t);
+  auto y = variable_symbol<2,0>();
+  auto t = variable_symbol<2,1>();
+  auto A3_analytic = (y*cos(t));
+  auto c1 = constant_one<2>();
+  
   IVPSYSTEM<REAL, REAL, REAL> A3_IVP;
-  A3_IVP.F = {A3_analytic};
-  A3_IVP.y = {0, 1};
+  A3_IVP.F = {A3_analytic, c1};
+  A3_IVP.t0 = 0;
+  A3_IVP.y = {1, 0};
   return A3_IVP;
 }
 
@@ -106,12 +110,14 @@ REAL A3_sol(const REAL& t)
 
 IVPSYSTEM<REAL, REAL, REAL> A5_SYSTEM()
 {
-  auto t = variable_symbol<2,0>();
-  auto y = variable_symbol<2,1>();
+  auto y = variable_symbol<2,0>();
+  auto t = variable_symbol<2,1>();
   auto A5_analytic = (y-t+REAL(4))/(y+t+REAL(4));
   simplify(A5_analytic);
+  auto c1 = constant_one<2>();
   IVPSYSTEM<REAL, REAL, REAL> A5_IVP;
-  A5_IVP.F = {A5_analytic};
+  A5_IVP.F = {A5_analytic, c1};
+  A5_IVP.t0 = 0;
   A5_IVP.y = {0, 0};
   return A5_IVP;
 }
@@ -154,20 +160,20 @@ IVPSYSTEM<REAL, REAL, REAL> A5_SYSTEM()
 //   return 0;
 // }
 
-IVPSYSTEM<REAL, REAL, REAL, REAL> B1_SYSTEM()
-{
-  auto t = variable_symbol<3,0>();
-  auto y1 = variable_symbol<3,1>();
-  auto y2 = variable_symbol<3,2>();
-  auto B1_analytic1 = REAL(2)*(y1-y1*y2);
-  simplify(B1_analytic1);
-  auto B1_analytic2 = y1*y2-y2;
-  simplify(B1_analytic2);
-  IVPSYSTEM<REAL, REAL, REAL,REAL> B1_IVP;
-  B1_IVP.F = {B1_analytic1, B1_analytic2};
-  B1_IVP.y = {0, 1, 3};
-  return B1_IVP;
-}
+// IVPSYSTEM<REAL, REAL, REAL, REAL> B1_SYSTEM()
+// {
+//   auto t = variable_symbol<3,0>();
+//   auto y1 = variable_symbol<3,1>();
+//   auto y2 = variable_symbol<3,2>();
+//   auto B1_analytic1 = REAL(2)*(y1-y1*y2);
+//   simplify(B1_analytic1);
+//   auto B1_analytic2 = y1*y2-y2;
+//   simplify(B1_analytic2);
+//   IVPSYSTEM<REAL, REAL, REAL,REAL> B1_IVP;
+//   B1_IVP.F = {B1_analytic1, B1_analytic2};
+//   B1_IVP.y = {0, 1, 3};
+//   return B1_IVP;
+// }
 
 // // Problem B3
 // // a nonlinear chemical reaction
@@ -503,17 +509,18 @@ IVPSYSTEM<REAL, REAL, REAL, REAL> B1_SYSTEM()
 // return 5*(1-y1*y1)*y2-y1;
 // }
 
-IVPSYSTEM<REAL,REAL, REAL, REAL> E2_SYSTEM()
+IVPSYSTEM<REAL, REAL, REAL> E2_SYSTEM()
 {
-  auto t = variable_symbol<3,0>();
-  auto y1 = variable_symbol<3,1>();
-  auto y2 = variable_symbol<3,2>();
+  auto y1 = variable_symbol<2,0>();
+  auto y2 = variable_symbol<2,1>();
   auto f1 = y2;
   auto f2 = REAL(100)*((REAL(1)-y1*y1)*y2-y1);
+  simplify(f2);
   
-  IVPSYSTEM<REAL, REAL, REAL, REAL> IVP;
+  IVPSYSTEM<REAL, REAL, REAL> IVP;
   IVP.F = {f1,f2};
-  IVP.y = {0, 1.2, -0.6};
+  IVP.t0 = 0;
+  IVP.y = {1.2, -0.6};
   return IVP;
 }
 // some other test systems
@@ -521,11 +528,13 @@ IVPSYSTEM<REAL,REAL, REAL, REAL> E2_SYSTEM()
 
 IVPSYSTEM<REAL, REAL, REAL> SINCOS_SYSTEM()
 {
-  auto t = variable_symbol<2,0>();
-  auto y = variable_symbol<2,1>();
+  auto y = variable_symbol<2,0>();
+  auto t = variable_symbol<2,1>();
   auto analytic = prune(sin(t)*cos(y));
+  auto c1 = constant_one<2>();
   IVPSYSTEM<REAL, REAL, REAL> IVP;
-  IVP.F = {analytic};
+  IVP.F = {analytic, c1};
+  IVP.t0 = 0;
   IVP.y = {0, 0};
   return IVP;
 
@@ -539,13 +548,15 @@ IVPSYSTEM<REAL, REAL, REAL, REAL, REAL, REAL, REAL> SINCOS_POLY_SYSTEM()
   auto v = variable_symbol<6,3>(); //cos(y)
   auto w = variable_symbol<6,4>(); // cos(t)
   auto z = variable_symbol<6,5>(); // sin(y)
+  auto c1 = constant_one<6>();
   auto yp = u*v;
   auto up = w;
   auto wp = REAL(-1)*u;
   auto vp = REAL(-1)*u*v*z;
   auto zp = u*v*v;
   IVPSYSTEM<REAL, REAL, REAL,REAL, REAL, REAL, REAL> IVP;
-  IVP.F = {yp, up,vp,wp,zp};
+  IVP.F = {c1,yp, up,vp,wp,zp};
+  IVP.t0 = 0;
   IVP.y = {0,0,0,1,1,0};
   return IVP;
 

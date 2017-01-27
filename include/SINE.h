@@ -18,7 +18,7 @@ namespace iRRAM
 
     REAL get_r() const override
     {
-      return 1000;
+      return 100;
     }
 
     REAL get_M(const REAL& r) const override
@@ -55,7 +55,7 @@ namespace iRRAM
 
     REAL get_r() const override
     {
-      return 1000;
+      return 100;
     }
 
     REAL get_M(const REAL& r) const override

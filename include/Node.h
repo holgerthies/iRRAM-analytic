@@ -16,7 +16,9 @@ namespace iRRAM
     template <class R, typename... Args>
   class Node;
   template<class R, class... Args>
-  R evaluate_pwr(const std::shared_ptr<const Node<R,Args...>>& f,const unsigned int max_coeffs, const Args&... xs);
+  R evaluate_pwr(const std::shared_ptr<const Node<R,Args...>>& f, const Args&... xs);
+  template<class R, class... Args>
+  R approximate_pwr(const std::shared_ptr<const Node<R,Args...>>& f,const unsigned int num_coeffs, const Args&... xs);
 
   template<class... Args>
   REAL real_max(const REAL& x, const Args&... args)
@@ -39,23 +41,25 @@ namespace iRRAM
     mutable pwr_series_ptr pwr;
     mutable R r;
     mutable bool r_set;
+    mutable R M_cache;
+    
   protected:
-    mutable bool visited; // helper for recursive evaluation
     mutable R evaluation_cache;
   public:
+    mutable bool visited; // helper for recursive evaluation
     Node() : r_set(false), visited(false)
     {
     }
 
     virtual R evaluate(const Args&... args) const {
       auto sp = this->shared_from_this();
-      return evaluate_pwr(sp,0, args...);
+      return evaluate_pwr(sp, args...);
     }
 
-    R approximate(const unsigned int max_coeffs,const Args&... args) const
+    R approximate(const unsigned int num_coeffs,const Args&... args) const
     {
       auto sp = this->shared_from_this();
-      return evaluate_pwr(sp,max_coeffs, args...);
+      return approximate_pwr(sp,num_coeffs, args...);
     }
 
     virtual ~Node() = default;
@@ -95,9 +99,28 @@ namespace iRRAM
       }
       return evaluation_cache;
     }
+
+    R get_M_cached(const REAL& r) const
+    {
+      if(!visited){
+        visited = true;
+        M_cache = get_M(r);
+      }
+      return M_cache;
+    }
+
     R evaluate_root(const Args&... args) const
     {
+      reset_visited();
       auto ans = evaluate_cached(args...);
+      reset_visited();
+      return ans;
+    }
+
+    R get_M_root(const REAL& r) const
+    {
+      reset_visited();
+      auto ans = get_M_cached(r);
       reset_visited();
       return ans;
     }
@@ -120,6 +143,11 @@ namespace iRRAM
       return PWRSERIES_IMPL::get_coeff<sizeof...(Args), R>(*get_pwr(), t);
     }
 
+    R get_zero_coefficient() const
+    {
+      return PWRSERIES_IMPL::constant_coefficient<sizeof...(Args), R>(get_pwr());
+    }
+
     REAL get_r_cached() const 
     {
       if(!r_set)
@@ -135,6 +163,7 @@ namespace iRRAM
 
     int node_number() 
     {
+      reset_visited();
       int n = count_nodes();
       reset_visited();
       return n;
@@ -221,6 +250,7 @@ namespace iRRAM
     {
       if(!this->visited){
         this->visited = true;
+        
         int n=1+node->count_nodes();
         return n;
       }

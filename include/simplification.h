@@ -22,9 +22,9 @@ namespace iRRAM{
 
     REAL get_M(const REAL& r) const override
     {
-      return node->get_M(r);
+      return node->get_M_cached(r);
     }
-
+    
     R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override
     {
       return node->get_coefficient_cached(idx);
@@ -483,6 +483,10 @@ namespace iRRAM{
   template<class R, class... Args>
   bool simplify_step(std::shared_ptr<Node<R, Args...>>& f)
   {
+    if(f->visited){
+      return false;
+    }
+    f->visited = true;
     switch(f->get_type()){
     case ANALYTIC_OPERATION::ADDITION:
         return simplify_addition(f);
@@ -510,7 +514,12 @@ namespace iRRAM{
   template<class R, class... Args>
   void simplify(std::shared_ptr<Node<R, Args...>>& f)
   {
-    while(simplify_step(f)) ;
+    int counter = 0;
+    while(simplify_step(f)){
+      ++counter;
+      f->reset_visited();
+    }
+    f->reset_visited();
   }
 
   template<class R, class... Args>

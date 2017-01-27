@@ -47,7 +47,7 @@ namespace iRRAM
       auto f = node->to_analytic();
       std::shared_ptr<SERIES_OPERATOR<sizeof...(Args), R>> exponentiation= std::make_shared<SERIES_COMPOSITION<sizeof...(Args), R>>(exppwr, f->get_series());
       REAL r = f->get_r();
-      REAL M = power(euler(), f->get_M());
+      REAL M = power(euler(), f->get_M_root());
       return std::make_shared<ANALYTIC<R, Args...>>(get_series(exponentiation), M, r);
     }
 

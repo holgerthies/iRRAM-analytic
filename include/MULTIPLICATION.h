@@ -61,7 +61,7 @@ namespace iRRAM
     };
 
     REAL get_M(const REAL& r) const override {
-      return this->lhs->get_M(r)*this->rhs->get_M(r);
+      return this->lhs->get_M_cached(r)*this->rhs->get_M_cached(r);
     };
 
     R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override
@@ -87,7 +87,7 @@ namespace iRRAM
   public:
     R evaluate(const Args&... args) const override
     {
-      return this->scalar*this->node->evaluate(args...);
+      return this->scalar*this->node->evaluate_cached(args...);
     }
     
     virtual std::string to_string() const override
@@ -99,7 +99,8 @@ namespace iRRAM
       return this->node->get_r_cached();
     };
     REAL get_M(const REAL& r) const override {
-      return this->node->get_M(r)*abs(this->scalar);
+      
+      return this->node->get_M_cached(r)*abs(this->scalar);
     };
 
     R get_coefficient(const tutil::n_tuple<sizeof...(Args),size_t>& idx) const override

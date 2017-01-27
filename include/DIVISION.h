@@ -129,7 +129,7 @@ namespace iRRAM
         REAL lowerbound=-1;// lower bound for the function
         while(!positive(lowerbound, -10)){
           r /= 2;
-          lowerbound = abs(f0)-grad->get_M(r)*r;
+          lowerbound = abs(f0)-grad->get_M_root(r)*r;
         }
       } 
       return r;
@@ -161,7 +161,7 @@ namespace iRRAM
 
     REAL get_M(const REAL& r) const override {
       get_r();
-      REAL lowerbound = abs(f0)-grad->get_M(r)*r;
+      REAL lowerbound = abs(f0)-grad->get_M_cached(r)*r;
       return 1/lowerbound;
     }
 
@@ -217,7 +217,7 @@ namespace iRRAM
         REAL lowerbound=-1;// lower bound for the function
         while(!positive(lowerbound, -10)){
           r /= 2;
-          lowerbound = abs(f0)-df->get_M(r)*r;
+          lowerbound = abs(f0)-df->get_M_root(r)*r;
         }
       } 
       return r;
@@ -249,7 +249,7 @@ namespace iRRAM
 
     REAL get_M(const REAL& r) const override {
       get_r();
-      REAL lowerbound = abs(f0)-df->get_M(r)*r;
+      REAL lowerbound = abs(f0)-df->get_M_cached(r)*r;
       return 1/lowerbound;
     }
 

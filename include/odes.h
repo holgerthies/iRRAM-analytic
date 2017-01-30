@@ -45,6 +45,31 @@ REAL A2_sol(const REAL& t)
   return REAL(1)/sqrt(t+C);
 }
 
+IVPSYSTEM<REAL, REAL> COS1D_SYSTEM()
+{
+  auto y = variable_symbol<1,0>();
+  auto analytic = cos(y);
+  IVPSYSTEM<REAL, REAL> IVP;
+  IVP.F = {analytic};
+  IVP.t0 = 0;
+  IVP.y = {0};
+  return IVP;
+
+}
+
+IVPSYSTEM<REAL, REAL> INV1D_SYSTEM()
+{
+  auto y = variable_symbol<1,0>();
+  auto analytic = y+REAL(10);
+  simplify(analytic);
+  analytic = REAL(1)/analytic;
+  IVPSYSTEM<REAL, REAL> IVP;
+  IVP.F = {analytic};
+  IVP.t0 = 0;
+  IVP.y = {0};
+  return IVP;
+
+}
 
 // // // Problem A3
 // // // an oscillatory problem
@@ -160,20 +185,19 @@ IVPSYSTEM<REAL, REAL, REAL> A5_SYSTEM()
 //   return 0;
 // }
 
-// IVPSYSTEM<REAL, REAL, REAL, REAL> B1_SYSTEM()
-// {
-//   auto t = variable_symbol<3,0>();
-//   auto y1 = variable_symbol<3,1>();
-//   auto y2 = variable_symbol<3,2>();
-//   auto B1_analytic1 = REAL(2)*(y1-y1*y2);
-//   simplify(B1_analytic1);
-//   auto B1_analytic2 = y1*y2-y2;
-//   simplify(B1_analytic2);
-//   IVPSYSTEM<REAL, REAL, REAL,REAL> B1_IVP;
-//   B1_IVP.F = {B1_analytic1, B1_analytic2};
-//   B1_IVP.y = {0, 1, 3};
-//   return B1_IVP;
-// }
+IVPSYSTEM<REAL, REAL, REAL> B1_SYSTEM()
+{
+  auto y1 = variable_symbol<2,0>();
+  auto y2 = variable_symbol<2,1>();
+  auto B1_analytic1 = REAL(2)*(y1-y1*y2);
+  simplify(B1_analytic1);
+  auto B1_analytic2 = y1*y2-y2;
+  simplify(B1_analytic2);
+  IVPSYSTEM<REAL, REAL, REAL> B1_IVP;
+  B1_IVP.F = {B1_analytic1, B1_analytic2};
+  B1_IVP.y = {1, 3};
+  return B1_IVP;
+}
 
 // // Problem B3
 // // a nonlinear chemical reaction
@@ -205,6 +229,20 @@ IVPSYSTEM<REAL, REAL, REAL> A5_SYSTEM()
 //   return y1/(sqrt(y1*y1+y2*y2));
 // }
 
+// IVPSYSTEM<REAL, REAL, REAL,REAL> B4_SYSTEM()
+// {
+//   auto y1 = variable_symbol<2,0>();
+//   auto y2 = variable_symbol<2,1>();
+//   auto y3 = variable_symbol<3,1>();
+//   auto B1_analytic1 = REAL(2)*(y1-y1*y2);
+//   simplify(B1_analytic1);
+//   auto B1_analytic2 = y1*y2-y2;
+//   simplify(B1_analytic2);
+//   IVPSYSTEM<REAL, REAL, REAL> B1_IVP;
+//   B1_IVP.F = {B1_analytic1, B1_analytic2};
+//   B1_IVP.y = {1, 3};
+//   return B1_IVP;
+// }
 // // Problem Class C: Moderate Problems
 
 // // Problem C1
@@ -509,12 +547,12 @@ IVPSYSTEM<REAL, REAL, REAL> A5_SYSTEM()
 // return 5*(1-y1*y1)*y2-y1;
 // }
 
-IVPSYSTEM<REAL, REAL, REAL> E2_SYSTEM()
+IVPSYSTEM<REAL, REAL, REAL> E2_SYSTEM(const REAL& mu)
 {
   auto y1 = variable_symbol<2,0>();
   auto y2 = variable_symbol<2,1>();
   auto f1 = y2;
-  auto f2 = REAL(100)*((REAL(1)-y1*y1)*y2-y1);
+  auto f2 = mu*((REAL(1)-y1*y1)*y2-y1);
   simplify(f2);
   
   IVPSYSTEM<REAL, REAL, REAL> IVP;
@@ -530,7 +568,7 @@ IVPSYSTEM<REAL, REAL, REAL> SINCOS_SYSTEM()
 {
   auto y = variable_symbol<2,0>();
   auto t = variable_symbol<2,1>();
-  auto analytic = prune(sin(t)*cos(y));
+  auto analytic = sin(t)*cos(y);
   auto c1 = constant_one<2>();
   IVPSYSTEM<REAL, REAL, REAL> IVP;
   IVP.F = {analytic, c1};

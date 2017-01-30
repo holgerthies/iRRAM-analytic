@@ -8,9 +8,8 @@
 namespace iRRAM
 {
   const int MAX_DAG_SIZE = 10;
-  const int ENCLOSURE_ORDER = 2;
   const int MAX_DAG_SIZE_LARGE = 100000;
-  const int ENCLOSURE_ORDER_LARGE = 25;
+  const int ENCLOSURE_MAX_ORDER = 35;
   // for debugging
   struct DEBUG_INFORMATION
   {
@@ -44,18 +43,30 @@ namespace iRRAM
       return ans;
     }
 
-    REAL enclose(const int i,const int order, const REAL& r, const REAL& enc) const
+    REAL enclose(const int i, const REAL& r, const REAL& enc) const
     {
       REAL r_pow = r;
       REAL M = abs(this->get_coefficient(i, 0));
-      for(int k=1; k<order; k++){
+      REAL tM = M + r_pow*this->get_f(i,0)->get_M_root(enc);
+      int k;
+      int order = ENCLOSURE_MAX_ORDER;
+      if(ACTUAL_STACK.actual_prec > -100){
+        order = min(ENCLOSURE_MAX_ORDER, 5);
+      }
+      for(k=1; k<order; k++){
         M += abs(this->get_coefficient(i, std::make_tuple<size_t>(k)))*r_pow;
         r_pow *= r;
+        REAL cM = M + r_pow*this->get_f(i,k)->get_M_root(enc);
+        if(positive(cM-tM, -2)){
+          break;
+        }
+        tM = cM;
       }
-      M = M + r_pow*this->get_f(i,order-1)->get_M_root(enc);
+      //std::cout << "k = " << k << std::endl;
+      
       //std::cout <<  this->get_f(i,order-1)->to_string()<< "\n";
       //std::cout << i << " "<<enc.as_double()<< "  " <<  M.as_double() << " " << this->get_f(i,order)->get_M_root(enc).as_double() <<std::endl;
-      return M;
+      return tM;
     }
 
   protected:
@@ -81,17 +92,18 @@ namespace iRRAM
           std::cout << "Warning: radius of F might be too small to continue" << std::endl;
         }
         min_r = minimum(min_r, f->get_r_cached());
-        q = maximum(q, abs(Y[index])+1);
+        q = maximum(q, abs(Y[index]));
         index++;
       }
+      q = minimum(q+1, q+min_r/10);
       radius = q;
       for(int i=0; i<F.size(); i++)
       {
-        REAL enc = enclose(i,this->enclosure_order, radius, q);
+        REAL enc = enclose(i, radius, q);
         
         while( positive(enc-q, -1)){
           radius /= 2;
-          enc = enclose(i, this->enclosure_order, radius, q);
+          enc = enclose(i, radius, q);
         }
       }
       //std::cout << radius.as_double() << "\n";
@@ -106,7 +118,7 @@ namespace iRRAM
       return radius;
     }
     REAL get_M(const int ind, const REAL& r) const {
-      return enclose(ind, this->enclosure_order, r,q );
+      return enclose(ind, r,q );
     }
     
     virtual R get_coefficient(const int ind, const tutil::n_tuple<1,size_t>& idx) const = 0;
@@ -156,7 +168,6 @@ namespace iRRAM
   public:
     IVPSOLVER(const std::vector<std::shared_ptr<Node<R,Args...>>>& F, const std::vector<R>& Y)
     {
-      this->enclosure_order = ENCLOSURE_ORDER_LARGE;
       this->F = F;
       this->Y = Y;
       this->coeffs = std::vector<std::vector<R>>(F.size(), std::vector<R>());
@@ -170,12 +181,11 @@ namespace iRRAM
     {
       while(this->Fc[ind].size() <= n){
         int i = this->Fc[ind].size();
-        std::cout << "("<<ind << ", " << i<<") " << std::endl;
+        //std::cout << "("<<ind << ", " << i<<") " << std::endl;
         this->Fc[ind].push_back(get_next_f(i+1, this->Fc[ind][i-1], this->F));
         if(this->Fc[ind][i]->get_size() > MAX_DAG_SIZE_LARGE)
           this->Fc[ind][i] = prune(this->Fc[ind][i]);
-        
-        std::cout << this->Fc[ind][n]->get_size() << "("<<ind << ", " << i<<") " << std::endl;
+        //std::cout << this->Fc[ind][n]->get_size() <<" "<<this->Fc[ind][n]->node_number()<< "("<<ind << ", " << i<<") " << std::endl;
       }
       return this->Fc[ind][n];
     }
@@ -212,7 +222,6 @@ namespace iRRAM
   public:
     IVPSOLVER_REC(const std::vector<std::shared_ptr<Node<R,Args...>>>& F, const std::vector<R>& Y)
     {
-      this->enclosure_order = ENCLOSURE_ORDER;
       this->F_orig = F;
       this->coeffs = std::vector<std::vector<R>>(F.size(), std::vector<R>());
       this->transpose(Y);
@@ -336,20 +345,30 @@ namespace iRRAM
   template<class R, class... Args>
   std::vector<R> ivp_solve_cs(const IVPSYSTEM<R, Args...>& S, const R& max_time, const bool output, const int solver_type, DEBUG_INFORMATION& debug)
   {
-    //single_valued code;
+    single_valued code;
     std::vector<R> Y(S.y);
+    std::vector<R> Y0(S.y);
+    std::vector<R> Z(S.y.size(), 0);
     int iter=0, order=0;
     std::shared_ptr<BASIC_IVPSOLVER<R, Args...>> solver;
     if(solver_type == 0){
-      solver = std::make_shared<IVPSOLVER<R,Args...>>(S.F, Y);
+      // make sure Y(0)=0 in the beginning
+      decltype(S.F) Fc;
+      for(const auto& f: S.F){
+        auto fc = iRRAM::transpose(f, Y0);
+        simplify(fc);
+        Fc.push_back(fc);
+      }
+      solver = std::make_shared<IVPSOLVER<R,Args...>>(Fc, Y);
     }
     else{
+      Z = Y0;
       solver = std::make_shared<IVPSOLVER_REC<R,Args...>>(S.F, Y);
     }
     REAL t = S.t0;
     while(positive(max_time-t, -3)){
       iter++;
-      solver->transpose(Y);
+      solver->transpose(Z);
       REAL h;
       for(int i=0; i<S.F.size(); i++){
         auto F = std::make_shared<IVP<R, Args...>>(solver, i);
@@ -357,9 +376,15 @@ namespace iRRAM
         h=F->get_r_cached()/d;
         //REAL p = minimum(h, max_time-Y[0]);
         if(solver_type == 0)
-          Y[i] = F->evaluate_root(h);
+        {
+          Z[i] = F->evaluate_root(h);
+          Y[i] = Y0[i]+Z[i];
+        }
         else
-          Y[i] += F->evaluate_root(h);
+        {
+          Z[i] += F->evaluate_root(h);
+          Y[i] = Z[i];
+        }
         order = max(order, std::dynamic_pointer_cast<IVP<R,Args...>>(F)->read_coefficients());
       }
       t += h;
@@ -378,13 +403,27 @@ namespace iRRAM
 
   // solve ODE system by taylor method and evaluate at some point x
   template<class R, class... Args>
-  std::vector<R> ivp_solve_co(const IVPSYSTEM<R, Args...>& S, const R& max_time, int order, bool output,  DEBUG_INFORMATION& debug)
+  std::vector<R> ivp_solve_co(const IVPSYSTEM<R, Args...>& S, const R& max_time,const int order, const bool output, const int solver_type, DEBUG_INFORMATION& debug)
   {
     single_valued code;
     std::vector<R> Y(S.y);
+    std::vector<R> Y0(S.y);
+    std::vector<R> Z(S.y.size(), 0);
     int iter=0;
-
-    auto solver = std::make_shared<IVPSOLVER_REC<R,Args...>>(S.F, Y);
+    std::shared_ptr<BASIC_IVPSOLVER<R, Args...>> solver;
+    if(solver_type == 0){
+      // make sure Y(0)=0 in the beginning
+      decltype(S.F) Fc;
+      for(const auto& f: S.F){
+        auto fc = iRRAM::transpose(f, Y0);
+        simplify(fc);
+        Fc.push_back(fc);
+      }
+      solver = std::make_shared<IVPSOLVER<R,Args...>>(Fc, Y);
+    }
+    else{
+      solver = std::make_shared<IVPSOLVER_REC<R,Args...>>(S.F, Y);
+    }
     REAL t = S.t0;
     while(positive(max_time-t, -3)){
       iter++;
@@ -392,7 +431,7 @@ namespace iRRAM
       REAL h=1;
       for(int i=0; i<S.F.size(); i++){
           auto F = std::make_shared<IVP<R, Args...>>(solver, i);
-          h = minimum(h, 2*F->get_r());
+          h = minimum(h, F->get_r());
       }
       auto trunc_error = real_to_error(1);
       while (trunc_error.exponent >= ACTUAL_STACK.actual_prec){
@@ -400,16 +439,26 @@ namespace iRRAM
         sizetype_exact(trunc_error);
         for(int i=0; i<S.F.size(); i++){
           auto F = std::make_shared<IVP<R, Args...>>(solver, i);
-          REAL error = abs(solver->get_f(i,order)->get_M_root(abs(Y[i])+1))*power(h, order);
-          Y[i] = F->approximate(order, h);
+          REAL error = abs(solver->get_f(i,order)->get_M_root(abs(Z[i])+1))*power(h, order);
+          if(solver_type == 0)
+          {
+            Z[i] = F->evaluate_root(h);
+          }
+          else
+          {
+            Z[i] = Y[i]+F->evaluate_root(h);
+          }
           auto local_trunc_error = real_to_error(error);
           sizetype sum_error, local_error;
-          Y[i].geterror(sum_error);
+          Z[i].geterror(sum_error);
           sizetype_add(local_error, sum_error, local_trunc_error);
-          Y[i].seterror(local_error);
+          Z[i].seterror(local_error);
           
           sizetype_max(trunc_error,trunc_error, local_trunc_error);
         }
+      }
+      for(int i=0; i<S.F.size(); i++){
+        Y[i] = Z[i];
       }
       
       t += h;
@@ -429,24 +478,48 @@ namespace iRRAM
 
   // solve ODE system by taylor method and evaluate at some point x
   template<class R, class... Args>
-  std::vector<R> ivp_solve_mixed(const IVPSYSTEM<R, Args...>& S, const R& max_time, bool output,  DEBUG_INFORMATION& debug)
+  std::vector<R> ivp_solve_mixed(const IVPSYSTEM<R, Args...>& S, const R& max_time, const bool output, const int solver_type, DEBUG_INFORMATION& debug)
   {
     single_valued code;
     std::vector<R> Y(S.y);
+    std::vector<R> Y0(S.y);
+    std::vector<R> Z(S.y.size(), 0);
     int iter=0, order=0;
-
-    auto solver = std::make_shared<IVPSOLVER_REC<R,Args...>>(S.F, Y);
+    std::shared_ptr<BASIC_IVPSOLVER<R, Args...>> solver;
+    if(solver_type == 0){
+      // make sure Y(0)=0 in the beginning
+      decltype(S.F) Fc;
+      for(const auto& f: S.F){
+        auto fc = iRRAM::transpose(f, Y0);
+        simplify(fc);
+        Fc.push_back(fc);
+      }
+      solver = std::make_shared<IVPSOLVER<R,Args...>>(Fc, Y);
+    }
+    else{
+      Z = Y0;
+      solver = std::make_shared<IVPSOLVER_REC<R,Args...>>(S.F, Y);
+    }
     REAL t = S.t0;
     while(positive(max_time-t, -3)){
       iter++;
-      solver->transpose(Y);
+      solver->transpose(Z);
       REAL h;
       for(int i=0; i<S.F.size(); i++){
         auto F = std::make_shared<IVP<R, Args...>>(solver, i);
         int d = -ACTUAL_STACK.actual_prec*S.F.size()/16;
         h=F->get_r_cached()/d;
         //REAL p = minimum(h, max_time-Y[0]);
-        Y[i] = F->evaluate_root(h);
+        if(solver_type == 0)
+        {
+          Z[i] = F->evaluate_root(h);
+          Y[i] = Y0[i]+Z[i];
+        }
+        else
+        {
+          Z[i] += F->evaluate_root(h);
+          Y[i] = Z[i];
+        }
         order = max(order, std::dynamic_pointer_cast<IVP<R,Args...>>(F)->read_coefficients());
       }
       t += h;
@@ -462,7 +535,6 @@ namespace iRRAM
     debug.order = order;
     return  Y;
   }
-
 
 } // namespace iRRAM
 

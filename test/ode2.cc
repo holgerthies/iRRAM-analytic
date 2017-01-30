@@ -25,19 +25,24 @@ void check(REAL x1, REAL y10, int prec)
 }
 
 template<class T>
-REAL solve(const T& system, const REAL& x, const int method, const int solver, const bool out, DEBUG_INFORMATION& d )
+std::vector<REAL> solve(T& system, const REAL& x, const int method, const int solver,bool do_prune, const bool out, DEBUG_INFORMATION& d )
 {
-  
+  if(do_prune){
+    for(int i=0; i<system.F.size(); i++){
+      system.F[i] = transpose(system.F[i], system.y);
+      system.F[i] = prune(system.F[i]);
+    }
+  }
   decltype(ivp_solve_cs(system, x,out,0, d)) sols;
   if(method == 1)
     sols = ivp_solve_cs(system,x,out,solver, d);
   if(method == 2)
-    sols = ivp_solve_co(system,x,25, out, d);
+    sols = ivp_solve_co(system,x,25, out,solver, d);
   if(method == 3)
-    sols = ivp_solve_co(system,x,50, out, d);
+    sols = ivp_solve_co(system,x,50, out,solver, d);
   if(method == 4)
-    sols = ivp_solve_mixed(system,x, out, d);
-  return sols[0];
+    sols = ivp_solve_mixed(system,x, out,solver, d);
+  return sols;
 }
 
 
@@ -45,11 +50,12 @@ void compute(){
   DEBUG_INFORMATION d;
   static int iteration_counter = 0;
 
-  vector<decltype(A2_SYSTEM())> systems_1d = {A2_SYSTEM()};//, A3_SYSTEM(), A5_SYSTEM(), SINCOS_SYSTEM()};
-  vector<decltype(A3_SYSTEM())> systems_2d = {A3_SYSTEM(), E2_SYSTEM()};
+  vector<decltype(A2_SYSTEM())> systems_1d = {A2_SYSTEM(), COS1D_SYSTEM(), INV1D_SYSTEM()};//, A3_SYSTEM(), A5_SYSTEM(), SINCOS_SYSTEM()};
+  vector<decltype(A3_SYSTEM())> systems_2d = {A3_SYSTEM(), E2_SYSTEM(10), A5_SYSTEM(), B1_SYSTEM(),SINCOS_SYSTEM()};
   vector<decltype(SINCOS_POLY_SYSTEM())> systems_6d = {SINCOS_POLY_SYSTEM()};
   
   int dimension=0, system,max_iter,prec,method,solver_type;
+  bool prune;
   struct rusage usage;
   struct timeval start, end;
   
@@ -69,6 +75,9 @@ void compute(){
 
   iRRAM::cout << "choose step size method" << std::endl;
   iRRAM::cin >>  method;
+
+  iRRAM::cout << "prune?" << std::endl;
+  iRRAM::cin >>  prune;
 
   REAL x;
   iRRAM::cout << "choose x" << std::endl;
@@ -93,19 +102,29 @@ void compute(){
   getrusage(RUSAGE_SELF, &usage);
   start = usage.ru_utime;
   REAL sol;
+  std::vector<REAL> sols;
   
   if(dimension == 1){
-    sol = solve(systems_1d[system],x, method,solver_type, out,  d);
+    sols = solve(systems_1d[system],x, method,solver_type,prune, out,  d);
   }
   if(dimension == 2)
-    sol = solve(systems_2d[system],x, method,solver_type, out,  d);
+    sols = solve(systems_2d[system],x, method,solver_type,prune, out,  d);
   if(dimension == 6)
-    sol = solve(systems_6d[system],x, method,solver_type, out,  d);
-  sizetype error;
-  sol.geterror(error);
+    sols = solve(systems_6d[system],x, method,solver_type,prune, out,  d);
+
+
   getrusage(RUSAGE_SELF, &usage);
   end = usage.ru_utime;
   auto iteration_time =  end.tv_sec-start.tv_sec+double(end.tv_usec-start.tv_usec)/1000000;
+
+  sizetype error;
+  sizetype_exact(error);
+  for(REAL s : sols){
+    sizetype curr_error;
+    s.geterror(curr_error);
+    sizetype_max(error, error, curr_error);
+  }
+  
   int error_exp_normalized;
   unsigned long mantissa = error.mantissa;
   error_exp_normalized = error.exponent;
@@ -113,13 +132,15 @@ void compute(){
     mantissa /= 2;
     error_exp_normalized++;
   }
-  
   //check(sol, A3_sol(5), 50);
   // return;
   
   
   std::cout << " dimension:" << dimension;
   std::cout << " system:" << system;
+  std::cout << " solver:" << solver_type;
+  std::cout << " method:" << method;
+  std::cout << " prune:" << prune;
   std::cout << " time:" << iteration_time;
   std::cout << " steps:" << d.steps;
   std::cout << " order:" << d.order;

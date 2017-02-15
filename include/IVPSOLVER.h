@@ -10,6 +10,9 @@ namespace iRRAM
   const int MAX_DAG_SIZE = 10;
   const int MAX_DAG_SIZE_LARGE = 100000;
   const int ENCLOSURE_MAX_ORDER = 35;
+  const int ENCLOSURE_MAX_ORDER_LARGE = 85;
+  const bool use_large_order = false;
+  const bool output_order = true;
   // for debugging
   struct DEBUG_INFORMATION
   {
@@ -20,8 +23,10 @@ namespace iRRAM
   std::shared_ptr<Node<R, Args...>> get_next_f(const int index, const std::shared_ptr<Node<R,Args...>>& f, const std::vector<std::shared_ptr<Node<R, Args...>>>& Fs)
   {
     auto ans = pderive(f, 0,1)*Fs[0];
+    simplify(ans);
     for(int i=1; i<Fs.size(); i++){
       ans = ans+pderive(f, i, 1)*Fs[i];
+      simplify(ans);
     }
     ans = (REAL(1)/REAL(index))*ans;
     simplify(ans);
@@ -50,7 +55,8 @@ namespace iRRAM
       REAL tM = M + r_pow*this->get_f(i,0)->get_M_root(enc);
       int k;
       int order = ENCLOSURE_MAX_ORDER;
-      if(ACTUAL_STACK.actual_prec > -100){
+      if(use_large_order) order = ENCLOSURE_MAX_ORDER_LARGE;
+      if(!use_large_order && (ACTUAL_STACK.actual_prec > -100 || this->no_prune || this->F.size() > 1)){
         order = min(ENCLOSURE_MAX_ORDER, 5);
       }
       for(k=1; k<order; k++){
@@ -74,6 +80,7 @@ namespace iRRAM
     std::vector<R> Y;
     mutable std::vector<std::vector<std::shared_ptr<Node<R, Args...>>>> Fc;
     mutable std::vector<std::vector<R>> coeffs;
+    bool no_prune;
     int ind;
     int enclosure_order;
     REAL q, radius;
@@ -96,6 +103,7 @@ namespace iRRAM
         index++;
       }
       q = minimum(q+1, q+min_r/10);
+      
       radius = q;
       for(int i=0; i<F.size(); i++)
       {
@@ -106,7 +114,7 @@ namespace iRRAM
           enc = enclose(i, radius, q);
         }
       }
-      //std::cout << radius.as_double() << "\n";
+      // std::cout << radius.as_double() << "\n";
     }
 
     auto get_F(const int index) -> decltype(F[0])
@@ -166,8 +174,9 @@ namespace iRRAM
   template <class R, class... Args>
   class IVPSOLVER : public BASIC_IVPSOLVER<R,Args...>  {
   public:
-    IVPSOLVER(const std::vector<std::shared_ptr<Node<R,Args...>>>& F, const std::vector<R>& Y)
+    IVPSOLVER(const std::vector<std::shared_ptr<Node<R,Args...>>>& F, const std::vector<R>& Y, const bool no_prune = false)
     {
+      this->no_prune = no_prune;
       this->F = F;
       this->Y = Y;
       this->coeffs = std::vector<std::vector<R>>(F.size(), std::vector<R>());
@@ -183,7 +192,7 @@ namespace iRRAM
         int i = this->Fc[ind].size();
         //std::cout << "("<<ind << ", " << i<<") " << std::endl;
         this->Fc[ind].push_back(get_next_f(i+1, this->Fc[ind][i-1], this->F));
-        if(this->Fc[ind][i]->get_size() > MAX_DAG_SIZE_LARGE)
+        if(!this->no_prune && this->Fc[ind][i]->get_size() > MAX_DAG_SIZE_LARGE)
           this->Fc[ind][i] = prune(this->Fc[ind][i]);
         //std::cout << this->Fc[ind][n]->get_size() <<" "<<this->Fc[ind][n]->node_number()<< "("<<ind << ", " << i<<") " << std::endl;
       }
@@ -220,8 +229,9 @@ namespace iRRAM
   private:
     std::vector<std::shared_ptr<Node<R,Args...>>> F_orig;
   public:
-    IVPSOLVER_REC(const std::vector<std::shared_ptr<Node<R,Args...>>>& F, const std::vector<R>& Y)
+    IVPSOLVER_REC(const std::vector<std::shared_ptr<Node<R,Args...>>>& F, const std::vector<R>& Y, const bool no_prune = false)
     {
+      this->no_prune = no_prune;
       this->F_orig = F;
       this->coeffs = std::vector<std::vector<R>>(F.size(), std::vector<R>());
       this->transpose(Y);
@@ -232,9 +242,9 @@ namespace iRRAM
       while(this->Fc[ind].size() <= n){
         int i = this->Fc[ind].size();
         this->Fc[ind].push_back(get_next_f(i+1, this->Fc[ind][i-1], this->F));
-        if(this->Fc[ind][i]->get_size() > MAX_DAG_SIZE)
+        if(!this->no_prune && this->Fc[ind][i]->get_size() > MAX_DAG_SIZE)
           this->Fc[ind][i] = prune(this->Fc[ind][i]);
-        
+        //std::cout << this->Fc[ind][i]->to_string()  << "\n";
         //std::cout << this->Fc[ind][i]->node_number() << "("<<ind << ", " << i<<") " << std::endl;
       }
       return this->Fc[ind][n];
@@ -345,7 +355,10 @@ namespace iRRAM
   template<class R, class... Args>
   std::vector<R> ivp_solve_cs(const IVPSYSTEM<R, Args...>& S, const R& max_time, const bool output, const int solver_type, DEBUG_INFORMATION& debug)
   {
+    #if SHOW_OUTPUT==false
     single_valued code;
+    #endif
+
     std::vector<R> Y(S.y);
     std::vector<R> Y0(S.y);
     std::vector<R> Z(S.y.size(), 0);
@@ -367,6 +380,7 @@ namespace iRRAM
     }
     REAL t = S.t0;
     while(positive(max_time-t, -3)){
+      int curr_order = 0;
       iter++;
       solver->transpose(Z);
       REAL h;
@@ -386,12 +400,15 @@ namespace iRRAM
           Y[i] = Z[i];
         }
         order = max(order, std::dynamic_pointer_cast<IVP<R,Args...>>(F)->read_coefficients());
+        curr_order = max(curr_order, std::dynamic_pointer_cast<IVP<R,Args...>>(F)->read_coefficients());
       }
       t += h;
       if(output){
         iRRAM::cout <<iter << " " << t;
         for(auto y : Y)
           iRRAM::cout << " " << y;
+        if(output_order)
+          iRRAM::cout << " " << curr_order;
         iRRAM::cout << std::endl;
         
       }
@@ -405,7 +422,9 @@ namespace iRRAM
   template<class R, class... Args>
   std::vector<R> ivp_solve_co(const IVPSYSTEM<R, Args...>& S, const R& max_time,const int order, const bool output, const int solver_type, DEBUG_INFORMATION& debug)
   {
+    #if SHOW_OUTPUT==false
     single_valued code;
+    #endif
     std::vector<R> Y(S.y);
     std::vector<R> Y0(S.y);
     std::vector<R> Z(S.y.size(), 0);
@@ -419,44 +438,56 @@ namespace iRRAM
         simplify(fc);
         Fc.push_back(fc);
       }
-      solver = std::make_shared<IVPSOLVER<R,Args...>>(Fc, Y);
+      solver = std::make_shared<IVPSOLVER<R,Args...>>(Fc, Y, true);
     }
     else{
-      solver = std::make_shared<IVPSOLVER_REC<R,Args...>>(S.F, Y);
+      solver = std::make_shared<IVPSOLVER_REC<R,Args...>>(S.F, Y, true);
     }
     REAL t = S.t0;
+    int order_check = 0;
     while(positive(max_time-t, -3)){
       iter++;
       solver->transpose(Y);
-      REAL h=1;
+      REAL h=power(2, -order+6);
+      std::vector<std::shared_ptr<IVP<R,Args...>>> y;
+      
       for(int i=0; i<S.F.size(); i++){
-          auto F = std::make_shared<IVP<R, Args...>>(solver, i);
-          h = minimum(h, F->get_r());
+        y.push_back(std::make_shared<IVP<R, Args...>>(solver, i));
+        h = minimum(h, y[i]->get_r());
       }
       auto trunc_error = real_to_error(1);
+      std::vector<REAL> Ms;
+      for(int i=0; i<S.F.size(); i++){
+        Ms.push_back(solver->get_f(i,order)->get_M_root(abs(Z[i])+h/2));
+      }
+      
       while (trunc_error.exponent >= ACTUAL_STACK.actual_prec){
         h /= 2;
         sizetype_exact(trunc_error);
         for(int i=0; i<S.F.size(); i++){
-          auto F = std::make_shared<IVP<R, Args...>>(solver, i);
-          REAL error = abs(solver->get_f(i,order)->get_M_root(abs(Z[i])+1))*power(h, order);
-          if(solver_type == 0)
-          {
-            Z[i] = F->evaluate_root(h);
-          }
-          else
-          {
-            Z[i] = Y[i]+F->evaluate_root(h);
-          }
-          auto local_trunc_error = real_to_error(error);
-          sizetype sum_error, local_error;
-          Z[i].geterror(sum_error);
-          sizetype_add(local_error, sum_error, local_trunc_error);
-          Z[i].seterror(local_error);
           
+          REAL error = Ms[i]*power(h, order);
+          auto local_trunc_error = real_to_error(error);
           sizetype_max(trunc_error,trunc_error, local_trunc_error);
         }
       }
+
+      for(int i=0; i<S.F.size(); i++){
+        if(solver_type == 0)
+        {
+          Z[i] = y[i]->approximate(order, h);
+        }
+        else
+        {
+          Z[i] = Y[i]+y[i]->approximate(order,h);
+        }
+        order_check = max(order_check, y[i]->read_coefficients());
+        sizetype sum_error, local_error;
+        Z[i].geterror(sum_error);
+        sizetype_add(local_error, sum_error, trunc_error);
+        Z[i].seterror(local_error);
+      }
+
       for(int i=0; i<S.F.size(); i++){
         Y[i] = Z[i];
       }
@@ -469,9 +500,10 @@ namespace iRRAM
         iRRAM::cout << std::endl;
         
       }
+      
     }
     debug.steps = iter;
-    debug.order = order;
+    debug.order = order_check;
     return  Y;
   }
 
@@ -480,7 +512,10 @@ namespace iRRAM
   template<class R, class... Args>
   std::vector<R> ivp_solve_mixed(const IVPSYSTEM<R, Args...>& S, const R& max_time, const bool output, const int solver_type, DEBUG_INFORMATION& debug)
   {
+    #if SHOW_OUTPUT==false
     single_valued code;
+    #endif
+
     std::vector<R> Y(S.y);
     std::vector<R> Y0(S.y);
     std::vector<R> Z(S.y.size(), 0);
@@ -503,6 +538,7 @@ namespace iRRAM
     REAL t = S.t0;
     while(positive(max_time-t, -3)){
       iter++;
+      int curr_order = 0;
       solver->transpose(Z);
       REAL h;
       for(int i=0; i<S.F.size(); i++){
@@ -521,12 +557,15 @@ namespace iRRAM
           Y[i] = Z[i];
         }
         order = max(order, std::dynamic_pointer_cast<IVP<R,Args...>>(F)->read_coefficients());
+        curr_order = max(curr_order, std::dynamic_pointer_cast<IVP<R,Args...>>(F)->read_coefficients());
       }
       t += h;
       if(output){
         iRRAM::cout <<iter << " " << t;
         for(auto y : Y)
           iRRAM::cout << " " << y;
+        if(output_order)
+          iRRAM::cout << " " << curr_order;
         iRRAM::cout << std::endl;
         
       }

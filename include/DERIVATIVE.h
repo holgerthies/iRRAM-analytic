@@ -83,9 +83,12 @@ namespace iRRAM
       
       std::vector<REAL> test_rs = {(r+node->get_r_cached())/2, r+2, 2*r, 1.1*r};
       REAL M =node->get_M_root(test_rs[0])/power(test_rs[0]-r, sum);
-      for(int i=1; i<test_rs.size(); i++){
-        REAL r1 = minimum(test_rs[i], (r+node->get_r_cached())/2);
-        M = minimum(M, node->get_M_root(test_rs[i])/power(test_rs[i]-r, sum));
+      if(positive(M-10000, 0))
+      {
+        for(int i=1; i<test_rs.size(); i++){
+          REAL r1 = minimum(test_rs[i], test_rs[0]);
+          M = minimum(M, node->get_M_root(r1)/power(r1-r, sum));
+        }
       }
       return fact*M;
       

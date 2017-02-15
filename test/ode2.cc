@@ -1,3 +1,4 @@
+#define SHOW_OUTPUT false
 #include "iRRAM.h"
 #include "irram_analytic.h"
 #include "odes.h"
@@ -30,14 +31,16 @@ std::vector<REAL> solve(T& system, const REAL& x, const int method, const int so
   if(do_prune){
     for(int i=0; i<system.F.size(); i++){
       system.F[i] = transpose(system.F[i], system.y);
+      simplify(system.F[i]);
       system.F[i] = prune(system.F[i]);
+      system.y = std::vector<REAL>(system.y.size(),0);
     }
   }
   decltype(ivp_solve_cs(system, x,out,0, d)) sols;
   if(method == 1)
     sols = ivp_solve_cs(system,x,out,solver, d);
   if(method == 2)
-    sols = ivp_solve_co(system,x,25, out,solver, d);
+    sols = ivp_solve_co(system,x,6, out,solver, d);
   if(method == 3)
     sols = ivp_solve_co(system,x,50, out,solver, d);
   if(method == 4)
@@ -51,7 +54,8 @@ void compute(){
   static int iteration_counter = 0;
 
   vector<decltype(A2_SYSTEM())> systems_1d = {A2_SYSTEM(), COS1D_SYSTEM(), INV1D_SYSTEM()};//, A3_SYSTEM(), A5_SYSTEM(), SINCOS_SYSTEM()};
-  vector<decltype(A3_SYSTEM())> systems_2d = {A3_SYSTEM(), E2_SYSTEM(10), A5_SYSTEM(), B1_SYSTEM(),SINCOS_SYSTEM()};
+  vector<decltype(A3_SYSTEM())> systems_2d = {B1_SYSTEM(),  A3_SYSTEM(),A5_SYSTEM(),RAT2D_SYSTEM(), E2_SYSTEM(10),E2_SYSTEM(100), E2_SYSTEM(1000),E2p_SYSTEM(100),E2p_SYSTEM(1000),E2p_SYSTEM(10),SINCOS_SYSTEM()};
+  vector<decltype(POLY3D_SYSTEM())> systems_3d = {POLY3D_SYSTEM()};
   vector<decltype(SINCOS_POLY_SYSTEM())> systems_6d = {SINCOS_POLY_SYSTEM()};
   
   int dimension=0, system,max_iter,prec,method,solver_type;
@@ -62,7 +66,7 @@ void compute(){
   while(dimension == 0){
     iRRAM::cout << "choose system dimension" << std::endl;
     iRRAM::cin >> dimension;
-    if(dimension != 1 && dimension != 2 && dimension != 6){
+    if(dimension != 1 && dimension != 2 && dimension !=3 && dimension != 6){
       iRRAM::cout << "invalid dimension" << std::endl;
       dimension = 0;
     }
@@ -109,6 +113,8 @@ void compute(){
   }
   if(dimension == 2)
     sols = solve(systems_2d[system],x, method,solver_type,prune, out,  d);
+  if(dimension == 3)
+    sols = solve(systems_3d[system],x, method,solver_type,prune, out,  d);
   if(dimension == 6)
     sols = solve(systems_6d[system],x, method,solver_type,prune, out,  d);
 

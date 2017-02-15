@@ -147,6 +147,19 @@ IVPSYSTEM<REAL, REAL, REAL> A5_SYSTEM()
   return A5_IVP;
 }
 
+IVPSYSTEM<REAL, REAL, REAL> RAT2D_SYSTEM()
+{
+  auto y = variable_symbol<2,0>();
+  auto t = variable_symbol<2,1>();
+  auto analytic = REAL(1)/(y+t+REAL(10));
+  simplify(analytic);
+  auto c1 = constant_one<2>();
+  IVPSYSTEM<REAL, REAL, REAL> A5_IVP;
+  A5_IVP.F = {analytic, c1};
+  A5_IVP.t0 = 0;
+  A5_IVP.y = {0, 0};
+  return A5_IVP;
+}
 // // Problem Class B: Small systems
 
 // // Problem B1
@@ -196,6 +209,7 @@ IVPSYSTEM<REAL, REAL, REAL> B1_SYSTEM()
   IVPSYSTEM<REAL, REAL, REAL> B1_IVP;
   B1_IVP.F = {B1_analytic1, B1_analytic2};
   B1_IVP.y = {1, 3};
+  B1_IVP.t0 = 0;
   return B1_IVP;
 }
 
@@ -336,51 +350,60 @@ IVPSYSTEM<REAL, REAL, REAL> B1_SYSTEM()
 //   return 2*r;
 // }
 
-// template<int I, class... Args>
-// struct C1_analytic_getter
-// {
-//   using analytic_type = typename C1_analytic_getter<I-1, REAL, Args...>::analytic_type;
-//   using vector_type = typename C1_analytic_getter<I-1, REAL, Args...>::vector_type;
-//   using system_type = typename C1_analytic_getter<I-1, REAL, Args...>::system_type;
+template<int I, class... Args>
+struct C1_analytic_getter
+{
+  using analytic_type = typename C1_analytic_getter<I-1, REAL, Args...>::analytic_type;
+  using vector_type = typename C1_analytic_getter<I-1, REAL, Args...>::vector_type;
+  using system_type = typename C1_analytic_getter<I-1, REAL, Args...>::system_type;
+  static vector_type get()
+  {
+    const int i = sizeof...(Args);
+    const int d = sizeof...(Args)+I;
+    auto v = C1_analytic_getter<I-1, REAL, Args...>::get();
+    auto yi = variable_symbol<d, I-1>();
+    auto ypi = variable_symbol<d, I-2>();
+    if(i == 0)
+      v.push_back(ypi);
+    else
+    {
+      auto f =ypi-yi;
+      simplify(f);
+      v.push_back(f);
+    }
+      
+    return v;
+  }
+};
+
+template<class... Args>
+struct C1_analytic_getter<1, Args...>
+{
+  using analytic_type = ANALYTIC<REAL, REAL, Args...>;
+  using vector_type = std::vector<std::shared_ptr<Node<REAL, REAL, Args...>>>;
+  using system_type = IVPSYSTEM<REAL, REAL, Args...>;
   
-//   static vector_type get(const REAL& r)
-//   {
-//     auto F = real_analytic<I+sizeof...(Args)+1>::make(C1_series_getter<I, I+sizeof...(Args)+1>::get(),C1_max(r),r);
-//     std::static_pointer_cast<analytic_type>(F)->add_algorithm(C1_fun_getter<I, I+sizeof...(Args)+1>::get());
-//     auto C1_analytic = C1_analytic_getter<I-1, REAL, Args...>::get(r);
-//     C1_analytic.push_back(F);
-//     return C1_analytic;
-//   }
-
-// };
-
-// template<class... Args>
-// struct C1_analytic_getter<0, Args...>
-// {
-//   using analytic_type = ANALYTIC<REAL, REAL, Args...>;
-//   using vector_type = std::vector<std::shared_ptr<Node<REAL, REAL, Args...>>>;
-//   using system_type = IVPSYSTEM<REAL, REAL, Args...>;
-  
-//   static vector_type get(const REAL& r)
-//   {
-//     return vector_type();
-//   }
-// };
+  static vector_type get()
+  {
+    const int d = sizeof...(Args)+1;
+    return vector_type{REAL(-1)*variable_symbol<d, 0>()};
+  }
+};
 
 
   
-// template<int dim>
-// typename C1_analytic_getter<dim-1>::system_type C1_SYSTEM(const REAL& r)
-// {
+ template<int dim>
+ typename C1_analytic_getter<dim>::system_type C1_SYSTEM()
+{
 
-//   auto C1_analytic = C1_analytic_getter<dim-1>::get(r);
-//   typename C1_analytic_getter<dim-1>::system_type C1_IVP;
-//   C1_IVP.F = C1_analytic;
-//   C1_IVP.y = std::vector<REAL>(dim, 0);
-//   C1_IVP.y[1] = 1;
+  auto F = C1_analytic_getter<dim>::get();
+  typename C1_analytic_getter<dim>::system_type C1_IVP;
+  C1_IVP.F = F;
+  C1_IVP.y = std::vector<REAL>(dim, 0);
+  C1_IVP.y[0] = 1;
   
-//   return C1_IVP;
-// }
+  return C1_IVP;
+}
 // //Problem Class D: Orbit Equations
 
 // //Problem D1
@@ -563,6 +586,21 @@ IVPSYSTEM<REAL, REAL, REAL> E2_SYSTEM(const REAL& mu)
 }
 // some other test systems
 
+IVPSYSTEM<REAL, REAL, REAL> E2p_SYSTEM(const REAL& mu)
+{
+  auto y1 = variable_symbol<2,0>();
+  auto y2 = variable_symbol<2,1>();
+  REAL fact = 1000;
+  auto f1 = fact*y2;
+  auto f2 = (REAL(1)/fact)*mu*((REAL(1)-y1*y1)*fact*y2-y1);
+  simplify(f2);
+  
+  IVPSYSTEM<REAL, REAL, REAL> IVP;
+  IVP.F = {f1,f2};
+  IVP.t0 = 0;
+  IVP.y = {1.2, -(REAL(1)/fact)*0.6};
+  return IVP;
+}
 
 IVPSYSTEM<REAL, REAL, REAL> SINCOS_SYSTEM()
 {
@@ -576,6 +614,24 @@ IVPSYSTEM<REAL, REAL, REAL> SINCOS_SYSTEM()
   IVP.y = {0, 0};
   return IVP;
 
+}
+
+IVPSYSTEM<REAL, REAL, REAL,REAL> POLY3D_SYSTEM()
+{
+  auto y1 = variable_symbol<3,0>();
+  auto y2 = variable_symbol<3,1>();
+  auto y3 = variable_symbol<3,2>();
+  auto analytic1 = y1*y2+REAL(1);
+  simplify(analytic1);
+  auto analytic2 = y1*y3+y2;
+  simplify(analytic2);
+  auto analytic3 = y1+y2+y3;
+  simplify(analytic3);
+  IVPSYSTEM<REAL, REAL, REAL, REAL> IVP;
+  IVP.F = {analytic1, analytic2, analytic3};
+  IVP.y = {0, 0, 0};
+  IVP.t0 = 0;
+  return IVP;
 }
 
 IVPSYSTEM<REAL, REAL, REAL, REAL, REAL, REAL, REAL> SINCOS_POLY_SYSTEM()

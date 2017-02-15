@@ -32,6 +32,7 @@ Output precision is set to 22 but lower for step size method 1 (as it does not m
 - 0 : y'(t) = -0.5y^3; y(0) = 1
 - 1 : y'(t) = cos(y); y(0) = 0
 - 2 : y'(t) = 1/(y+10); y(0) = 0
+
 ## dimension 2
 - 0 : y1'(t) = 2(y1-y1y2); y2'(t) = y1y2-y2; y(0) = (1,3)
 - 1 : y1'(t) = y1cos(y2); y2'(t)=1; y(0) = (1,0)
@@ -43,5 +44,6 @@ Output precision is set to 22 but lower for step size method 1 (as it does not m
 - 7 : y1'(t) = 1000y2; y2'(t) = 0.1((1-y1^2)1000y2-y1); y(0) = (1.2, -0.0006)
 - 8 : y1'(t) = 1000y2; y2'(t) = ((1-y1^2)1000y2-y1); y(0) = (1.2, -0.0006)
 - 9 : y1'(t) = 1000y2; y2'(t) = 0.01((1-y1^2)1000y2-y1); y(0) = (1.2, -0.0006)
+
 ## dimension 3
 - 0 : y1'(t) = y1y2+1; y2'(t) = y1y3+y2; y3'(t) = y1+y2+y3; y(0) = (0,0,0)

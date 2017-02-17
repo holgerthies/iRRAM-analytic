@@ -6,9 +6,9 @@ The Interface is changed regularly and some things might not work properly.
 ## Requirements
 - A C++14 ready compiler.
 - A recent version of [iRRAM](https://github.com/norbert-mueller/iRRAM).
+
 ## Installation
-The library is header-only, so no building is required.
-## Usage
+The library is header-only. No building is required.
 
 ## License
 This program is free software: you can redistribute it and/or modify

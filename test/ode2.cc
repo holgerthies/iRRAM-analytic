@@ -1,4 +1,4 @@
-#define SHOW_OUTPUT false
+#define SHOW_OUTPUT true
 #include "iRRAM.h"
 #include "irram_analytic.h"
 #include "odes.h"

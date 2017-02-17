@@ -1,5 +1,5 @@
 # Evaluation method
-All data is output from the ode2 script contained in test/ode2.cc
+All data is output from the ode2 script contained in `test/ode2.cc`
 The script reads the following from the standard input.
 - Dimension of the system (1,2 or 3)
 - System ID (see below)
@@ -18,6 +18,8 @@ If the precision is given it outputs for each iteration
 - mantissa and exponent for the error of the value y(t) of the solution function at the last step
 - exponent if error is written in the form 2^n
 Otherwise at each step the time t, and all values of y(t) are output with the given precision.
+
+For technical reasons, it is necessary to set the `SHOW_OUTPUT` flag in the first line of `ode2.cc` to `true` if you want to specify the output precision and to `false` if you want to give the number of iterations. 
 
 The data in the file data.txt is generated as follows:
 the program ode2 is run with parameter --prec_inc=1 and as value for t 1.0 is chosen. 
